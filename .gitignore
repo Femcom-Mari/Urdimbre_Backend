@@ -31,3 +31,10 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Archivos y carpetas con -env
+*-env
+*-env.*
+*-env/
+.env
+.env.*
