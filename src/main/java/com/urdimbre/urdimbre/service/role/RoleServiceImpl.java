@@ -1,17 +1,17 @@
-package com.urdimbre.backend.service.role;
+package com.urdimbre.urdimbre.service.role;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
-import com.urdimbre.backend.dto.role.RoleRequestDTO;
-import com.urdimbre.backend.dto.role.RoleResponseDTO;
-import com.urdimbre.backend.exception.ResourceNotFoundException;
-import com.urdimbre.backend.model.Role;
-import com.urdimbre.backend.model.User;
-import com.urdimbre.backend.repository.RoleRepository;
-import com.urdimbre.backend.repository.UserRepository;
+import com.urdimbre.urdimbre.dto.role.RoleRequestDTO;
+import com.urdimbre.urdimbre.dto.role.RoleResponseDTO;
+import com.urdimbre.urdimbre.exception.ResourceNotFoundException;
+import com.urdimbre.urdimbre.model.Role;
+import com.urdimbre.urdimbre.model.User;
+import com.urdimbre.urdimbre.repository.RoleRepository;
+import com.urdimbre.urdimbre.repository.UserRepository;
 
 @Service
 public class RoleServiceImpl implements RoleService {

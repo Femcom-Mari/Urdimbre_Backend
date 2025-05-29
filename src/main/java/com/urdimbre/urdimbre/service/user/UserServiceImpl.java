@@ -1,4 +1,4 @@
-package com.urdimbre.backend.service.user;
+package com.urdimbre.urdimbre.service.user;
 
 import java.util.List;
 import java.util.Set;
@@ -7,12 +7,12 @@ import java.util.stream.Collectors;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.urdimbre.backend.dto.user.UserRequestDTO;
-import com.urdimbre.backend.dto.user.UserResponseDTO;
-import com.urdimbre.backend.model.Role;
-import com.urdimbre.backend.model.User;
-import com.urdimbre.backend.repository.RoleRepository;
-import com.urdimbre.backend.repository.UserRepository;
+import com.urdimbre.urdimbre.dto.user.UserRequestDTO;
+import com.urdimbre.urdimbre.dto.user.UserResponseDTO;
+import com.urdimbre.urdimbre.model.Role;
+import com.urdimbre.urdimbre.model.User;
+import com.urdimbre.urdimbre.repository.RoleRepository;
+import com.urdimbre.urdimbre.repository.UserRepository;
 
 @Service
 public class UserServiceImpl implements UserService {

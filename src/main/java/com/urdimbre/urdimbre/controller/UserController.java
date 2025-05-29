@@ -1,4 +1,4 @@
-package com.urdimbre.backend.controller;
+package com.urdimbre.urdimbre.controller;
 
 import java.util.List;
 import java.util.Set;
@@ -17,9 +17,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.urdimbre.backend.dto.user.UserRequestDTO;
-import com.urdimbre.backend.dto.user.UserResponseDTO;
-import com.urdimbre.backend.service.user.UserService;
+import com.urdimbre.urdimbre.dto.user.UserRequestDTO;
+import com.urdimbre.urdimbre.dto.user.UserResponseDTO;
+import com.urdimbre.urdimbre.service.user.UserService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;

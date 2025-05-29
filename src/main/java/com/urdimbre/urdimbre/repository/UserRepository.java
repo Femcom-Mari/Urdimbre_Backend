@@ -1,10 +1,10 @@
-package com.urdimbre.backend.repository;
+package com.urdimbre.urdimbre.repository;
 
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.urdimbre.backend.model.User;
+import com.urdimbre.urdimbre.model.User;
 
 public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByUsername(String username);

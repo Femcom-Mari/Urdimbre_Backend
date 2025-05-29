@@ -1,9 +1,9 @@
-package com.urdimbre.backend.service.role;
+package com.urdimbre.urdimbre.service.role;
 
 import java.util.List;
 
-import com.urdimbre.backend.dto.role.RoleRequestDTO;
-import com.urdimbre.backend.dto.role.RoleResponseDTO;
+import com.urdimbre.urdimbre.dto.role.RoleRequestDTO;
+import com.urdimbre.urdimbre.dto.role.RoleResponseDTO;
 
 public interface RoleService {
     RoleResponseDTO createRole(RoleRequestDTO roleDTO);

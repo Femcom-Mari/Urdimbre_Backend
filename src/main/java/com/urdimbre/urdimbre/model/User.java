@@ -1,4 +1,4 @@
-package com.urdimbre.backend.model;
+package com.urdimbre.urdimbre.model;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;

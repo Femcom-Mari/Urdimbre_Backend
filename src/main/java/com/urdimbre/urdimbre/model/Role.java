@@ -1,4 +1,4 @@
-package com.urdimbre.backend.model;
+package com.urdimbre.urdimbre.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

@@ -1,11 +1,11 @@
-package com.urdimbre.backend.service.user;
+package com.urdimbre.urdimbre.service.user;
 
 import java.util.List;
 import java.util.Set;
 
-import com.urdimbre.backend.dto.user.UserRequestDTO;
-import com.urdimbre.backend.dto.user.UserResponseDTO;
-import com.urdimbre.backend.model.User;
+import com.urdimbre.urdimbre.dto.user.UserRequestDTO;
+import com.urdimbre.urdimbre.dto.user.UserResponseDTO;
+import com.urdimbre.urdimbre.model.User;
 
 public interface UserService {
 
