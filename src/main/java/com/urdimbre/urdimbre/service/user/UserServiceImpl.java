@@ -134,9 +134,6 @@ public class UserServiceImpl implements UserService {
                 user.getLocation(),
                 user.getProfileImageUrl(),
                 user.getStatus() != null ? user.getStatus().name() : null,
-                (long) (user.getForums() != null ? user.getForums().size() : 0),
-                (long) (user.getPosts() != null ? user.getPosts().size() : 0),
-                (long) (user.getComments() != null ? user.getComments().size() : 0),
                 user.getCreatedAt() != null ? user.getCreatedAt().toString() : null,
                 user.getUpdatedAt() != null ? user.getUpdatedAt().toString() : null,
                 user.getRoles().stream()

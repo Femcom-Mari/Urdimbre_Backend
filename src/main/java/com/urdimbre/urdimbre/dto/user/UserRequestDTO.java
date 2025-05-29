@@ -1,7 +1,5 @@
 package com.urdimbre.urdimbre.dto.user;
 
-import com.urdimbre.urdimbre.validation.ValidEmail;
-
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -18,9 +16,7 @@ public class UserRequestDTO {
     private String username;
 
     @NotBlank(message = "El email no puede estar vacío")
-    @ValidEmail
     private String email;
-
     @NotBlank(message = "El nombre completo es obligatorio")
     @Size(max = 100, message = "El nombre completo no puede exceder los 100 caracteres")
     private String fullName;

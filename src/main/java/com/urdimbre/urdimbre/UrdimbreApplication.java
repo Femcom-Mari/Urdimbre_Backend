@@ -9,14 +9,24 @@ import io.github.cdimascio.dotenv.Dotenv;
 public class UrdimbreApplication {
 
 	public static void main(String[] args) {
+		Dotenv dotenv = Dotenv.configure().ignoreIfMissing().load();
 
-		Dotenv dotenv = Dotenv.configure().load();
-		System.setProperty("DB_URL", dotenv.get("DB_URL"));
-		System.setProperty("DB_USERNAME", dotenv.get("DB_USERNAME"));
-		System.setProperty("DB_PASSWORD", dotenv.get("DB_PASSWORD"));
+		String dbUrl = dotenv.get("DB_URL");
+		String dbUser = dotenv.get("DB_USERNAME");
+		String dbPass = dotenv.get("DB_PASSWORD");
+
+		if (dbUrl == null || dbUser == null || dbPass == null) {
+			System.err.println("❌ ERROR: Faltan variables de entorno para la conexión a la base de datos.");
+			System.err.println("Verifica que .env tenga DB_URL, DB_USERNAME y DB_PASSWORD.");
+			System.exit(1);
+		}
+
+		System.setProperty("DB_URL", dbUrl);
+		System.setProperty("DB_USERNAME", dbUser);
+		System.setProperty("DB_PASSWORD", dbPass);
 
 		SpringApplication.run(UrdimbreApplication.class, args);
-		
-	}
 
+		System.out.println("✅ Aplicación iniciada correctamente y variables de entorno cargadas.");
+	}
 }
