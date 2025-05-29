@@ -18,7 +18,7 @@ import lombok.Data;
 @Entity
 @Table(name="category_activities")
 @Data
-public class Category_activities {
+public class CategoryActivities {
     
     @Id
     @SequenceGenerator(name ="activities_id_sequence", sequenceName = "activities_id_sequence", allocationSize = 1, initialValue = 1)

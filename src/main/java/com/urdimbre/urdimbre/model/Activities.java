@@ -35,7 +35,7 @@ public class Activities {
     
     @ManyToOne
     @JoinColumn(name = "id_activity")
-    private Category_activities category_activities;
+    private CategoryActivities category_activities;
 
     @OneToMany(mappedBy = "subActivity", cascade = CascadeType.ALL)
     private List<ActivitiesUrdimbre> activitiesUrdimbre = new ArrayList<>();
