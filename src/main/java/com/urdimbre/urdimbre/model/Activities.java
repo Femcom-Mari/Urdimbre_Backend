@@ -15,12 +15,16 @@ import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 
 @Entity
 @Table(name="sub_activities")
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class Activities {
 
     @Id
@@ -31,7 +35,7 @@ public class Activities {
     @Column
     @NotBlank(message = "(!) ERROR: The name of the activity field cannot be empty")
     @Size(max = 50, message = "(!) ERROR: Maximun 50 characters allowed in this field")
-    private String activityName;
+    private String activity;
     
     @ManyToOne
     @JoinColumn(name = "id_activity")

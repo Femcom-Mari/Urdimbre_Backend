@@ -12,12 +12,16 @@ import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 
 @Entity
 @Table(name="category_activities")
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class CategoryActivities {
     
     @Id

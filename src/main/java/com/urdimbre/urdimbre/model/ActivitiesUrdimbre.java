@@ -1,7 +1,10 @@
 package com.urdimbre.urdimbre.model;
 
+import java.time.LocalDateTime;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -11,12 +14,17 @@ import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Entity
 @Table(name = "activities_urdimbre")
 public class ActivitiesUrdimbre {
@@ -26,36 +34,37 @@ public class ActivitiesUrdimbre {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "activitiesUrdimbre_id_sequence")
     private Integer id;
 
-
-
     @Column
-    @NotBlank(message = "(!) ERROR: The description field cannot be empty")
-    @Size(max = 500, message = "(!) ERROR: Maximun 500 characters allowed in the field")
+    @NotBlank
+    @Size(max = 500)
     private String description;
 
-    @Column
-    @NotBlank(message = "(!) ERROR: el campo del idioma no puede estar vacío")
-    @Size(max = 500, message = "(!) ERROR: el campo del título no puede tener más de 500 caracteres")
-    private String idioma;
-    //Usar ENUM
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    @NotNull
+    private Language language;
 
+    
     @Column
-    @NotBlank(message = "(!) ERROR: The date field cannot be empty")
+    @NotBlank
     private String date;
+    
+    @Column
+    @NotBlank
+    private LocalDateTime startTime;
 
     @Column
-    @NotBlank(message = "(!) ERROR: The time field cannot be empty")
-    private String time;
-
+    @NotBlank
+    private LocalDateTime endTime;
 
     @Column
-    @Min(value = 1, message = "(!) ERROR: el campo del máximo de participantes debe tener un valor mínimo de 1")
+    @Min(value = 1)
     private Integer maxAttendees;
 
 
     @ManyToOne
-    @JoinColumn(name = "subActivity_id", nullable = false)
-    private Activities Activities;
+    @JoinColumn(name = "activity_id", nullable = false)
+    private Activities activity;
 
 
     //ralation whit user to catch the name of the coach
