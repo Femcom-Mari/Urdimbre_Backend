@@ -1,6 +1,5 @@
 package com.urdimbre.urdimbre.service.auth;
 
-import java.util.HashSet;
 import java.util.Optional;
 
 import org.slf4j.Logger;
@@ -39,57 +38,78 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public UserResponseDTO register(UserRegisterDTO dto) {
-        logger.info("Iniciando registro para usuario: {}", dto.getUsername());
+        logger.info("Registrando usuario: {}", dto.getUsername());
 
-        // Validación de unicidad
+        // Validaciones
         if (userRepository.findByUsername(dto.getUsername()).isPresent()) {
-            logger.warn("Intento de registro con nombre de usuario existente: {}", dto.getUsername());
             throw new BadRequestException("El nombre de usuario ya está en uso");
         }
         if (userRepository.findByEmail(dto.getEmail()).isPresent()) {
-            logger.warn("Intento de registro con email existente: {}", dto.getEmail());
             throw new BadRequestException("El correo electrónico ya está registrado");
         }
 
-        // Mapeo de campos
-        User user = new User();
-        user.setInvitationCode(dto.getInvitationCode());
-        user.setFirstName(dto.getFirstName());
-        user.setLastName(dto.getLastName());
-        user.setUsername(dto.getUsername());
-        user.setEmail(dto.getEmail());
-        user.setPassword(passwordEncoder.encode(dto.getPassword()));
-        user.setCreatedAt(java.time.LocalDateTime.now());
-        user.setUpdatedAt(java.time.LocalDateTime.now());
+        // ✅ CREAR USUARIO CON CAMPOS SEPARADOS DE NOMBRE Y APELLIDO
+        User.UserBuilder userBuilder = User.builder()
+                .username(dto.getUsername())
+                .email(dto.getEmail())
+                .password(passwordEncoder.encode(dto.getPassword()))
+                .fullName(dto.getFullName()) // ✅ Método que combina firstName + lastName
+                .status(User.UserStatus.ACTIVE)
+                .biography("Nuevo usuario registrado");
 
-        // Asignar rol existente
+        // ✅ MANEJAR PRONOMBRES CON VALIDACIÓN
+        if (dto.getPronouns() != null) {
+            try {
+                User.Pronoun pronoun = User.Pronoun.fromDisplayValue(dto.getPronouns());
+                userBuilder.pronouns(pronoun);
+            } catch (IllegalArgumentException e) {
+                throw new BadRequestException("Pronombre inválido: " + dto.getPronouns() +
+                        ". Valores válidos: Elle, Ella, El");
+            }
+        }
+
+        User user = userBuilder.build();
+
+        // Asignar rol
         Role userRole = roleRepository.findByName("ROLE_USER")
-                .orElseThrow(() -> new BadRequestException("El rol ROLE_USER no existe en la base de datos"));
-        user.setRoles(new java.util.HashSet<>(java.util.Set.of(userRole)));
+                .orElseThrow(() -> new BadRequestException("El rol ROLE_USER no existe"));
+        user.getRoles().add(userRole);
 
-        logger.info("Guardando nuevo usuario: {}", dto.getUsername());
+        // Guardar usuario
         User savedUser = userRepository.save(user);
 
-        // Construir respuesta segura
+        // ✅ CONSTRUIR RESPUESTA USANDO SETTERS (MÁS SEGURO)
         UserResponseDTO response = new UserResponseDTO();
         response.setId(savedUser.getId());
         response.setUsername(savedUser.getUsername());
         response.setEmail(savedUser.getEmail());
+        response.setFullName(savedUser.getFullName());
+        response.setBiography(savedUser.getBiography());
+        response.setLocation(savedUser.getLocation());
+        response.setProfileImageUrl(savedUser.getProfileImageUrl());
+        response.setPronouns(savedUser.getPronouns() != null ? savedUser.getPronouns().getDisplayValue() : null);
+        response.setStatus(savedUser.getStatus() != null ? savedUser.getStatus().name() : null);
+        response.setCreatedAt(savedUser.getCreatedAt() != null ? savedUser.getCreatedAt().toString() : null);
+        response.setUpdatedAt(savedUser.getUpdatedAt() != null ? savedUser.getUpdatedAt().toString() : null);
+        response.setRoles(savedUser.getRoles() != null && !savedUser.getRoles().isEmpty()
+                ? savedUser.getRoles().stream().map(Role::getName).toList()
+                : null);
 
-        logger.info("Usuario registrado exitosamente: {}", dto.getUsername());
+        logger.info("Usuario registrado exitosamente: {}", savedUser.getUsername());
         return response;
     }
 
     @Override
     public AuthResponseDTO login(AuthRequestDTO dto) {
-        logger.info("Iniciando proceso de login para: {}", dto.getUsername());
+        logger.info("Iniciando login para: {}", dto.getUsername());
 
         Optional<User> optionalUser = userRepository.findByUsername(dto.getUsername());
         if (optionalUser.isEmpty() && dto.getUsername().contains("@")) {
             optionalUser = userRepository.findByEmail(dto.getUsername());
         }
 
-        if (optionalUser.isEmpty() || !passwordEncoder.matches(dto.getPassword(), optionalUser.get().getPassword())) {
+        if (optionalUser.isEmpty() ||
+                !passwordEncoder.matches(dto.getPassword(), optionalUser.get().getPassword())) {
             throw new BadCredentialsException("Credenciales inválidas");
         }
 
@@ -98,21 +118,21 @@ public class AuthServiceImpl implements AuthService {
         String accessToken = refreshTokenService.generateAccessToken(user.getUsername());
         String refreshToken = refreshTokenService.generateRefreshToken(user.getUsername());
 
-        logger.debug("Tokens generados para usuario: '{}'", user.getUsername());
-
         return AuthResponseDTO.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .fullName(user.getFullName())
                 .build();
     }
 
     @Override
     public void logout(HttpServletRequest request, HttpServletResponse response) {
         String refreshToken = refreshTokenService.extractRefreshTokenFromRequest(request);
-
         if (refreshToken != null) {
             refreshTokenService.removeToken(refreshToken);
-            logger.info("Sesión cerrada y token eliminado");
+            logger.info("Sesión cerrada exitosamente");
         }
     }
 
@@ -121,14 +141,12 @@ public class AuthServiceImpl implements AuthService {
         String username = refreshTokenService.getUsernameFromToken(refreshToken);
 
         if (username == null) {
-            logger.warn("Intento de refresh con token inválido");
             throw new BadCredentialsException("Refresh token inválido o expirado");
         }
 
         Optional<User> optionalUser = userRepository.findByUsername(username);
         if (optionalUser.isEmpty()) {
             refreshTokenService.removeToken(refreshToken);
-            logger.warn("Usuario no encontrado durante refresh de token: '{}'", username);
             throw new BadCredentialsException("Usuario no encontrado");
         }
 
@@ -136,11 +154,10 @@ public class AuthServiceImpl implements AuthService {
         refreshTokenService.removeToken(refreshToken);
         String newRefreshToken = refreshTokenService.generateRefreshToken(username);
 
-        logger.debug("Tokens renovados para: '{}'", username);
-
         return AuthResponseDTO.builder()
                 .accessToken(newAccessToken)
                 .refreshToken(newRefreshToken)
+                .username(username)
                 .build();
     }
 }

@@ -1,99 +1,133 @@
 package com.urdimbre.urdimbre.security;
 
-import java.util.Arrays;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
-import org.springframework.http.HttpMethod;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.firewall.HttpFirewall;
+import org.springframework.security.web.firewall.StrictHttpFirewall;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import com.urdimbre.urdimbre.security.filter.JwtAuthenticationFilter;
 import com.urdimbre.urdimbre.security.filter.JwtAuthorizationFilter;
+import com.urdimbre.urdimbre.security.service.UserDetailsServiceImpl;
 import com.urdimbre.urdimbre.service.token.RefreshTokenService;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
+@Slf4j
 public class SecurityConfig {
 
-    private final UserDetailsService userDetailsService;
-    private final RefreshTokenService refreshTokenService;
+        private final UserDetailsServiceImpl userDetailsService;
+        private final RefreshTokenService refreshTokenService;
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, AuthenticationConfiguration authConfig)
-            throws Exception {
-        return http
-                .csrf(csrf -> csrf.disable())
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
+        @Bean
+        public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+                log.info("🔒 Configurando Security Filter Chain - VERSIÓN FINAL SEGURA");
 
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                http
+                                .csrf(csrf -> csrf.disable())
+                                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
-                        .requestMatchers("/api/auth/register", "/api/auth/login",
-                                "/api/auth/refresh")
-                        .permitAll()
+                                .authorizeHttpRequests(auth -> auth
 
-                        .requestMatchers(HttpMethod.GET, "/api/categories", "/api/forums",
-                                "/api/forums/**", "/api/posts/**", "/api/comments/**")
-                        .permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/events", "/api/events/{id}")
-                        .permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/events/create").authenticated()
-                        .requestMatchers(HttpMethod.PUT, "/api/events/{id}/edit")
-                        .authenticated()
-                        .requestMatchers(HttpMethod.DELETE, "/api/events/{id}/delete")
-                        .authenticated()
-                        .requestMatchers("/api/attendances/**").authenticated()
-                        .requestMatchers("/api/users/me").authenticated()
-                        .anyRequest().authenticated())
-                .addFilterBefore(
-                        new JwtAuthenticationFilter(authenticationManager(authConfig),
-                                refreshTokenService),
-                        UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(new JwtAuthorizationFilter(userDetailsService),
-                        UsernamePasswordAuthenticationFilter.class)
-                .build();
-    }
+                                                .requestMatchers(
+                                                                "/api/auth/login",
+                                                                "/api/auth/register",
+                                                                "/api/auth/refresh",
+                                                                "/actuator/health",
+                                                                "/error")
+                                                .permitAll()
 
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept"));
-        configuration.setExposedHeaders(Arrays.asList("Authorization"));
-        configuration.setAllowCredentials(true);
-        configuration.setMaxAge(3600L);
+                                                .requestMatchers("/api/auth/logout").authenticated()
+                                                .requestMatchers("/api/users/**").authenticated()
+                                                .requestMatchers("/api/roles/**").hasRole("ADMIN")
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
-    }
+                                                .anyRequest().authenticated())
 
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
-        return authConfig.getAuthenticationManager();
-    }
+                                .sessionManagement(session -> session
+                                                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-    @Bean
-    @Primary
-    public BCryptPasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+                                .addFilterBefore(
+                                                new JwtAuthorizationFilter(userDetailsService, refreshTokenService),
+                                                UsernamePasswordAuthenticationFilter.class);
+
+                log.info("✅ Security Filter Chain SEGURO configurado");
+                return http.build();
+        }
+
+        @Bean
+        public CorsConfigurationSource corsConfigurationSource() {
+                log.info("🌐 Configurando CORS");
+
+                CorsConfiguration configuration = new CorsConfiguration();
+
+                // Orígenes permitidos (ajusta según tu frontend)
+                configuration.addAllowedOriginPattern("http://localhost:*");
+                configuration.addAllowedOriginPattern("http://127.0.0.1:*");
+                configuration.addAllowedOriginPattern("https://tu-dominio.com");
+
+                // Métodos HTTP permitidos
+                configuration.addAllowedMethod("GET");
+                configuration.addAllowedMethod("POST");
+                configuration.addAllowedMethod("PUT");
+                configuration.addAllowedMethod("DELETE");
+                configuration.addAllowedMethod("OPTIONS");
+
+                // Headers permitidos
+                configuration.addAllowedHeader("*");
+
+                // Headers expuestos
+                configuration.addExposedHeader("Authorization");
+                configuration.addExposedHeader("Refresh-Token");
+
+                // Permitir credentials
+                configuration.setAllowCredentials(true);
+
+                // Tiempo de cache para preflight
+                configuration.setMaxAge(3600L);
+
+                UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+                source.registerCorsConfiguration("/**", configuration);
+
+                log.info("✅ CORS configurado correctamente");
+                return source;
+        }
+
+        @Bean
+        public HttpFirewall httpFirewall() {
+                log.info("🛡️ Configurando HTTP Firewall");
+
+                StrictHttpFirewall firewall = new StrictHttpFirewall();
+
+                // Solo permitir lo mínimo necesario
+                firewall.setAllowUrlEncodedCarriageReturn(true);
+                firewall.setAllowUrlEncodedPercent(true);
+                firewall.setAllowUrlEncodedSlash(false); // Más seguro
+                firewall.setAllowUrlEncodedPeriod(false); // Más seguro
+
+                log.info("✅ HTTP Firewall configurado");
+                return firewall;
+        }
+
+        @Bean
+        public WebSecurityCustomizer webSecurityCustomizer() {
+                return (web) -> web.httpFirewall(httpFirewall());
+        }
+
+        @Bean
+        public PasswordEncoder passwordEncoder() {
+                return new BCryptPasswordEncoder();
+        }
 }

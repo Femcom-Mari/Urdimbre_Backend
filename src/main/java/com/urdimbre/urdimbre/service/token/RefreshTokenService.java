@@ -45,7 +45,6 @@ public class RefreshTokenService {
                 .withExpiresAt(new Date(System.currentTimeMillis() + REFRESH_TOKEN_EXPIRATION))
                 .sign(Algorithm.HMAC512(SecurityConstants.SECRET));
 
-        // Almacenar el token
         saveToken(refreshToken, username);
 
         return refreshToken;

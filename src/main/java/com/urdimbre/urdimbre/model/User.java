@@ -8,8 +8,25 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import jakarta.persistence.*;
-import lombok.*;
+import com.fasterxml.jackson.annotation.JsonValue;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "users")
@@ -24,34 +41,38 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String invitationCode;
-    private String firstName;
-    private String lastName;
-
     @Column(nullable = false, unique = true)
     private String username;
-
-    @Column(nullable = false, unique = true)
-    private String email;
 
     @Column(nullable = false)
     private String password;
 
-    @Column(length = 1000)
+    @Column(nullable = false, unique = true)
+    private String email;
+
+    @Column(name = "full_name")
+    private String fullName;
+
+    @Column(columnDefinition = "TEXT")
     private String biography;
 
-    @Column(length = 100)
     private String location;
 
     @Column(name = "profile_image_url")
     private String profileImageUrl;
 
+    // ✅ ENUM CORREGIDO CON VALORES VÁLIDOS EN JAVA
     @Enumerated(EnumType.STRING)
-    @Column(length = 10)
     private Pronoun pronouns;
 
-    @Column(name = "user_status")
-    private String userStatus;
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private UserStatus status = UserStatus.ACTIVE;
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
+    @Builder.Default
+    private Set<Role> roles = new HashSet<>();
 
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -61,22 +82,45 @@ public class User {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @Builder.Default
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
-    private Set<Role> roles = new HashSet<>();
-
     public boolean isEnabled() {
-        return this.userStatus != null && this.userStatus.equals(UserStatus.ACTIVE.name());
+        return this.status == UserStatus.ACTIVE;
+    }
+
+    // ✅ ENUM CORREGIDO: Nombres técnicos con valores de presentación
+    public enum Pronoun {
+        ELLE("Elle"),
+        ELLA("Ella"),
+        EL("El");
+
+        private final String displayValue;
+
+        Pronoun(String displayValue) {
+            this.displayValue = displayValue;
+        }
+
+        @JsonValue // ✅ Esto hace que Jackson serialice el displayValue
+        public String getDisplayValue() {
+            return displayValue;
+        }
+
+        // ✅ Método para buscar por valor de display
+        public static Pronoun fromDisplayValue(String displayValue) {
+            for (Pronoun pronoun : values()) {
+                if (pronoun.displayValue.equals(displayValue)) {
+                    return pronoun;
+                }
+            }
+            throw new IllegalArgumentException("Pronombre inválido: " + displayValue +
+                    ". Valores válidos: Elle, Ella, El");
+        }
+
+        @Override
+        public String toString() {
+            return displayValue;
+        }
     }
 
     public enum UserStatus {
         ACTIVE, INACTIVE, BANNED, DELETED
-    }
-
-    public enum Pronoun {
-        SHE, // Ella
-        HE, // Él
-        THEY // Elle
     }
 }

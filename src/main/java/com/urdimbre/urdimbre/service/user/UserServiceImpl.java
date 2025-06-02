@@ -63,15 +63,26 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-        user.setFirstName(userDTO.getFirstName());
-        user.setLastName(userDTO.getLastName());
-        user.setEmail(userDTO.getEmail());
-        user.setBiography(userDTO.getBiography());
-        user.setLocation(userDTO.getLocation());
-        user.setProfileImageUrl(userDTO.getProfileImageUrl());
-        user.setUserStatus(userDTO.getUserStatus());
-        user.setPronouns(userDTO.getPronouns() != null ? User.Pronoun.valueOf(userDTO.getPronouns()) : null);
-        user.setInvitationCode(userDTO.getInvitationCode());
+        // USANDO SOLO LOS CAMPOS QUE EXISTEN EN TU MODELO
+        if (userDTO.getEmail() != null) {
+            user.setEmail(userDTO.getEmail());
+        }
+        if (userDTO.getFullName() != null) {
+            user.setFullName(userDTO.getFullName());
+        }
+        if (userDTO.getBiography() != null) {
+            user.setBiography(userDTO.getBiography());
+        }
+        if (userDTO.getLocation() != null) {
+            user.setLocation(userDTO.getLocation());
+        }
+        if (userDTO.getProfileImageUrl() != null) {
+            user.setProfileImageUrl(userDTO.getProfileImageUrl());
+        }
+        // ✅ AGREGADO: Manejo de pronombres
+        if (userDTO.getPronouns() != null) {
+            user.setPronouns(User.Pronoun.valueOf(userDTO.getPronouns()));
+        }
 
         User updatedUser = userRepository.save(user);
         return mapToResponseDTO(updatedUser);
@@ -88,7 +99,7 @@ public class UserServiceImpl implements UserService {
     public List<UserResponseDTO> getAllUsers() {
         return userRepository.findAll().stream()
                 .map(this::mapToResponseDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -116,6 +127,7 @@ public class UserServiceImpl implements UserService {
     // --- Métodos privados reutilizables ---
 
     private void validateUniqueUsernameAndEmail(String username, String email) {
+        // ✅ CORREGIDO: Expresiones booleanas directas (sin comparación con true)
         if (userRepository.existsByUsername(username)) {
             throw new RuntimeException("El nombre de usuario ya está en uso");
         }
@@ -125,42 +137,34 @@ public class UserServiceImpl implements UserService {
     }
 
     private User convertToEntity(UserRequestDTO dto) {
-        User user = new User();
-        user.setUsername(dto.getUsername());
-        user.setEmail(dto.getEmail());
-        user.setFirstName(dto.getFirstName());
-        user.setLastName(dto.getLastName());
-        user.setPassword(dto.getPassword());
-        user.setBiography(dto.getBiography());
-        user.setLocation(dto.getLocation());
-        user.setProfileImageUrl(dto.getProfileImageUrl());
-        user.setUserStatus(dto.getUserStatus());
-        user.setPronouns(dto.getPronouns() != null ? User.Pronoun.valueOf(dto.getPronouns()) : null);
-        user.setInvitationCode(dto.getInvitationCode());
-        return user;
+        return User.builder()
+                .username(dto.getUsername())
+                .email(dto.getEmail())
+                .password(dto.getPassword())
+                .fullName(dto.getFullName()) // USANDO fullName que SÍ existe
+                .biography(dto.getBiography())
+                .location(dto.getLocation())
+                .profileImageUrl(dto.getProfileImageUrl())
+                .pronouns(dto.getPronouns() != null ? User.Pronoun.valueOf(dto.getPronouns()) : null) // ✅ AGREGADO
+                .status(User.UserStatus.ACTIVE)
+                .build();
     }
 
     private UserResponseDTO mapToResponseDTO(User user) {
-        String fullName = ((user.getFirstName() != null ? user.getFirstName() : "") +
-                (user.getLastName() != null ? " " + user.getLastName() : "")).trim();
-
         return new UserResponseDTO(
                 user.getId(),
                 user.getUsername(),
                 user.getEmail(),
-                user.getFirstName(),
-                user.getLastName(),
-                fullName,
+                user.getFullName(), // USANDO fullName que SÍ existe
                 user.getBiography(),
                 user.getLocation(),
                 user.getProfileImageUrl(),
-                user.getUserStatus(),
-                user.getPronouns() != null ? user.getPronouns().name() : null,
-                user.getInvitationCode(),
+                user.getPronouns() != null ? user.getPronouns().name() : null, // ✅ AGREGADO
+                user.getStatus() != null ? user.getStatus().name() : null,
                 user.getCreatedAt() != null ? user.getCreatedAt().toString() : null,
                 user.getUpdatedAt() != null ? user.getUpdatedAt().toString() : null,
                 user.getRoles() != null
-                        ? user.getRoles().stream().map(Role::getName).collect(Collectors.toList())
+                        ? user.getRoles().stream().map(Role::getName).toList()
                         : null);
     }
 }

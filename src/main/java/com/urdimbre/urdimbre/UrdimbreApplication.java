@@ -26,7 +26,6 @@ public class UrdimbreApplication {
 		System.setProperty("DB_PASSWORD", dbPass);
 
 		SpringApplication.run(UrdimbreApplication.class, args);
-
 		System.out.println("✅ Aplicación iniciada correctamente y variables de entorno cargadas.");
 	}
 }
