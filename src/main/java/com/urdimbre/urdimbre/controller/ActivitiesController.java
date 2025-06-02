@@ -2,6 +2,7 @@ package com.urdimbre.urdimbre.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,8 +21,8 @@ public class ActivitiesController {
 
     private final ActivitiesService activitiesService;
 
-    @PostMapping
-    public ResponseEntity<Object> createActivity(@Valid @RequestBody Activities activities) {
-        return activitiesService.createActivity(activities);
+    @PostMapping("/category/{categoryId}")
+    public ResponseEntity<Object> createActivity(@PathVariable Integer categoryId, @Valid @RequestBody Activities activities) {
+        return activitiesService.createActivity(categoryId, activities);
     }
 }

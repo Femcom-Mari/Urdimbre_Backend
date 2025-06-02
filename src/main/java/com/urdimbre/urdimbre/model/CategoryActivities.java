@@ -1,6 +1,10 @@
 package com.urdimbre.urdimbre.model;
 
+import java.util.ArrayList;
 import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -32,11 +36,16 @@ public class CategoryActivities {
     @Column
     @NotBlank(message = "(!) ERROR: The name of the category field cannot be empty")
     @Size(max = 50, message = "(!) ERROR: Maximun 50 characters allowed in this field")
-    private String categoryName;
+    private String category;
+
+    @JsonManagedReference
+    @OneToMany(mappedBy = "categoryActivities", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Activities> activities = new ArrayList<>();
 
 
-    @OneToMany(mappedBy = "category_activities", cascade = CascadeType.ALL)
-    private List<ActivitiesUrdimbre> activitiesUrdimbre;
+
+    // @OneToMany(mappedBy = "category_activities", cascade = CascadeType.ALL)
+    // private List<ActivitiesUrdimbre> activitiesUrdimbre;
     
 
 }

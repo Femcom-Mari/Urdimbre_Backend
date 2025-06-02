@@ -1,12 +1,8 @@
 package com.urdimbre.urdimbre.dto.ActivitiesUrdimbre;
 
 import java.time.LocalDateTime;
-
 import com.urdimbre.urdimbre.model.Language;
-
 import jakarta.persistence.Column;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
