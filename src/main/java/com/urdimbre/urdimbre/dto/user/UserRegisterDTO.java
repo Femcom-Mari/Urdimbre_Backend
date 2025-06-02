@@ -10,16 +10,7 @@ import lombok.Setter;
 @Setter
 public class UserRegisterDTO {
 
-    @NotBlank(message = "El código de invitación es obligatorio")
-    private String invitationCode;
-
     @NotBlank(message = "El nombre es obligatorio")
-    private String firstName;
-
-    @NotBlank(message = "El apellido es obligatorio")
-    private String lastName;
-
-    @NotBlank(message = "El nombre de usuario es obligatorio")
     private String username;
 
     @NotBlank(message = "El correo electrónico es obligatorio")
@@ -30,6 +21,4 @@ public class UserRegisterDTO {
     @Size(min = 6, message = "La contraseña debe tener al menos 6 caracteres")
     private String password;
 
-    @NotBlank(message = "El pronombre es obligatorio")
-    private String pronouns; // SHE, HE, THEY
 }
