@@ -42,12 +42,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserResponseDTO registerUser(UserRequestDTO userDTO, Set<String> roles) {
-        if (userRepository.existsByUsername(userDTO.getUsername())) {
-            throw new RuntimeException("El nombre de usuario ya está en uso");
-        }
-        if (userRepository.existsByEmail(userDTO.getEmail())) {
-            throw new RuntimeException("El correo electrónico ya está en uso");
-        }
+        validateUniqueUsernameAndEmail(userDTO.getUsername(), userDTO.getEmail());
 
         User user = convertToEntity(userDTO);
         user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
@@ -68,10 +63,15 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-        user.setFullName(userDTO.getFullName());
+        user.setFirstName(userDTO.getFirstName());
+        user.setLastName(userDTO.getLastName());
         user.setEmail(userDTO.getEmail());
         user.setBiography(userDTO.getBiography());
         user.setLocation(userDTO.getLocation());
+        user.setProfileImageUrl(userDTO.getProfileImageUrl());
+        user.setUserStatus(userDTO.getUserStatus());
+        user.setPronouns(userDTO.getPronouns() != null ? User.Pronoun.valueOf(userDTO.getPronouns()) : null);
+        user.setInvitationCode(userDTO.getInvitationCode());
 
         User updatedUser = userRepository.save(user);
         return mapToResponseDTO(updatedUser);
@@ -113,31 +113,54 @@ public class UserServiceImpl implements UserService {
         return mapToResponseDTO(updatedUser);
     }
 
+    // --- Métodos privados reutilizables ---
+
+    private void validateUniqueUsernameAndEmail(String username, String email) {
+        if (userRepository.existsByUsername(username)) {
+            throw new RuntimeException("El nombre de usuario ya está en uso");
+        }
+        if (userRepository.existsByEmail(email)) {
+            throw new RuntimeException("El correo electrónico ya está en uso");
+        }
+    }
+
     private User convertToEntity(UserRequestDTO dto) {
         User user = new User();
         user.setUsername(dto.getUsername());
         user.setEmail(dto.getEmail());
-        user.setFullName(dto.getFullName());
+        user.setFirstName(dto.getFirstName());
+        user.setLastName(dto.getLastName());
+        user.setPassword(dto.getPassword());
         user.setBiography(dto.getBiography());
         user.setLocation(dto.getLocation());
-        user.setPassword(dto.getPassword());
+        user.setProfileImageUrl(dto.getProfileImageUrl());
+        user.setUserStatus(dto.getUserStatus());
+        user.setPronouns(dto.getPronouns() != null ? User.Pronoun.valueOf(dto.getPronouns()) : null);
+        user.setInvitationCode(dto.getInvitationCode());
         return user;
     }
 
     private UserResponseDTO mapToResponseDTO(User user) {
+        String fullName = ((user.getFirstName() != null ? user.getFirstName() : "") +
+                (user.getLastName() != null ? " " + user.getLastName() : "")).trim();
+
         return new UserResponseDTO(
                 user.getId(),
                 user.getUsername(),
                 user.getEmail(),
-                user.getFullName(),
+                user.getFirstName(),
+                user.getLastName(),
+                fullName,
                 user.getBiography(),
                 user.getLocation(),
                 user.getProfileImageUrl(),
-                user.getStatus() != null ? user.getStatus().name() : null,
+                user.getUserStatus(),
+                user.getPronouns() != null ? user.getPronouns().name() : null,
+                user.getInvitationCode(),
                 user.getCreatedAt() != null ? user.getCreatedAt().toString() : null,
                 user.getUpdatedAt() != null ? user.getUpdatedAt().toString() : null,
-                user.getRoles().stream()
-                        .map(Role::getName)
-                        .collect(Collectors.toList()));
+                user.getRoles() != null
+                        ? user.getRoles().stream().map(Role::getName).collect(Collectors.toList())
+                        : null);
     }
 }

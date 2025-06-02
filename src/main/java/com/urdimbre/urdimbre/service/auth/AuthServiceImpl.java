@@ -41,51 +41,39 @@ public class AuthServiceImpl implements AuthService {
     public UserResponseDTO register(UserRegisterDTO dto) {
         logger.info("Iniciando registro para usuario: {}", dto.getUsername());
 
+        // Validación de unicidad
         if (userRepository.findByUsername(dto.getUsername()).isPresent()) {
             logger.warn("Intento de registro con nombre de usuario existente: {}", dto.getUsername());
             throw new BadRequestException("El nombre de usuario ya está en uso");
         }
-
         if (userRepository.findByEmail(dto.getEmail()).isPresent()) {
             logger.warn("Intento de registro con email existente: {}", dto.getEmail());
             throw new BadRequestException("El correo electrónico ya está registrado");
         }
 
+        // Mapeo de campos
         User user = new User();
+        user.setInvitationCode(dto.getInvitationCode());
+        user.setFirstName(dto.getFirstName());
+        user.setLastName(dto.getLastName());
         user.setUsername(dto.getUsername());
         user.setEmail(dto.getEmail());
         user.setPassword(passwordEncoder.encode(dto.getPassword()));
+        user.setCreatedAt(java.time.LocalDateTime.now());
+        user.setUpdatedAt(java.time.LocalDateTime.now());
 
-        if (user.getRoles() == null) {
-            user.setRoles(new HashSet<>());
-        }
-
-        try {
-            Optional<Role> userRoleOpt = roleRepository.findByName("ROLE_USER");
-
-            if (userRoleOpt.isPresent()) {
-                user.getRoles().add(userRoleOpt.get());
-                logger.info("Rol ROLE_USER asignado al usuario: {}", dto.getUsername());
-
-                logger.warn("Rol ROLE_USER no encontrado. Creando rol...");
-                Role newUserRole = new Role();
-                newUserRole.setName("ROLE_USER");
-                Role savedRole = roleRepository.save(newUserRole);
-
-                user.getRoles().add(savedRole);
-                logger.info("Nuevo rol ROLE_USER creado y asignado al usuario: {}", dto.getUsername());
-            }
-        } catch (Exception e) {
-            logger.error("Error al asignar rol al usuario: {}", e.getMessage(), e);
-
-        }
+        // Asignar rol existente
+        Role userRole = roleRepository.findByName("ROLE_USER")
+                .orElseThrow(() -> new BadRequestException("El rol ROLE_USER no existe en la base de datos"));
+        user.setRoles(new java.util.HashSet<>(java.util.Set.of(userRole)));
 
         logger.info("Guardando nuevo usuario: {}", dto.getUsername());
         User savedUser = userRepository.save(user);
 
+        // Construir respuesta segura
         UserResponseDTO response = new UserResponseDTO();
         response.setId(savedUser.getId());
-        response.setUsername(String.valueOf(savedUser.getUsername()));
+        response.setUsername(savedUser.getUsername());
         response.setEmail(savedUser.getEmail());
 
         logger.info("Usuario registrado exitosamente: {}", dto.getUsername());
