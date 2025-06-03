@@ -23,7 +23,7 @@ public class ActivitiesUrdimbreRequestDTO {
     private Integer categoryId;
 
     @NotNull(message = "(!) ERROR: You need to select a activity")
-    private Integer activityId;
+    private Integer activityName;
 
     @NotBlank(message = "(!) ERROR: The description field cannot be empty")
     @Size(max = 500, message = "(!) ERROR: Maximun 500 characters allowed in the field")
@@ -34,23 +34,22 @@ public class ActivitiesUrdimbreRequestDTO {
     private Language language;
 
     
-
     @NotNull(message = "(!) ERROR: The date field cannot be empty")
     private String date;
 
 
-    @NotNull(message = "La fecha y hora de inicio es obligatoria")
-    @Future(message = "La fecha y hora de inicio debe ser futura")
+    @NotNull(message = "(!) ERROR: Start Time and end Time cannot be empty")
+    @Future(message = "(!) ERROR: Start Time and end Time  must be in the future")
     private LocalDateTime startTime;
 
-    @NotNull(message = "La fecha y hora de finalización es obligatoria")
-    @Future(message = "La fecha y hora de finalización debe ser futura")
+    @NotNull(message = "(!) ERROR: Start Time and End Time cannot be empty")
+    @Future(message = "(!) ERROR: Start Time and End Time must be in the future")
     private LocalDateTime endTime;
 
 
     @Column
     @NotNull
-    @Min(value = 1, message = "(!) ERROR: The maximum particioants field must have a minimim value of 1")
+    @Min(value = 1, message = "(!) ERROR: The maximum participants field must have a minimim value of 1")
     private Integer maxAttendees;
 
 }

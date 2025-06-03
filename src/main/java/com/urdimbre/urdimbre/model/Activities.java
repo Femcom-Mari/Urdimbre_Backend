@@ -1,8 +1,12 @@
 package com.urdimbre.urdimbre.model;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
-
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -10,6 +14,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
@@ -38,11 +43,12 @@ public class Activities {
     
     @ManyToOne
     @JsonBackReference
-    @JoinColumn(name = "id_catedory_activity", nullable = false)
+    @JoinColumn(name = "id_category_activity", nullable = false)
     private CategoryActivities categoryActivities;
 
 
+    @JsonManagedReference
+    @OneToMany(mappedBy = "activities", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ActivitiesUrdimbre> activitiesUrdimbre = new ArrayList<>();
 
-    // @OneToMany(mappedBy = "activity", cascade = CascadeType.ALL)
-    // private List<ActivitiesUrdimbre> activitiesUrdimbre = new ArrayList<>();
 }

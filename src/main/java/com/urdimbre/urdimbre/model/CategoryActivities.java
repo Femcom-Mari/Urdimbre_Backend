@@ -42,6 +42,10 @@ public class CategoryActivities {
     @OneToMany(mappedBy = "categoryActivities", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Activities> activities = new ArrayList<>();
 
+    @JsonManagedReference
+    @OneToMany(mappedBy = "categoryActivities", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ActivitiesUrdimbre> activitiesUrdimbre = new ArrayList<>();
+
 
 
     // @OneToMany(mappedBy = "category_activities", cascade = CascadeType.ALL)

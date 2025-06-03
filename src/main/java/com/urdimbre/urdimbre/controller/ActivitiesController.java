@@ -21,8 +21,8 @@ public class ActivitiesController {
 
     private final ActivitiesService activitiesService;
 
-    @PostMapping("/category/{categoryId}")
-    public ResponseEntity<Object> createActivity(@PathVariable Integer categoryId, @Valid @RequestBody Activities activities) {
+    @PostMapping("/category/{categoryId}/atividad/{actividadid}")
+    public ResponseEntity<Object> createActivity(@PathVariable Integer categoryId, Integer activityId, @Valid @RequestBody Activities activities) {
         return activitiesService.createActivity(categoryId, activities);
     }
 }
