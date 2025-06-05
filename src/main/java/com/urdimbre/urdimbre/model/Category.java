@@ -22,11 +22,11 @@ import lombok.NoArgsConstructor;
 
 
 @Entity
-@Table(name="category_activities")
+@Table(name="category")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CategoryActivities {
+public class Category {
     
     @Id
     @SequenceGenerator(name ="activities_id_sequence", sequenceName = "activities_id_sequence", allocationSize = 1, initialValue = 1)

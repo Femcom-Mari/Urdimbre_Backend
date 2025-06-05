@@ -1,7 +1,6 @@
 package com.urdimbre.urdimbre.model;
 
 import java.time.LocalDateTime;
-
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -67,7 +66,7 @@ public class ActivitiesUrdimbre {
     @ManyToOne(fetch = FetchType.LAZY)
     @JsonBackReference
     @JoinColumn(name = "categoryId", nullable = false)
-    private CategoryActivities categoryActivities;
+    private Category category;
 
 
     //ralation whit user to catch the name of the coach
