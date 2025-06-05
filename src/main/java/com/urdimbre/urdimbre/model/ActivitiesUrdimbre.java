@@ -8,6 +8,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -67,10 +68,9 @@ public class ActivitiesUrdimbre {
     @ManyToOne
     @JsonBackReference
     @JoinColumn(name = "activityName", nullable = false)
-    private Activities activity;
+    private Activities activities;
 
-    
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JsonBackReference
     @JoinColumn(name = "categoryId", nullable = false)
     private CategoryActivities categoryActivities;
