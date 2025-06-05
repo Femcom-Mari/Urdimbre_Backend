@@ -1,6 +1,9 @@
 package com.urdimbre.urdimbre.service.auth;
 
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +21,7 @@ import com.urdimbre.urdimbre.model.Role;
 import com.urdimbre.urdimbre.model.User;
 import com.urdimbre.urdimbre.repository.RoleRepository;
 import com.urdimbre.urdimbre.repository.UserRepository;
+import com.urdimbre.urdimbre.service.invite.InviteCodeService;
 import com.urdimbre.urdimbre.service.token.RefreshTokenService;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -34,13 +38,19 @@ public class AuthServiceImpl implements AuthService {
     private final RoleRepository roleRepository;
     private final BCryptPasswordEncoder passwordEncoder;
     private final RefreshTokenService refreshTokenService;
+    private final InviteCodeService inviteCodeService; // ✅ NUEVO: Inyectar servicio
 
     @Override
     @Transactional
     public UserResponseDTO register(UserRegisterDTO dto) {
         logger.info("Registrando usuario: {}", dto.getUsername());
 
-        // Validaciones
+        // ✅ VALIDAR CÓDIGO DE INVITACIÓN PRIMERO
+        if (!inviteCodeService.validateInviteCode(dto.getInviteCode())) {
+            throw new BadRequestException("Código de invitación inválido o expirado");
+        }
+
+        // Validaciones existentes
         if (userRepository.findByUsername(dto.getUsername()).isPresent()) {
             throw new BadRequestException("El nombre de usuario ya está en uso");
         }
@@ -48,25 +58,18 @@ public class AuthServiceImpl implements AuthService {
             throw new BadRequestException("El correo electrónico ya está registrado");
         }
 
-        // ✅ CREAR USUARIO CON CAMPOS SEPARADOS DE NOMBRE Y APELLIDO
+        // ✅ CREAR USUARIO CON MÚLTIPLES PRONOMBRES
         User.UserBuilder userBuilder = User.builder()
                 .username(dto.getUsername())
                 .email(dto.getEmail())
                 .password(passwordEncoder.encode(dto.getPassword()))
-                .fullName(dto.getFullName()) // ✅ Método que combina firstName + lastName
+                .fullName(dto.getFullName())
                 .status(User.UserStatus.ACTIVE)
                 .biography("Nuevo usuario registrado");
 
-        // ✅ MANEJAR PRONOMBRES CON VALIDACIÓN
-        if (dto.getPronouns() != null) {
-            try {
-                User.Pronoun pronoun = User.Pronoun.fromDisplayValue(dto.getPronouns());
-                userBuilder.pronouns(pronoun);
-            } catch (IllegalArgumentException e) {
-                throw new BadRequestException("Pronombre inválido: " + dto.getPronouns() +
-                        ". Valores válidos: Elle, Ella, El");
-            }
-        }
+        // ✅ MANEJAR MÚLTIPLES PRONOMBRES (extraído a método privado)
+        Set<User.Pronoun> pronounSet = validateAndMapPronouns(dto.getPronouns());
+        userBuilder.pronouns(pronounSet);
 
         User user = userBuilder.build();
 
@@ -78,7 +81,16 @@ public class AuthServiceImpl implements AuthService {
         // Guardar usuario
         User savedUser = userRepository.save(user);
 
-        // ✅ CONSTRUIR RESPUESTA USANDO SETTERS (MÁS SEGURO)
+        // ✅ MARCAR CÓDIGO COMO USADO DESPUÉS DEL REGISTRO EXITOSO
+        try {
+            inviteCodeService.useInviteCode(dto.getInviteCode(), savedUser.getUsername());
+            logger.info("Código de invitación {} usado por {}", dto.getInviteCode(), savedUser.getUsername());
+        } catch (Exception e) {
+            logger.warn("Error al marcar código como usado: {}", e.getMessage());
+            // No falla el registro, solo log del warning
+        }
+
+        // ✅ CONSTRUIR RESPUESTA CON MÚLTIPLES PRONOMBRES Y AUDITORÍA
         UserResponseDTO response = new UserResponseDTO();
         response.setId(savedUser.getId());
         response.setUsername(savedUser.getUsername());
@@ -87,16 +99,49 @@ public class AuthServiceImpl implements AuthService {
         response.setBiography(savedUser.getBiography());
         response.setLocation(savedUser.getLocation());
         response.setProfileImageUrl(savedUser.getProfileImageUrl());
-        response.setPronouns(savedUser.getPronouns() != null ? savedUser.getPronouns().getDisplayValue() : null);
+
+        // ✅ MÚLTIPLES PRONOMBRES - Convertir Set<Pronoun> a Set<String>
+        if (savedUser.getPronouns() != null && !savedUser.getPronouns().isEmpty()) {
+            Set<String> pronounStrings = savedUser.getPronouns().stream()
+                    .map(User.Pronoun::getDisplayValue)
+                    .collect(Collectors.toSet());
+            response.setPronouns(pronounStrings);
+        }
+
         response.setStatus(savedUser.getStatus() != null ? savedUser.getStatus().name() : null);
+
+        // ✅ AUDITORÍA COMPLETA
         response.setCreatedAt(savedUser.getCreatedAt() != null ? savedUser.getCreatedAt().toString() : null);
         response.setUpdatedAt(savedUser.getUpdatedAt() != null ? savedUser.getUpdatedAt().toString() : null);
+        response.setCreatedBy(savedUser.getCreatedBy());
+        response.setLastModifiedBy(savedUser.getLastModifiedBy());
+
         response.setRoles(savedUser.getRoles() != null && !savedUser.getRoles().isEmpty()
                 ? savedUser.getRoles().stream().map(Role::getName).toList()
                 : null);
 
         logger.info("Usuario registrado exitosamente: {}", savedUser.getUsername());
         return response;
+    }
+
+    /**
+     * Valida y mapea los pronombres recibidos en el DTO a un Set de User.Pronoun.
+     */
+    private Set<User.Pronoun> validateAndMapPronouns(Set<String> pronouns) {
+        if (pronouns == null || pronouns.isEmpty()) {
+            throw new BadRequestException("Debe seleccionar al menos un pronombre");
+        }
+        Set<User.Pronoun> pronounSet = new HashSet<>();
+        for (String pronounString : pronouns) {
+            try {
+                User.Pronoun pronoun = User.Pronoun.fromDisplayValue(pronounString);
+                pronounSet.add(pronoun);
+            } catch (IllegalArgumentException e) {
+                throw new BadRequestException("Pronombre inválido: " + pronounString +
+                        ". Valores válidos: Elle, Ella, El");
+            }
+        }
+        return pronounSet;
     }
 
     @Override

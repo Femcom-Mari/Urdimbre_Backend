@@ -1,191 +1,388 @@
 package com.urdimbre.urdimbre.controller;
 
-import java.util.HashSet;
-
-import org.springframework.http.HttpStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.urdimbre.urdimbre.dto.auth.AuthRequestDTO;
 import com.urdimbre.urdimbre.dto.auth.AuthResponseDTO;
 import com.urdimbre.urdimbre.dto.auth.RefreshTokenRequestDTO;
 import com.urdimbre.urdimbre.dto.user.UserRegisterDTO;
+import com.urdimbre.urdimbre.dto.user.UserResponseDTO;
 import com.urdimbre.urdimbre.exception.BadRequestException;
-import com.urdimbre.urdimbre.model.Role;
-import com.urdimbre.urdimbre.model.User;
-import com.urdimbre.urdimbre.model.User.UserStatus;
-import com.urdimbre.urdimbre.repository.RoleRepository;
-import com.urdimbre.urdimbre.repository.UserRepository;
-import com.urdimbre.urdimbre.service.token.RefreshTokenService;
+import com.urdimbre.urdimbre.service.auth.AuthService;
+import com.urdimbre.urdimbre.service.invite.InviteCodeService;
+import com.urdimbre.urdimbre.service.token.BlacklistedTokenService;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
-@Slf4j
 public class AuthController {
 
-    private final UserRepository userRepository;
-    private final RoleRepository roleRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final RefreshTokenService refreshTokenService;
+    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
 
-    // Código temporal hasta implementar sistema dinámico
-    private static final String VALID_INVITE_CODE = System.getenv("INVITE_CODE") != null ? System.getenv("INVITE_CODE")
-            : "URDIMBRE2025";
+    private final AuthService authService;
+    private final InviteCodeService inviteCodeService;
+    private final BlacklistedTokenService blacklistedTokenService;
 
+    /**
+     * 📝 Registro de usuario CON CÓDIGO DE INVITACIÓN DINÁMICO
+     */
     @PostMapping("/register")
-    public ResponseEntity<AuthResponseDTO> register(@Valid @RequestBody UserRegisterDTO request) {
-        log.info("Registration attempt for user: {}", request.getUsername());
-
-        // Validar código de invitación
-        if (!VALID_INVITE_CODE.equals(request.getInviteCode())) {
-            log.warn("Invalid invite code attempt for user: {}", request.getUsername());
-            throw new BadRequestException("Código de invitación inválido");
-        }
-
-        // Verificar si el usuario ya existe
-        if (userRepository.findByUsername(request.getUsername()).isPresent()) {
-            log.warn("Username already exists: {}", request.getUsername());
-            throw new BadRequestException("El nombre de usuario ya está en uso");
-        }
-
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            log.warn("Email already exists: {}", request.getEmail());
-            throw new BadRequestException("El email ya está en uso");
-        }
-
-        // Crear nuevo usuario - USANDO CAMPOS QUE EXISTEN EN TU MODELO
-        User newUser = User.builder()
-                .username(request.getUsername())
-                .email(request.getEmail())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .fullName(request.getFullName()) // fullName en lugar de firstName/lastName
-                .status(UserStatus.ACTIVE)
-                .biography("Nuevo usuario")
-                .roles(new HashSet<>())
-                .build();
-
-        // Asignar rol por defecto
-        Role userRole = roleRepository.findByName("ROLE_USER")
-                .orElseThrow(() -> new RuntimeException("Rol ROLE_USER no encontrado"));
-        newUser.getRoles().add(userRole);
-
-        // Guardar usuario
-        User savedUser = userRepository.save(newUser);
-        log.info("User registered successfully: {}", savedUser.getUsername());
-
-        // Generar tokens - USANDO MÉTODOS QUE EXISTEN
-        String accessToken = refreshTokenService.generateAccessToken(savedUser.getUsername());
-        String refreshToken = refreshTokenService.generateRefreshToken(savedUser.getUsername());
-
-        AuthResponseDTO response = AuthResponseDTO.builder()
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .username(savedUser.getUsername())
-                .email(savedUser.getEmail())
-                .fullName(savedUser.getFullName())
-                .build();
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    }
-
-    @PostMapping("/login")
-    public ResponseEntity<AuthResponseDTO> login(@Valid @RequestBody AuthRequestDTO request) {
-        log.info("Login attempt for user: {}", request.getUsername());
-
-        User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> {
-                    log.warn("User not found: {}", request.getUsername());
-                    return new BadRequestException("Credenciales inválidas");
-                });
-
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            log.warn("Invalid password for user: {}", request.getUsername());
-            throw new BadRequestException("Credenciales inválidas");
-        }
-
-        if (user.getStatus() != UserStatus.ACTIVE) {
-            log.warn("Inactive user attempted login: {}", request.getUsername());
-            throw new BadRequestException("Usuario inactivo");
-        }
-
-        // Generar tokens
-        String accessToken = refreshTokenService.generateAccessToken(user.getUsername());
-        String refreshToken = refreshTokenService.generateRefreshToken(user.getUsername());
-
-        log.info("Login successful for user: {}", user.getUsername());
-
-        AuthResponseDTO response = AuthResponseDTO.builder()
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .username(user.getUsername())
-                .email(user.getEmail())
-                .fullName(user.getFullName())
-                .build();
-
-        return ResponseEntity.ok(response);
-    }
-
-    @PostMapping("/refresh")
-    public ResponseEntity<AuthResponseDTO> refreshToken(@Valid @RequestBody RefreshTokenRequestDTO request) {
-        log.info("Token refresh request");
+    public ResponseEntity<UserResponseDTO> register(@Valid @RequestBody UserRegisterDTO request) {
+        logger.info("🔐 Intento de registro para usuario: {}", request.getUsername());
 
         try {
-            // USAR MÉTODO QUE EXISTE EN TU RefreshTokenService
-            String username = refreshTokenService.getUsernameFromToken(request.getRefreshToken());
-
-            // USAR MÉTODO QUE EXISTE EN TU RefreshTokenService
-            if (!refreshTokenService.validateToken(request.getRefreshToken())) {
-                log.warn("Invalid refresh token");
-                throw new BadRequestException("Refresh token inválido");
+            // 🎟️ VALIDAR CÓDIGO DE INVITACIÓN ANTES DEL REGISTRO
+            // ✅ CAMBIO: Solo validar, no usar aquí (AuthService lo usará después)
+            if (!inviteCodeService.validateInviteCode(request.getInviteCode())) {
+                throw new BadRequestException("Código de invitación inválido, expirado o agotado");
             }
 
-            // SEGURIDAD: Invalidar el refresh token usado (rotación)
-            refreshTokenService.removeToken(request.getRefreshToken());
+            // 🔐 VALIDACIONES ADICIONALES DE SEGURIDAD
+            validateRegistrationData(request);
 
-            // Generar nuevos tokens
-            String newAccessToken = refreshTokenService.generateAccessToken(username);
-            String newRefreshToken = refreshTokenService.generateRefreshToken(username);
+            // 📝 PROCEDER CON EL REGISTRO (AuthService validará y usará el código)
+            UserResponseDTO response = authService.register(request);
 
-            log.info("Tokens refreshed successfully for user: {}", username);
-
-            AuthResponseDTO response = AuthResponseDTO.builder()
-                    .accessToken(newAccessToken)
-                    .refreshToken(newRefreshToken)
-                    .username(username)
-                    .build();
-
+            logger.info("✅ Usuario registrado exitosamente: {}", request.getUsername());
             return ResponseEntity.ok(response);
 
+        } catch (BadRequestException e) {
+            logger.warn("❌ Error en registro para {}: {}", request.getUsername(), e.getMessage());
+            throw e;
         } catch (Exception e) {
-            log.error("Error refreshing token: {}", e.getMessage());
-            throw new BadRequestException("Error al renovar token");
+            logger.error("❌ Error inesperado en registro para {}: {}", request.getUsername(), e.getMessage());
+            throw new BadRequestException("Error interno del servidor");
         }
     }
 
-    @PostMapping("/logout")
-    public ResponseEntity<Void> logout(@Valid @RequestBody RefreshTokenRequestDTO request) {
-        log.info("Logout request");
+    /**
+     * 🔑 Login de usuario
+     */
+    @PostMapping("/login")
+    public ResponseEntity<AuthResponseDTO> login(@Valid @RequestBody AuthRequestDTO request) {
+        logger.info("🔑 Intento de login para: {}", request.getUsername());
 
         try {
-            String username = refreshTokenService.getUsernameFromToken(request.getRefreshToken());
+            // 🔐 VALIDACIONES DE SEGURIDAD
+            validateLoginData(request);
 
-            // SEGURIDAD: Invalidar el refresh token
-            refreshTokenService.removeToken(request.getRefreshToken());
+            // 🔑 PROCEDER CON EL LOGIN
+            AuthResponseDTO response = authService.login(request);
 
-            log.info("Logout successful for user: {}", username);
+            logger.info("✅ Login exitoso para usuario: {}", request.getUsername());
+            return ResponseEntity.ok(response);
+
+        } catch (BadCredentialsException e) {
+            logger.warn("❌ Credenciales inválidas para: {}. Detalle: {}", request.getUsername(), e.getMessage(), e);
+            throw new BadCredentialsException(
+                    "Credenciales inválidas para usuario: " + request.getUsername() + ". Detalle: " + e.getMessage(),
+                    e);
         } catch (Exception e) {
-            log.warn("Error during logout: {}", e.getMessage());
+            logger.error("❌ Error inesperado en login para {}: {}", request.getUsername(), e.getMessage(), e);
+            throw new BadCredentialsException("Error interno del servidor para usuario: " + request.getUsername()
+                    + ". Detalle: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 🔄 Renovar token de acceso
+     */
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponseDTO> refreshToken(@Valid @RequestBody RefreshTokenRequestDTO request) {
+        logger.info("🔄 Intento de renovación de token");
+
+        try {
+            // 🔐 VALIDAR REFRESH TOKEN
+            if (request.getRefreshToken() == null || request.getRefreshToken().trim().isEmpty()) {
+                throw new BadCredentialsException("Refresh token es requerido");
+            }
+
+            // 🚫 VERIFICAR QUE NO ESTÉ EN BLACKLIST
+            if (blacklistedTokenService.isTokenBlacklisted(request.getRefreshToken())) {
+                logger.warn("❌ Intento de usar refresh token en blacklist");
+                throw new BadCredentialsException("Token inválido");
+            }
+
+            // 🔄 PROCEDER CON LA RENOVACIÓN
+            AuthResponseDTO response = authService.refreshToken(request.getRefreshToken());
+
+            logger.info("✅ Token renovado exitosamente para usuario: {}", response.getUsername());
+            return ResponseEntity.ok(response);
+
+        } catch (BadCredentialsException e) {
+            logger.warn("❌ Refresh token inválido: {}", e.getMessage());
+            throw new BadCredentialsException("Refresh token inválido: " + e.getMessage());
+        } catch (Exception e) {
+            logger.error("❌ Error inesperado en renovación de token: {}", e.getMessage());
+            throw new BadCredentialsException("Error interno del servidor durante la renovación de token");
+        }
+    }
+
+    /**
+     * 🚪 Cerrar sesión CON BLACKLIST
+     */
+    @PostMapping("/logout")
+    public ResponseEntity<String> logout(HttpServletRequest request, HttpServletResponse response) {
+        try {
+            String username = SecurityContextHolder.getContext().getAuthentication().getName();
+            logger.info("🚪 Intento de logout para usuario: {}", username);
+
+            // 🚫 AGREGAR TOKENS A BLACKLIST
+            addTokensToBlacklist(request, username);
+
+            // 🚪 PROCEDER CON EL LOGOUT
+            authService.logout(request, response);
+
+            // 🧹 LIMPIAR CONTEXTO DE SEGURIDAD
+            SecurityContextHolder.clearContext();
+
+            logger.info("✅ Logout exitoso para usuario: {}", username);
+            return ResponseEntity.ok("Sesión cerrada exitosamente");
+
+        } catch (Exception e) {
+            logger.error("❌ Error en logout: {}", e.getMessage());
+            return ResponseEntity.status(org.springframework.http.HttpStatus.OK).body("Sesión cerrada"); // Siempre
+                                                                                                         // confirmar
+                                                                                                         // logout por
+                                                                                                         // seguridad
+        }
+    }
+
+    // ================================
+    // ✅ NUEVOS ENDPOINTS PÚBLICOS PARA CÓDIGOS DE INVITACIÓN
+    // ================================
+
+    /**
+     * ✅ Validar código de invitación (PÚBLICO - para frontend)
+     * Este endpoint NO requiere autenticación
+     */
+    @GetMapping("/invite-codes/validate")
+    public ResponseEntity<Boolean> validateInviteCodePublic(@RequestParam String code) {
+        logger.debug("✅ Validando código de invitación público: {}", code);
+
+        if (code == null || code.trim().isEmpty()) {
+            return ResponseEntity.ok(false);
         }
 
-        return ResponseEntity.ok().build();
+        try {
+            boolean isValid = inviteCodeService.validateInviteCode(code);
+            logger.debug("✅ Código {} es válido: {}", code, isValid);
+            return ResponseEntity.ok(isValid);
+        } catch (Exception e) {
+            logger.warn("❌ Error validando código {}: {}", code, e.getMessage());
+            return ResponseEntity.ok(false);
+        }
+    }
+
+    /**
+     * ℹ️ Obtener información básica del código (sin datos sensibles)
+     * Útil para mostrar al usuario si el código es válido antes del registro
+     */
+    @GetMapping("/invite-codes/info")
+    public ResponseEntity<InviteCodePublicInfo> getInviteCodeInfo(@RequestParam String code) {
+        logger.debug("ℹ️ Obteniendo info pública del código: {}", code);
+
+        if (code == null || code.trim().isEmpty()) {
+            return ResponseEntity.ok(InviteCodePublicInfo.builder()
+                    .valid(false)
+                    .message("Código requerido")
+                    .build());
+        }
+
+        try {
+            // Validar que el código existe y está activo
+            boolean isValid = inviteCodeService.validateInviteCode(code);
+
+            if (!isValid) {
+                return ResponseEntity.ok(InviteCodePublicInfo.builder()
+                        .valid(false)
+                        .message("Código inválido o expirado")
+                        .build());
+            }
+
+            return ResponseEntity.ok(InviteCodePublicInfo.builder()
+                    .valid(true)
+                    .message("Código válido")
+                    .build());
+
+        } catch (Exception e) {
+            logger.warn("❌ Error obteniendo info del código {}: {}", code, e.getMessage());
+            return ResponseEntity.status(org.springframework.http.HttpStatus.BAD_REQUEST).body(
+                    InviteCodePublicInfo.builder()
+                            .valid(false)
+                            .message("Error validando código")
+                            .build());
+        }
+    }
+
+    // ================================
+    // MÉTODOS PRIVADOS
+    // ================================
+
+    /**
+     * 🚫 Agregar tokens a blacklist durante logout
+     */
+    private void addTokensToBlacklist(HttpServletRequest request, String username) {
+        try {
+            // 🎫 OBTENER ACCESS TOKEN DEL HEADER
+            String authHeader = request.getHeader("Authorization");
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                String accessToken = authHeader.substring(7);
+                blacklistedTokenService.blacklistToken(
+                        accessToken, username, "access",
+                        java.time.LocalDateTime.now().plusMinutes(15),
+                        "Logout manual");
+            }
+
+            // 🔄 OBTENER REFRESH TOKEN
+            String refreshToken = request.getHeader("Refresh-Token");
+            if (refreshToken != null && !refreshToken.trim().isEmpty()) {
+                blacklistedTokenService.blacklistToken(
+                        refreshToken, username, "refresh",
+                        java.time.LocalDateTime.now().plusDays(7),
+                        "Logout manual");
+            }
+
+            logger.debug("🚫 Tokens agregados a blacklist para usuario: {}", username);
+
+        } catch (Exception e) {
+            logger.warn("⚠️ Error agregando tokens a blacklist: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * 🔍 Validar datos de registro
+     */
+    private void validateRegistrationData(UserRegisterDTO request) {
+        validateUsername(request.getUsername());
+        validateEmail(request.getEmail());
+        validatePassword(request.getPassword());
+        validateFullName(request.getFullName());
+        validateInviteCode(request.getInviteCode());
+    }
+
+    private void validateUsername(String username) {
+        if (username == null || username.trim().length() < 3) {
+            throw new BadRequestException("El username debe tener al menos 3 caracteres");
+        }
+        if (username.length() > 50) {
+            throw new BadRequestException("El username no puede tener más de 50 caracteres");
+        }
+        if (!username.matches("^[a-zA-Z0-9_.-]+$")) {
+            throw new BadRequestException(
+                    "El username solo puede contener letras, números, puntos, guiones y guiones bajos");
+        }
+    }
+
+    private void validateEmail(String email) {
+        if (email == null || !isValidEmail(email)) {
+            throw new BadRequestException("Email inválido");
+        }
+        if (email.length() > 100) {
+            throw new BadRequestException("Email demasiado largo");
+        }
+    }
+
+    private void validatePassword(String password) {
+        if (password == null || password.length() < 8) {
+            throw new BadRequestException("La contraseña debe tener al menos 8 caracteres");
+        }
+        if (password.length() > 128) {
+            throw new BadRequestException("La contraseña no puede tener más de 128 caracteres");
+        }
+        if (!isPasswordSecure(password)) {
+            throw new BadRequestException(
+                    "La contraseña debe contener al menos una mayúscula, una minúscula, un número y un símbolo");
+        }
+    }
+
+    private void validateFullName(String fullName) {
+        if (fullName == null || fullName.trim().length() < 2) {
+            throw new BadRequestException("El nombre completo debe tener al menos 2 caracteres");
+        }
+        if (fullName.length() > 100) {
+            throw new BadRequestException("El nombre completo no puede tener más de 100 caracteres");
+        }
+    }
+
+    private void validateInviteCode(String inviteCode) {
+        if (inviteCode == null || inviteCode.trim().isEmpty()) {
+            throw new BadRequestException("Código de invitación es obligatorio");
+        }
+    }
+
+    /**
+     * 🔍 Validar datos de login
+     */
+    private void validateLoginData(AuthRequestDTO request) {
+        // ✅ VALIDAR USERNAME/EMAIL
+        if (request.getUsername() == null || request.getUsername().trim().isEmpty()) {
+            throw new BadCredentialsException("Username o email es requerido");
+        }
+
+        if (request.getUsername().length() > 100) {
+            throw new BadCredentialsException("Username/email demasiado largo");
+        }
+
+        // ✅ VALIDAR CONTRASEÑA
+        if (request.getPassword() == null || request.getPassword().trim().isEmpty()) {
+            throw new BadCredentialsException("Contraseña es requerida");
+        }
+
+        if (request.getPassword().length() > 128) {
+            throw new BadCredentialsException("Contraseña demasiado larga");
+        }
+    }
+
+    /**
+     * 📧 Validar formato de email
+     */
+    private boolean isValidEmail(String email) {
+        return email != null && email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
+    }
+
+    /**
+     * 🔐 Validar que la contraseña sea segura
+     */
+    private boolean isPasswordSecure(String password) {
+        if (password == null || password.length() < 8) {
+            return false;
+        }
+
+        boolean hasLower = password.chars().anyMatch(Character::isLowerCase);
+        boolean hasUpper = password.chars().anyMatch(Character::isUpperCase);
+        boolean hasDigit = password.chars().anyMatch(Character::isDigit);
+        boolean hasSymbol = password.chars().anyMatch(ch -> "@$!%*?&".indexOf(ch) >= 0);
+
+        return hasLower && hasUpper && hasDigit && hasSymbol;
+    }
+
+    // ================================
+    // DTO INTERNO PARA INFORMACIÓN PÚBLICA
+    // ================================
+
+    @lombok.Builder
+    @lombok.Data
+    public static class InviteCodePublicInfo {
+        private boolean valid;
+        private String message;
+        // Podrías agregar más campos como:
+        // private Integer remainingUses;
+        // private Long hoursUntilExpiration;
     }
 }

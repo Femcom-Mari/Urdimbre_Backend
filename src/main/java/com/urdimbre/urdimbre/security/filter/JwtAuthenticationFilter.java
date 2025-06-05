@@ -11,7 +11,6 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.urdimbre.urdimbre.security.constants.SecurityConstants;
 import com.urdimbre.urdimbre.service.token.RefreshTokenService;
 
 import jakarta.servlet.FilterChain;
@@ -31,6 +30,10 @@ class LoginRequest {
 }
 
 public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
+
+    // ✅ CONSTANTES PROPIAS (sin depender de SecurityConstants)
+    private static final String HEADER_STRING = "Authorization";
+    private static final String TOKEN_PREFIX = "Bearer ";
 
     private final AuthenticationManager authenticationManager;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -67,7 +70,8 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
         String accessToken = refreshTokenService.generateAccessToken(username);
         String refreshToken = refreshTokenService.generateRefreshToken(username);
 
-        response.addHeader(SecurityConstants.HEADER_STRING, SecurityConstants.TOKEN_PREFIX + accessToken);
+        // ✅ USAR CONSTANTES PROPIAS en lugar de SecurityConstants
+        response.addHeader(HEADER_STRING, TOKEN_PREFIX + accessToken);
 
         Map<String, String> tokenMap = new HashMap<>();
         tokenMap.put("accessToken", accessToken);
@@ -77,5 +81,4 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
         response.setContentType("application/json");
         response.getWriter().write(objectMapper.writeValueAsString(tokenMap));
     }
-
 }

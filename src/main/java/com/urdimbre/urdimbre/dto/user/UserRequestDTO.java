@@ -1,7 +1,8 @@
 package com.urdimbre.urdimbre.dto.user;
 
+import java.util.Set;
+
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -29,9 +30,8 @@ public class UserRequestDTO {
 
     private String profileImageUrl;
 
-    // ✅ CORREGIDO: Validar valores de display, no valores técnicos del enum
-    @Pattern(regexp = "^(Elle|Ella|El)$", message = "Los pronombres deben ser: Elle, Ella o El")
-    private String pronouns;
+    // ✅ MÚLTIPLES PRONOMBRES - Ahora es Set<String>
+    private Set<String> pronouns;
 
     public boolean isLoginRequest() {
         return username != null && password != null &&
