@@ -38,9 +38,6 @@ public class CategoryActivities {
     @Size(max = 50, message = "(!) ERROR: Maximun 50 characters allowed in this field")
     private String category;
 
-    @JsonManagedReference
-    @OneToMany(mappedBy = "categoryActivities", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Activities> activities = new ArrayList<>();
 
     @JsonManagedReference
     @OneToMany(mappedBy = "categoryActivities", cascade = CascadeType.ALL, orphanRemoval = true)

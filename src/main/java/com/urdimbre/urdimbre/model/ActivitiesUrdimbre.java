@@ -3,7 +3,6 @@ package com.urdimbre.urdimbre.model;
 import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -64,11 +63,6 @@ public class ActivitiesUrdimbre {
     @Min(value = 1)
     private Integer maxAttendees;
 
-
-    @ManyToOne
-    @JsonBackReference
-    @JoinColumn(name = "activityName", nullable = false)
-    private Activities activities;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JsonBackReference
