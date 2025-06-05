@@ -1,17 +1,12 @@
 package com.urdimbre.urdimbre.model;
 
-import java.time.LocalDateTime;
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Min;
@@ -38,6 +33,11 @@ public class ActivitiesUrdimbre {
 
     @Column
     @NotBlank
+    @Size(max = 30)
+    private String title; 
+
+    @Column
+    @NotBlank
     @Size(max = 500)
     private String description;
 
@@ -50,13 +50,14 @@ public class ActivitiesUrdimbre {
     @NotBlank
     private String date;
     
+    //change the string 
     @Column
     @NotBlank
-    private LocalDateTime startTime;
+    private String startTime;
 
     @Column
     @NotBlank
-    private LocalDateTime endTime;
+    private String endTime;
 
     @Column
     @Min(value = 1)
@@ -65,7 +66,7 @@ public class ActivitiesUrdimbre {
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     @NotNull
-    private Language Category;
+    private Category category;
 
 
     //ralation whit user to catch the name of the coach

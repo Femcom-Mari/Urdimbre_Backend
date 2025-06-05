@@ -1,11 +1,9 @@
 package com.urdimbre.urdimbre.dto.ActivitiesUrdimbre;
 
-import java.time.LocalDateTime;
-import java.util.Locale.Category;
-
+// import java.time.LocalDateTime;
+import com.urdimbre.urdimbre.model.Category;
 import com.urdimbre.urdimbre.model.Language;
 import jakarta.persistence.Column;
-import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -24,8 +22,8 @@ public class ActivitiesUrdimbreRequestDTO {
     @NotNull(message = "(!) ERROR: You need to select a category")
     private Category category;
 
-    @NotNull(message = "(!) ERROR: You need to select a activity")
-    private Integer activityName;
+    @NotNull(message = "(!) ERROR: this field cannot be empty")
+    private String title;
 
     @NotBlank(message = "(!) ERROR: The description field cannot be empty")
     @Size(max = 500, message = "(!) ERROR: Maximun 500 characters allowed in the field")
@@ -41,12 +39,12 @@ public class ActivitiesUrdimbreRequestDTO {
 
 
     @NotNull(message = "(!) ERROR: Start Time and end Time cannot be empty")
-    @Future(message = "(!) ERROR: Start Time and end Time  must be in the future")
-    private LocalDateTime startTime;
+    // @Future(message = "(!) ERROR: Start Time and end Time  must be in the future")
+    private String startTime;
 
     @NotNull(message = "(!) ERROR: Start Time and End Time cannot be empty")
-    @Future(message = "(!) ERROR: Start Time and End Time must be in the future")
-    private LocalDateTime endTime;
+    // @Future(message = "(!) ERROR: Start Time and End Time must be in the future")
+    private String endTime;
 
 
     @Column
