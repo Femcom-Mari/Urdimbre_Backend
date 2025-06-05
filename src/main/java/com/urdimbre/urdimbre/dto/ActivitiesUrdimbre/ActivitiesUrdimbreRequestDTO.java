@@ -1,6 +1,8 @@
 package com.urdimbre.urdimbre.dto.ActivitiesUrdimbre;
 
 import java.time.LocalDateTime;
+import java.util.Locale.Category;
+
 import com.urdimbre.urdimbre.model.Language;
 import jakarta.persistence.Column;
 import jakarta.validation.constraints.Future;
@@ -20,7 +22,7 @@ public class ActivitiesUrdimbreRequestDTO {
     private Integer id;
 
     @NotNull(message = "(!) ERROR: You need to select a category")
-    private Integer categoryId;
+    private Category category;
 
     @NotNull(message = "(!) ERROR: You need to select a activity")
     private Integer activityName;

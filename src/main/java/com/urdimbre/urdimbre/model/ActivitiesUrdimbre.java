@@ -62,11 +62,10 @@ public class ActivitiesUrdimbre {
     @Min(value = 1)
     private Integer maxAttendees;
 
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JsonBackReference
-    @JoinColumn(name = "categoryId", nullable = false)
-    private Category category;
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    @NotNull
+    private Language Category;
 
 
     //ralation whit user to catch the name of the coach
