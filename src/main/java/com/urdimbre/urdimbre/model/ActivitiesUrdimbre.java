@@ -50,7 +50,7 @@ public class ActivitiesUrdimbre {
     @NotBlank
     private String date;
     
-    //change the string 
+    //change the string and 24hs.
     @Column
     @NotBlank
     private String startTime;

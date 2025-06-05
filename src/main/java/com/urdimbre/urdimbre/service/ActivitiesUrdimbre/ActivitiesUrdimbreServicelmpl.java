@@ -1,12 +1,12 @@
 package com.urdimbre.urdimbre.service.ActivitiesUrdimbre;
 
+import java.util.List;
 import org.springframework.stereotype.Service;
-
 import com.urdimbre.urdimbre.dto.ActivitiesUrdimbre.ActivitiesUrdimbreRequestDTO;
 import com.urdimbre.urdimbre.dto.ActivitiesUrdimbre.ActivitiesUrdimbreResponseDTO;
 import com.urdimbre.urdimbre.model.ActivitiesUrdimbre;
+import com.urdimbre.urdimbre.model.Category;
 import com.urdimbre.urdimbre.repository.ActivitiesUrdimbreRepository;
-
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 
@@ -47,5 +47,28 @@ public class ActivitiesUrdimbreServicelmpl implements ActivitiesUrdimbreService 
 }
 
 
+    @Override
+public List<ActivitiesUrdimbreResponseDTO> getActivitiesByCategory(String categoryStr) {
+    Category category = Category.valueOf(categoryStr.toUpperCase());
 
- }
+    return activitiesUrdimbreRepository.findAllByCategory(category)
+            .stream()
+            .map(this::convertToDto)
+            .toList();
+}
+    
+
+
+        private ActivitiesUrdimbreResponseDTO convertToDto(ActivitiesUrdimbre activities) {
+        return new ActivitiesUrdimbreResponseDTO(
+                activities.getCategory(),
+                activities.getTitle(),
+                activities.getDescription(),
+                activities.getLanguage(),
+                activities.getDate(),
+                activities.getStartTime(),
+                activities.getEndTime(),
+                activities.getMaxAttendees());
+    }
+    }
+
