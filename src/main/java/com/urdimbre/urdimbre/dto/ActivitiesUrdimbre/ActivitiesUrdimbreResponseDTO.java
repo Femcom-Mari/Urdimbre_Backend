@@ -1,4 +1,4 @@
-package com.urdimbre.urdimbre.dto.ActivitiesUrdimbre;
+package com.urdimbre.urdimbre.dto.activitiesUrdimbre;
 
 import java.time.LocalDate;
 import java.time.LocalTime;

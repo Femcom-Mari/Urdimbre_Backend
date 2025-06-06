@@ -88,12 +88,6 @@
 			<version>4.4.0</version>
 		</dependency>
 
-		<!-- Environment Variables -->
-		<dependency>
-			<groupId>io.github.cdimascio</groupId>
-			<artifactId>dotenv-java</artifactId>
-			<version>3.0.0</version>
-		</dependency>
 
 		<!-- Documentation -->
 		<dependency>
