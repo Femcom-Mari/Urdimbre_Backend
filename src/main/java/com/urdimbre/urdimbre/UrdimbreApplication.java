@@ -8,6 +8,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import io.github.cdimascio.dotenv.Dotenv;
 
 @SpringBootApplication
+
 public class UrdimbreApplication {
 
 	private static final Logger logger = LoggerFactory.getLogger(UrdimbreApplication.class);

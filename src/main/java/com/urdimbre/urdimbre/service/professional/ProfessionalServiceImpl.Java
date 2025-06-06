@@ -1,16 +1,18 @@
 package com.urdimbre.urdimbre.service.professional;
 
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.urdimbre.urdimbre.dto.professional.ProfessionalRequestDTO;
 import com.urdimbre.urdimbre.dto.professional.ProfessionalResponseDTO;
 import com.urdimbre.urdimbre.model.Professional;
 import com.urdimbre.urdimbre.repository.ProfessionalRepository;
-import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -60,7 +62,7 @@ public class ProfessionalServiceImpl implements ProfessionalService {
     public List<ProfessionalResponseDTO> getAllProfessionals() {
         return professionalRepository.findAll().stream()
                 .map(this::mapToResponseDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -92,9 +94,31 @@ public class ProfessionalServiceImpl implements ProfessionalService {
     }
 
     private Set<Professional.Pronoun> mapPronouns(Set<String> pronouns) {
-        return pronouns.stream()
-                .map(s -> Professional.Pronoun.valueOf(s.toUpperCase()))
-                .collect(Collectors.toSet());
+        return pronouns.stream().map(s -> {
+            try {
+                return mapStringToPronoun(s);
+            } catch (IllegalArgumentException e) {
+                throw new RuntimeException("Pronombre inválido: " + s +
+                        ". Valores válidos: Elle, Ella, El");
+            }
+        }).collect(Collectors.toSet());
+    }
+
+    private Professional.Pronoun mapStringToPronoun(String pronounString) {
+        // Intentar mapear por display value (Elle, Ella, El)
+        for (Professional.Pronoun pronoun : Professional.Pronoun.values()) {
+            if (pronoun.getDisplayValue().equalsIgnoreCase(pronounString)) {
+                return pronoun;
+            }
+        }
+
+        // Fallback: intentar mapear por enum name (ELLE, ELLA, EL)
+        try {
+            return Professional.Pronoun.valueOf(pronounString.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Pronombre no válido: " + pronounString +
+                    ". Valores válidos: Elle, Ella, El");
+        }
     }
 
     private ProfessionalResponseDTO mapToResponseDTO(Professional professional) {
@@ -102,11 +126,13 @@ public class ProfessionalServiceImpl implements ProfessionalService {
         dto.setId(professional.getId());
         dto.setFirstName(professional.getFirstName());
         dto.setLastName(professional.getLastName());
+
+        // Mapear usando display values
         dto.setPronouns(
                 professional.getPronouns().stream()
-                        .map(Enum::name)
-                        .collect(Collectors.toSet())
-        );
+                        .map(Professional.Pronoun::getDisplayValue)
+                        .collect(Collectors.toSet()));
+
         dto.setTitle(professional.getTitle());
         dto.setBio(professional.getBio());
         dto.setPhone(professional.getPhone());

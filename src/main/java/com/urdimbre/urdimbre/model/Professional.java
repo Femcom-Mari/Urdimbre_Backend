@@ -1,15 +1,35 @@
 package com.urdimbre.urdimbre.model;
 
-import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
-import lombok.*;
+import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
+
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Table;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "professionals")
@@ -39,6 +59,7 @@ public class Professional {
     @CollectionTable(name = "professional_pronouns", joinColumns = @JoinColumn(name = "professional_id"))
     @Column(name = "pronoun")
     @NotEmpty(message = "At least one pronoun is required")
+    @Builder.Default
     private Set<Pronoun> pronouns = new HashSet<>();
 
     @Size(max = 100, message = "Title must not exceed 100 characters")
@@ -58,19 +79,19 @@ public class Professional {
     private String location;
 
     @Size(max = 255, message = "Profile image URL must not exceed 255 characters")
-    @Pattern(regexp = "^(https?://)?[\\w.-]+(?:\\.[\\w\\.-]+)+[/#?]?.*$", message = "Profile image URL format is invalid")
+    @Pattern(regexp = "^(https?://)?[\\w.-]+\\.[a-zA-Z]{2,}.*$", message = "Profile image URL format is invalid")
     private String profileImageUrl;
 
     @Size(max = 255, message = "URL must not exceed 255 characters")
-    @Pattern(regexp = "^(https?://)?[\\w.-]+(?:\\.[\\w\\.-]+)+[/#?]?.*$", message = "URL1 format is invalid")
+    @Pattern(regexp = "^(https?://)?[\\w.-]+\\.[a-zA-Z]{2,}.*$", message = "URL1 format is invalid")
     private String url1;
 
     @Size(max = 255, message = "URL must not exceed 255 characters")
-    @Pattern(regexp = "^(https?://)?[\\w.-]+(?:\\.[\\w\\.-]+)+[/#?]?.*$", message = "URL2 format is invalid")
+    @Pattern(regexp = "^(https?://)?[\\w.-]+\\.[a-zA-Z]{2,}.*$", message = "URL2 format is invalid")
     private String url2;
 
     @Size(max = 255, message = "URL must not exceed 255 characters")
-    @Pattern(regexp = "^(https?://)?[\\w.-]+(?:\\.[\\w\\.-]+)+[/#?]?.*$", message = "URL3 format is invalid")
+    @Pattern(regexp = "^(https?://)?[\\w.-]+\\.[a-zA-Z]{2,}.*$", message = "URL3 format is invalid")
     private String url3;
 
     @CreatedDate
@@ -90,9 +111,20 @@ public class Professional {
         ACTIVE, INACTIVE, DELETED
     }
 
+    // ✅ ENUM SIN CAMBIOS
     public enum Pronoun {
-        SHE, // Ella
-        HE, // Él
-        THEY // Elle
+        ELLE("Elle"),
+        ELLA("Ella"),
+        EL("El");
+
+        private final String displayValue;
+
+        Pronoun(String displayValue) {
+            this.displayValue = displayValue;
+        }
+
+        public String getDisplayValue() {
+            return displayValue;
+        }
     }
 }

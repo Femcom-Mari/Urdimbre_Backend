@@ -1,8 +1,13 @@
 package com.urdimbre.urdimbre.dto.professional;
 
-import jakarta.validation.constraints.*;
-import lombok.Data;
 import java.util.Set;
+
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+import lombok.Data;
 
 @Data
 public class ProfessionalRequestDTO {

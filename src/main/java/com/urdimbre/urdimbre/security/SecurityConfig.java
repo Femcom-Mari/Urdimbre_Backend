@@ -2,6 +2,7 @@ package com.urdimbre.urdimbre.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -26,87 +27,83 @@ import lombok.extern.slf4j.Slf4j;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity(prePostEnabled = true) // ✅ NECESARIO para @PreAuthorize en controllers
+@EnableMethodSecurity(prePostEnabled = true)
 @RequiredArgsConstructor
 @Slf4j
 public class SecurityConfig {
+
+        private static final String ROLE_ADMIN = "ADMIN";
+        private static final String ROLE_USER = "USER";
+        private static final String PROFESSIONALS_API_PATTERN = "/api/professionals/**";
 
         private final UserDetailsServiceImpl userDetailsService;
         private final RefreshTokenService refreshTokenService;
 
         @Bean
         public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-                log.info("🔒 Configurando Security Filter Chain - VERSIÓN FINAL SEGURA CON CÓDIGOS DE INVITACIÓN");
+                http.cors(cors -> cors.configurationSource(corsConfigurationSource()));
 
                 http
                                 .csrf(csrf -> csrf.disable())
-                                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-
-                                .authorizeHttpRequests(auth -> auth
-
-                                                // ================================
-                                                // ✅ ENDPOINTS PÚBLICOS (sin autenticación)
-                                                // ================================
-                                                .requestMatchers(
-                                                                "/api/auth/login",
-                                                                "/api/auth/register",
-                                                                "/api/auth/refresh",
-                                                                "/api/auth/invite-codes/validate", // ✅ NUEVO
-                                                                "/api/auth/invite-codes/info", // ✅ NUEVO
-                                                                "/actuator/health",
-                                                                "/error")
-                                                .permitAll()
-
-                                                // ================================
-                                                // ✅ ENDPOINTS DE ADMIN (requieren rol ADMIN)
-                                                // ================================
-                                                .requestMatchers("/api/admin/**")
-                                                .hasRole("ADMIN")
-
-                                                // ================================
-                                                // ✅ ENDPOINTS AUTENTICADOS (requieren login)
-                                                // ================================
-                                                .requestMatchers("/api/auth/logout").authenticated()
-                                                .requestMatchers("/api/users/**").authenticated()
-                                                .requestMatchers("/api/roles/**").hasRole("ADMIN")
-                                                .requestMatchers("/api/professionals/**").authenticated()
-
-                                                // ================================
-                                                // ✅ RESTO DE ENDPOINTS (requieren autenticación)
-                                                // ================================
-                                                .anyRequest().authenticated())
-
                                 .sessionManagement(session -> session
                                                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                                .authorizeHttpRequests(auth -> auth
+                                                // Public endpoints
+                                                .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+                                                .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
+                                                .requestMatchers(HttpMethod.POST, "/api/auth/refresh").permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/api/auth/invite-codes/validate")
+                                                .permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/api/auth/invite-codes/info")
+                                                .permitAll()
+                                                .requestMatchers("/actuator/health").permitAll()
+                                                .requestMatchers("/error").permitAll()
+                                                .requestMatchers("/api/test/**").permitAll() // Remove in production
+
+                                                // Professional endpoints - read access for users and admins
+                                                .requestMatchers(HttpMethod.GET, "/api/professionals",
+                                                                PROFESSIONALS_API_PATTERN)
+                                                .hasAnyRole(ROLE_USER, ROLE_ADMIN)
+
+                                                // Professional endpoints - write access only for admins
+                                                .requestMatchers(HttpMethod.POST, "/api/professionals")
+                                                .hasRole(ROLE_ADMIN)
+                                                .requestMatchers(HttpMethod.PUT, PROFESSIONALS_API_PATTERN)
+                                                .hasRole(ROLE_ADMIN)
+                                                .requestMatchers(HttpMethod.PATCH, PROFESSIONALS_API_PATTERN)
+                                                .hasRole(ROLE_ADMIN)
+                                                .requestMatchers(HttpMethod.DELETE, PROFESSIONALS_API_PATTERN)
+                                                .hasRole(ROLE_ADMIN)
+
+                                                // Admin endpoints
+                                                .requestMatchers("/api/admin/**").hasRole(ROLE_ADMIN)
+                                                .requestMatchers("/api/roles/**").hasRole(ROLE_ADMIN)
+
+                                                // Authenticated endpoints
+                                                .requestMatchers(HttpMethod.POST, "/api/auth/logout").authenticated()
+                                                .requestMatchers("/api/users/**").authenticated()
+
+                                                // All other requests require authentication
+                                                .anyRequest().authenticated())
 
                                 .addFilterBefore(
                                                 new JwtAuthorizationFilter(userDetailsService, refreshTokenService),
                                                 UsernamePasswordAuthenticationFilter.class);
 
-                log.info("✅ Security Filter Chain SEGURO configurado con códigos de invitación");
                 return http.build();
         }
 
         @Bean
         public CorsConfigurationSource corsConfigurationSource() {
-                log.info("🌐 Configurando CORS");
-
                 CorsConfiguration configuration = new CorsConfiguration();
 
-                // ================================
-                // ✅ ORÍGENES PERMITIDOS
-                // ================================
-                // Desarrollo local
+                // Allowed origins
                 configuration.addAllowedOriginPattern("http://localhost:*");
                 configuration.addAllowedOriginPattern("http://127.0.0.1:*");
-
-                // Producción (ajusta según tu dominio)
                 configuration.addAllowedOriginPattern("https://tu-dominio.com");
                 configuration.addAllowedOriginPattern("https://*.tu-dominio.com");
 
-                // ================================
-                // ✅ MÉTODOS HTTP PERMITIDOS
-                // ================================
+                // Allowed methods
                 configuration.addAllowedMethod("GET");
                 configuration.addAllowedMethod("POST");
                 configuration.addAllowedMethod("PUT");
@@ -115,59 +112,39 @@ public class SecurityConfig {
                 configuration.addAllowedMethod("OPTIONS");
                 configuration.addAllowedMethod("HEAD");
 
-                // ================================
-                // ✅ HEADERS PERMITIDOS
-                // ================================
+                // Allowed headers
                 configuration.addAllowedHeader("*");
 
-                // ================================
-                // ✅ HEADERS EXPUESTOS (para que el frontend pueda leerlos)
-                // ================================
+                // Exposed headers
                 configuration.addExposedHeader("Authorization");
                 configuration.addExposedHeader("Refresh-Token");
                 configuration.addExposedHeader("Content-Length");
                 configuration.addExposedHeader("Content-Type");
 
-                // ================================
-                // ✅ CONFIGURACIONES ADICIONALES
-                // ================================
-                // Permitir credentials (cookies, headers de autorización)
+                // Additional configurations
                 configuration.setAllowCredentials(true);
-
-                // Tiempo de cache para preflight requests (1 hora)
                 configuration.setMaxAge(3600L);
 
                 UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
                 source.registerCorsConfiguration("/**", configuration);
 
-                log.info("✅ CORS configurado correctamente");
                 return source;
         }
 
         @Bean
         public HttpFirewall httpFirewall() {
-                log.info("🛡️ Configurando HTTP Firewall");
-
                 StrictHttpFirewall firewall = new StrictHttpFirewall();
 
-                // ================================
-                // ✅ CONFIGURACIONES DE SEGURIDAD
-                // ================================
-                // Permitir caracteres necesarios para códigos de invitación
-                firewall.setAllowUrlEncodedCarriageReturn(false); // Más seguro
-                firewall.setAllowUrlEncodedPercent(true); // Necesario para query params
-                firewall.setAllowUrlEncodedSlash(false); // Más seguro
-                firewall.setAllowUrlEncodedPeriod(false); // Más seguro
-                firewall.setAllowBackSlash(false); // Más seguro
-                firewall.setAllowUrlEncodedLineFeed(false); // Más seguro
-                // firewall.setAllowUrlEncodedTab(false); // Más seguro (no disponible en
-                // StrictHttpFirewall)
+                // Security configurations
+                firewall.setAllowUrlEncodedCarriageReturn(false);
+                firewall.setAllowUrlEncodedPercent(true);
+                firewall.setAllowUrlEncodedSlash(false);
+                firewall.setAllowUrlEncodedPeriod(false);
+                firewall.setAllowBackSlash(false);
+                firewall.setAllowUrlEncodedLineFeed(false);
+                firewall.setAllowSemicolon(false);
+                firewall.setAllowUrlEncodedDoubleSlash(false);
 
-                // Permitir algunos caracteres comunes en URLs
-                firewall.setAllowSemicolon(false); // Más seguro
-                firewall.setAllowUrlEncodedDoubleSlash(false); // Más seguro
-
-                log.info("✅ HTTP Firewall configurado con seguridad mejorada");
                 return firewall;
         }
 
@@ -176,25 +153,13 @@ public class SecurityConfig {
                 return (web) -> web.httpFirewall(httpFirewall());
         }
 
-        // ================================
-        // ✅ BEANS DE CODIFICACIÓN DE CONTRASEÑAS
-        // ================================
-
-        /**
-         * Bean específico BCryptPasswordEncoder para inyección directa
-         */
         @Bean
         public BCryptPasswordEncoder bCryptPasswordEncoder() {
-                log.debug("🔐 Creando bean BCryptPasswordEncoder");
-                return new BCryptPasswordEncoder(12); // Strength 12 para mayor seguridad
+                return new BCryptPasswordEncoder(12);
         }
 
-        /**
-         * Bean PasswordEncoder para compatibilidad con Spring Security
-         */
         @Bean
         public PasswordEncoder passwordEncoder() {
-                log.debug("🔐 Creando bean PasswordEncoder");
-                return new BCryptPasswordEncoder(12); // Strength 12 para mayor seguridad
+                return new BCryptPasswordEncoder(12);
         }
 }
