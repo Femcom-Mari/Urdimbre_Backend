@@ -1,7 +1,7 @@
 package com.urdimbre.urdimbre.model;
 
-import java.time.LocalDateTime;
-
+import java.time.LocalDate;
+import java.time.LocalTime;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -50,16 +50,15 @@ public class ActivitiesUrdimbre {
 
     @Column
     @NotNull
-    private String date;
+    private LocalDate date;
     
-    //change the string and 24hs.
     @Column
     @NotNull
-    private LocalDateTime startTime;
+    private LocalTime startTime;
 
     @Column
     @NotNull
-    private LocalDateTime endTime;
+    private LocalTime endTime;
 
     @Column
     @Min(value = 1)

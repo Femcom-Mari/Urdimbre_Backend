@@ -1,5 +1,7 @@
 package com.urdimbre.urdimbre.service.ActivitiesUrdimbre;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import com.urdimbre.urdimbre.dto.ActivitiesUrdimbre.ActivitiesUrdimbreRequestDTO;
@@ -19,47 +21,52 @@ public class ActivitiesUrdimbreServicelmpl implements ActivitiesUrdimbreService 
 
     @Override
     public ActivitiesUrdimbreResponseDTO createActivitiesUrdimbre(ActivitiesUrdimbreRequestDTO dto) {
-    ActivitiesUrdimbre activity = new ActivitiesUrdimbre();
-    activity.setCategory(dto.getCategory());
-    activity.setTitle(dto.getTitle());
-    activity.setDescription(dto.getDescription());
-    activity.setLanguage(dto.getLanguage());
-    activity.setDate(dto.getDate());
-    activity.setStartTime(dto.getStartTime());
-    activity.setEndTime(dto.getEndTime());
-    activity.setMaxAttendees(dto.getMaxAttendees());
-    
-    ActivitiesUrdimbre saved = activitiesUrdimbreRepository.save(activity);
+        ActivitiesUrdimbre activity = new ActivitiesUrdimbre();
+        activity.setCategory(dto.getCategory());
+        activity.setTitle(dto.getTitle());
+        activity.setDescription(dto.getDescription());
+        activity.setLanguage(dto.getLanguage());
+        activity.setDate(LocalDate.parse(dto.getDate()));
+        activity.setStartTime(LocalTime.parse(dto.getStartTime()));
+        activity.setEndTime(LocalTime.parse(dto.getEndTime()));
+        activity.setMaxAttendees(dto.getMaxAttendees());
 
-    ActivitiesUrdimbreResponseDTO response = ActivitiesUrdimbreResponseDTO.builder()
-        .category(saved.getCategory())
-        .title(dto.getTitle())
-        .description(saved.getDescription())
-        .language(saved.getLanguage())
-        .date(saved.getDate())
-        .startTime(saved.getStartTime())
-        .endTime(saved.getEndTime())
-        .maxAttendees(saved.getMaxAttendees())
-        .build();
+        ActivitiesUrdimbre saved = activitiesUrdimbreRepository.save(activity);
 
-    return response;
+        ActivitiesUrdimbreResponseDTO response = ActivitiesUrdimbreResponseDTO.builder()
+                .category(saved.getCategory())
+                .title(dto.getTitle())
+                .description(saved.getDescription())
+                .language(saved.getLanguage())
+                .date(saved.getDate())
+                .startTime(saved.getStartTime())
+                .endTime(saved.getEndTime())
+                .maxAttendees(saved.getMaxAttendees())
+                .build();
 
-}
+        return response;
 
+    }
 
     @Override
-public List<ActivitiesUrdimbreResponseDTO> getActivitiesByCategory(String categoryStr) {
-    Category category = Category.valueOf(categoryStr.toUpperCase());
+    public List<ActivitiesUrdimbreResponseDTO> getActivitiesByCategory(String categoryStr) {
+        Category category = Category.valueOf(categoryStr.toUpperCase());
 
-    return activitiesUrdimbreRepository.findAllByCategory(category)
-            .stream()
-            .map(this::convertToDto)
-            .toList();
-}
-    
+        return activitiesUrdimbreRepository.findAllByCategory(category)
+                .stream()
+                .map(this::convertToDto)
+                .toList();
+    }
 
+    @Override
+    public List<ActivitiesUrdimbreResponseDTO> getActivitiesByDate(LocalDate date) {
+        return activitiesUrdimbreRepository.findAllByDate(date)
+                .stream()
+                .map(this::convertToDto)
+                .toList();
+    }
 
-        private ActivitiesUrdimbreResponseDTO convertToDto(ActivitiesUrdimbre activities) {
+    private ActivitiesUrdimbreResponseDTO convertToDto(ActivitiesUrdimbre activities) {
         return new ActivitiesUrdimbreResponseDTO(
                 activities.getCategory(),
                 activities.getTitle(),
@@ -70,5 +77,4 @@ public List<ActivitiesUrdimbreResponseDTO> getActivitiesByCategory(String catego
                 activities.getEndTime(),
                 activities.getMaxAttendees());
     }
-    }
-
+}

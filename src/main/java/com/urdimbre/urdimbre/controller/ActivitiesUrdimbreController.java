@@ -1,7 +1,9 @@
 package com.urdimbre.urdimbre.controller;
 
+import java.time.LocalDate;
 import java.util.List;
 
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,7 +22,7 @@ import lombok.AllArgsConstructor;
 @RestController
 @AllArgsConstructor
 @RequestMapping("/api/activities")
-public class ActivitiesUrdimbre {
+public class ActivitiesUrdimbreController {
 
     private ActivitiesUrdimbreService activitiesUrdimbreService;
 
@@ -31,7 +33,7 @@ public class ActivitiesUrdimbre {
         return ResponseEntity.status(HttpStatus.CREATED).body(createdActivity);
     }
 
-        @GetMapping("/category/{category}")
+    @GetMapping("/category/{category}")
     public ResponseEntity<List<ActivitiesUrdimbreResponseDTO>> getActivitiesByCategory(
             @PathVariable String category,
             @RequestParam(defaultValue = "0") int page,
@@ -39,4 +41,12 @@ public class ActivitiesUrdimbre {
         List<ActivitiesUrdimbreResponseDTO> activities = activitiesUrdimbreService.getActivitiesByCategory(category);
         return ResponseEntity.ok(activities);
     }
+
+    @GetMapping("/schedule/{date}")
+    public ResponseEntity<List<ActivitiesUrdimbreResponseDTO>> getActivitiesByDate(
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        List<ActivitiesUrdimbreResponseDTO> activities = activitiesUrdimbreService.getActivitiesByDate(date);
+        return ResponseEntity.ok(activities);
+    }
+
 }
