@@ -1,9 +1,10 @@
 package com.urdimbre.urdimbre.dto.ActivitiesUrdimbre;
 
-// import java.time.LocalDateTime;
+import java.time.LocalDateTime;
 import com.urdimbre.urdimbre.model.Category;
 import com.urdimbre.urdimbre.model.Language;
 import jakarta.persistence.Column;
+import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -39,12 +40,12 @@ public class ActivitiesUrdimbreRequestDTO {
 
 
     @NotNull(message = "(!) ERROR: Start Time and end Time cannot be empty")
-    // @Future(message = "(!) ERROR: Start Time and end Time  must be in the future")
-    private String startTime;
+    @Future(message = "(!) ERROR: Start Time and end Time  must be in the future")
+    private LocalDateTime startTime;
 
     @NotNull(message = "(!) ERROR: Start Time and End Time cannot be empty")
-    // @Future(message = "(!) ERROR: Start Time and End Time must be in the future")
-    private String endTime;
+    @Future(message = "(!) ERROR: Start Time and End Time must be in the future")
+    private LocalDateTime endTime;
 
 
     @Column
