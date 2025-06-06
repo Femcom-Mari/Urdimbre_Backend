@@ -1,5 +1,6 @@
 package com.urdimbre.urdimbre.service.user;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -63,7 +64,7 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-        // USANDO SOLO LOS CAMPOS QUE EXISTEN EN TU MODELO
+        // Actualizar campos básicos
         if (userDTO.getEmail() != null) {
             user.setEmail(userDTO.getEmail());
         }
@@ -79,9 +80,22 @@ public class UserServiceImpl implements UserService {
         if (userDTO.getProfileImageUrl() != null) {
             user.setProfileImageUrl(userDTO.getProfileImageUrl());
         }
-        // ✅ AGREGADO: Manejo de pronombres
-        if (userDTO.getPronouns() != null) {
-            user.setPronouns(User.Pronoun.valueOf(userDTO.getPronouns()));
+
+        // ✅ MÚLTIPLES PRONOMBRES - Convertir Set<String> a Set<Pronoun>
+        if (userDTO.getPronouns() != null && !userDTO.getPronouns().isEmpty()) {
+            Set<User.Pronoun> pronounSet = new HashSet<>();
+
+            for (String pronounString : userDTO.getPronouns()) {
+                try {
+                    User.Pronoun pronoun = User.Pronoun.fromDisplayValue(pronounString);
+                    pronounSet.add(pronoun);
+                } catch (IllegalArgumentException e) {
+                    throw new RuntimeException("Pronombre inválido: " + pronounString +
+                            ". Valores válidos: Elle, Ella, El");
+                }
+            }
+
+            user.setPronouns(pronounSet);
         }
 
         User updatedUser = userRepository.save(user);
@@ -124,10 +138,11 @@ public class UserServiceImpl implements UserService {
         return mapToResponseDTO(updatedUser);
     }
 
-    // --- Métodos privados reutilizables ---
+    // ========================================
+    // MÉTODOS PRIVADOS AUXILIARES
+    // ========================================
 
     private void validateUniqueUsernameAndEmail(String username, String email) {
-        // ✅ CORREGIDO: Expresiones booleanas directas (sin comparación con true)
         if (userRepository.existsByUsername(username)) {
             throw new RuntimeException("El nombre de usuario ya está en uso");
         }
@@ -137,34 +152,66 @@ public class UserServiceImpl implements UserService {
     }
 
     private User convertToEntity(UserRequestDTO dto) {
-        return User.builder()
+        User.UserBuilder userBuilder = User.builder()
                 .username(dto.getUsername())
                 .email(dto.getEmail())
                 .password(dto.getPassword())
-                .fullName(dto.getFullName()) // USANDO fullName que SÍ existe
+                .fullName(dto.getFullName())
                 .biography(dto.getBiography())
                 .location(dto.getLocation())
                 .profileImageUrl(dto.getProfileImageUrl())
-                .pronouns(dto.getPronouns() != null ? User.Pronoun.valueOf(dto.getPronouns()) : null) // ✅ AGREGADO
-                .status(User.UserStatus.ACTIVE)
-                .build();
+                .status(User.UserStatus.ACTIVE);
+
+        // ✅ MÚLTIPLES PRONOMBRES - Convertir Set<String> a Set<Pronoun>
+        if (dto.getPronouns() != null && !dto.getPronouns().isEmpty()) {
+            Set<User.Pronoun> pronounSet = new HashSet<>();
+
+            for (String pronounString : dto.getPronouns()) {
+                try {
+                    User.Pronoun pronoun = User.Pronoun.fromDisplayValue(pronounString);
+                    pronounSet.add(pronoun);
+                } catch (IllegalArgumentException e) {
+                    throw new RuntimeException("Pronombre inválido: " + pronounString +
+                            ". Valores válidos: Elle, Ella, El");
+                }
+            }
+
+            userBuilder.pronouns(pronounSet);
+        }
+
+        return userBuilder.build();
     }
 
     private UserResponseDTO mapToResponseDTO(User user) {
-        return new UserResponseDTO(
-                user.getId(),
-                user.getUsername(),
-                user.getEmail(),
-                user.getFullName(), // USANDO fullName que SÍ existe
-                user.getBiography(),
-                user.getLocation(),
-                user.getProfileImageUrl(),
-                user.getPronouns() != null ? user.getPronouns().name() : null, // ✅ AGREGADO
-                user.getStatus() != null ? user.getStatus().name() : null,
-                user.getCreatedAt() != null ? user.getCreatedAt().toString() : null,
-                user.getUpdatedAt() != null ? user.getUpdatedAt().toString() : null,
-                user.getRoles() != null
-                        ? user.getRoles().stream().map(Role::getName).toList()
-                        : null);
+        UserResponseDTO response = new UserResponseDTO();
+        response.setId(user.getId());
+        response.setUsername(user.getUsername());
+        response.setEmail(user.getEmail());
+        response.setFullName(user.getFullName());
+        response.setBiography(user.getBiography());
+        response.setLocation(user.getLocation());
+        response.setProfileImageUrl(user.getProfileImageUrl());
+
+        // ✅ MÚLTIPLES PRONOMBRES - Convertir Set<Pronoun> a Set<String>
+        if (user.getPronouns() != null && !user.getPronouns().isEmpty()) {
+            Set<String> pronounStrings = user.getPronouns().stream()
+                    .map(User.Pronoun::getDisplayValue)
+                    .collect(Collectors.toSet());
+            response.setPronouns(pronounStrings);
+        }
+
+        response.setStatus(user.getStatus() != null ? user.getStatus().name() : null);
+
+        // ✅ AUDITORÍA COMPLETA
+        response.setCreatedAt(user.getCreatedAt() != null ? user.getCreatedAt().toString() : null);
+        response.setUpdatedAt(user.getUpdatedAt() != null ? user.getUpdatedAt().toString() : null);
+        response.setCreatedBy(user.getCreatedBy());
+        response.setLastModifiedBy(user.getLastModifiedBy());
+
+        response.setRoles(user.getRoles() != null && !user.getRoles().isEmpty()
+                ? user.getRoles().stream().map(Role::getName).toList()
+                : null);
+
+        return response;
     }
 }
