@@ -28,9 +28,13 @@
 	</scm>
 	<properties>
 		<java.version>21</java.version>
+		<resilience4j.version>2.2.0</resilience4j.version>
 	</properties>
+	
 	<dependencies>
-		<!-- Spring Boot Starters -->
+		<!-- ================================ -->
+		<!-- SPRING BOOT CORE DEPENDENCIES   -->
+		<!-- ================================ -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
@@ -47,15 +51,46 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-validation</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-cache</artifactId>
+		</dependency>
 
-		<!-- Database -->
+		<dependency>
+			<groupId>io.github.resilience4j</groupId>
+			<artifactId>resilience4j-spring-boot3</artifactId>
+			<version>${resilience4j.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>io.github.resilience4j</groupId>
+			<artifactId>resilience4j-ratelimiter</artifactId>
+			<version>${resilience4j.version}</version>
+		</dependency>
+
+		<!-- ================================ -->
+		<!-- CACHE DEPENDENCIES               -->
+		<!-- ================================ -->
+		<dependency>
+			<groupId>com.github.ben-manes.caffeine</groupId>
+			<artifactId>caffeine</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.github.ben-manes.caffeine</groupId>
+			<artifactId>jcache</artifactId>
+		</dependency>
+
+		<!-- ================================ -->
+		<!-- DATABASE                         -->
+		<!-- ================================ -->
 		<dependency>
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
 			<scope>runtime</scope>
 		</dependency>
 
-		<!-- JWT - SOLO UNA LIBRERÍA (jjwt es más moderna) -->
+		<!-- ================================ -->
+		<!-- JWT AUTHENTICATION              -->
+		<!-- ================================ -->
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
 			<artifactId>jjwt-api</artifactId>
@@ -73,33 +108,38 @@
 			<version>0.12.3</version>
 			<scope>runtime</scope>
 		</dependency>
-				<dependency>
-    <groupId>com.auth0</groupId>
-    <artifactId>java-jwt</artifactId>
-    <version>4.4.0</version>
-</dependency>
-		<!-- Environment Variables -->
+		<dependency>
+			<groupId>com.auth0</groupId>
+			<artifactId>java-jwt</artifactId>
+			<version>4.4.0</version>
+		</dependency>
+		
+		<!-- ================================ -->
+		<!-- UTILITIES                        -->
+		<!-- ================================ -->
 		<dependency>
 			<groupId>io.github.cdimascio</groupId>
 			<artifactId>dotenv-java</artifactId>
 			<version>3.0.0</version>
 		</dependency>
-
-		<!-- Documentation -->
-		<dependency>
-			<groupId>org.springdoc</groupId>
-			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-			<version>2.2.0</version>
-		</dependency>
-
-		<!-- Utilities -->
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
 			<optional>true</optional>
 		</dependency>
 
-		<!-- Test Dependencies -->
+		<!-- ================================ -->
+		<!-- DOCUMENTATION                    -->
+		<!-- ================================ -->
+		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+			<version>2.2.0</version>
+		</dependency>
+
+		<!-- ================================ -->
+		<!-- TEST DEPENDENCIES               -->
+		<!-- ================================ -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
@@ -111,8 +151,6 @@
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
-
-
 
 	<build>
 		<plugins>
