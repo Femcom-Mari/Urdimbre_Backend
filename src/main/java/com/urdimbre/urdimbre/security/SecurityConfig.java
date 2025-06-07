@@ -63,7 +63,7 @@ public class SecurityConfig {
                                                 .contentTypeOptions(contentTypeOptions -> {
                                                 })
 
-                                                // 🛡️ XSS Protection - SINTAXIS CORREGIDA
+                                                // 🛡️ HSTS Protection
                                                 .httpStrictTransportSecurity(hstsConfig -> {
                                                         if (isProductionEnvironment()) {
                                                                 hstsConfig
@@ -76,7 +76,8 @@ public class SecurityConfig {
                                                 // 🛡️ Content Security Policy
                                                 .contentSecurityPolicy(cspConfig -> cspConfig
                                                                 .policyDirectives(buildContentSecurityPolicy()))
-                                                // ✅ Add custom header writer here
+
+                                                // ✅ Headers personalizados
                                                 .addHeaderWriter((request, response) -> {
                                                         // XSS Protection manual
                                                         response.setHeader("X-XSS-Protection", "1; mode=block");
@@ -89,43 +90,16 @@ public class SecurityConfig {
                                                                                         "payment=(), usb=(), magnetometer=(), gyroscope=()");
                                                 }))
 
-                                .authorizeHttpRequests(auth -> auth
+                                .sessionManagement(session -> session
+                                                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
+                                // ================================
+                                // ✅ ÚNICA CONFIGURACIÓN DE AUTORIZACIÓN (SIN DUPLICADOS)
+                                // ================================
+                                .authorizeHttpRequests(auth -> auth
                                                 // ================================
                                                 // ✅ ENDPOINTS PÚBLICOS (sin autenticación)
                                                 // ================================
-                                                .requestMatchers(
-                                                                "/api/auth/login",
-                                                                "/api/auth/register",
-                                                                "/api/auth/refresh",
-                                                                "/api/auth/invite-codes/validate", // ✅ NUEVO
-                                                                "/api/auth/invite-codes/info", // ✅ NUEVO
-                                                                "/actuator/health",
-                                                                "/error")
-                                                .permitAll()
-
-                                                // ================================
-                                                // ✅ ENDPOINTS DE ADMIN (requieren rol ADMIN)
-                                                // ================================
-                                                .requestMatchers("/api/admin/**")
-                                                .hasRole("ADMIN")
-
-                                                // ================================
-                                                // ✅ ENDPOINTS AUTENTICADOS (requieren login)
-                                                // ================================
-                                                .requestMatchers("/api/auth/logout").authenticated()
-                                                .requestMatchers("/api/users/**").authenticated()
-                                                .requestMatchers("/api/roles/**").hasRole("ADMIN")
-
-                                                // ================================
-                                                // ✅ RESTO DE ENDPOINTS (requieren autenticación)
-                                                // ================================
-                                                .anyRequest().authenticated())
-
-                                .sessionManagement(session -> session
-                                                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                                .authorizeHttpRequests(auth -> auth
-                                                // Public endpoints
                                                 .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                                                 .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
                                                 .requestMatchers(HttpMethod.POST, "/api/auth/refresh").permitAll()
@@ -137,9 +111,19 @@ public class SecurityConfig {
                                                 .requestMatchers("/error").permitAll()
                                                 .requestMatchers("/api/test/**").permitAll() // Remove in production
 
+                                                // ================================
+                                                // ✅ ENDPOINTS DE ADMIN (requieren rol ADMIN)
+                                                // ================================
+                                                .requestMatchers("/api/admin/**").hasRole(ROLE_ADMIN)
+                                                .requestMatchers("/api/roles/**").hasRole(ROLE_ADMIN)
+
+                                                // ================================
+                                                // ✅ PROFESSIONALS ENDPOINTS
+                                                // ================================
                                                 // Professional endpoints - read access for users and admins
-                                                .requestMatchers(HttpMethod.GET, "/api/professionals",
-                                                                PROFESSIONALS_API_PATTERN)
+                                                .requestMatchers(HttpMethod.GET, "/api/professionals")
+                                                .hasAnyRole(ROLE_USER, ROLE_ADMIN)
+                                                .requestMatchers(HttpMethod.GET, PROFESSIONALS_API_PATTERN)
                                                 .hasAnyRole(ROLE_USER, ROLE_ADMIN)
 
                                                 // Professional endpoints - write access only for admins
@@ -152,15 +136,15 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.DELETE, PROFESSIONALS_API_PATTERN)
                                                 .hasRole(ROLE_ADMIN)
 
-                                                // Admin endpoints
-                                                .requestMatchers("/api/admin/**").hasRole(ROLE_ADMIN)
-                                                .requestMatchers("/api/roles/**").hasRole(ROLE_ADMIN)
-
-                                                // Authenticated endpoints
+                                                // ================================
+                                                // ✅ ENDPOINTS AUTENTICADOS (requieren login)
+                                                // ================================
                                                 .requestMatchers(HttpMethod.POST, "/api/auth/logout").authenticated()
                                                 .requestMatchers("/api/users/**").authenticated()
 
-                                                // All other requests require authentication
+                                                // ================================
+                                                // ✅ RESTO DE ENDPOINTS (DEBE SER EL ÚLTIMO)
+                                                // ================================
                                                 .anyRequest().authenticated())
 
                                 .addFilterBefore(

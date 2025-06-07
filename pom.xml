@@ -56,6 +56,9 @@
 			<artifactId>spring-boot-starter-cache</artifactId>
 		</dependency>
 
+		<!-- ================================ -->
+		<!-- RESILIENCE4J DEPENDENCIES       -->
+		<!-- ================================ -->
 		<dependency>
 			<groupId>io.github.resilience4j</groupId>
 			<artifactId>resilience4j-spring-boot3</artifactId>
@@ -65,6 +68,14 @@
 			<groupId>io.github.resilience4j</groupId>
 			<artifactId>resilience4j-ratelimiter</artifactId>
 			<version>${resilience4j.version}</version>
+		</dependency>
+
+		<!-- ================================ -->
+		<!-- JAKARTA ANNOTATION API          -->
+		<!-- ================================ -->
+		<dependency>
+			<groupId>jakarta.annotation</groupId>
+			<artifactId>jakarta.annotation-api</artifactId>
 		</dependency>
 
 		<!-- ================================ -->
@@ -82,13 +93,6 @@
 		<!-- ================================ -->
 		<!-- DATABASE                         -->
 		<!-- ================================ -->
-		<!-- ✅ AGREGADO: Jakarta Annotation API para @PostConstruct -->
-		<dependency>
-			<groupId>jakarta.annotation</groupId>
-			<artifactId>jakarta.annotation-api</artifactId>
-		</dependency>
-
-		<!-- Database -->
 		<dependency>
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
@@ -98,7 +102,6 @@
 		<!-- ================================ -->
 		<!-- JWT AUTHENTICATION              -->
 		<!-- ================================ -->
-		<!-- JWT - MANTENEMOS AMBAS LIBRERÍAS (auth0 funciona, jjwt por si acaso) -->
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
 			<artifactId>jjwt-api</artifactId>
@@ -125,8 +128,6 @@
 		<!-- ================================ -->
 		<!-- UTILITIES                        -->
 		<!-- ================================ -->
-
-		<!-- Environment Variables -->
 		<dependency>
 			<groupId>io.github.cdimascio</groupId>
 			<artifactId>dotenv-java</artifactId>
