@@ -3,6 +3,7 @@ package com.urdimbre.urdimbre.security;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -27,10 +28,14 @@ import lombok.extern.slf4j.Slf4j;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity(prePostEnabled = true) // ✅ NECESARIO para @PreAuthorize en controllers
+@EnableMethodSecurity(prePostEnabled = true)
 @RequiredArgsConstructor
 @Slf4j
 public class SecurityConfig {
+
+        private static final String ROLE_ADMIN = "ADMIN";
+        private static final String ROLE_USER = "USER";
+        private static final String PROFESSIONALS_API_PATTERN = "/api/professionals/**";
 
         private final UserDetailsServiceImpl userDetailsService;
         private final RefreshTokenService refreshTokenService;
@@ -119,6 +124,44 @@ public class SecurityConfig {
 
                                 .sessionManagement(session -> session
                                                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                                .authorizeHttpRequests(auth -> auth
+                                                // Public endpoints
+                                                .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+                                                .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
+                                                .requestMatchers(HttpMethod.POST, "/api/auth/refresh").permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/api/auth/invite-codes/validate")
+                                                .permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/api/auth/invite-codes/info")
+                                                .permitAll()
+                                                .requestMatchers("/actuator/health").permitAll()
+                                                .requestMatchers("/error").permitAll()
+                                                .requestMatchers("/api/test/**").permitAll() // Remove in production
+
+                                                // Professional endpoints - read access for users and admins
+                                                .requestMatchers(HttpMethod.GET, "/api/professionals",
+                                                                PROFESSIONALS_API_PATTERN)
+                                                .hasAnyRole(ROLE_USER, ROLE_ADMIN)
+
+                                                // Professional endpoints - write access only for admins
+                                                .requestMatchers(HttpMethod.POST, "/api/professionals")
+                                                .hasRole(ROLE_ADMIN)
+                                                .requestMatchers(HttpMethod.PUT, PROFESSIONALS_API_PATTERN)
+                                                .hasRole(ROLE_ADMIN)
+                                                .requestMatchers(HttpMethod.PATCH, PROFESSIONALS_API_PATTERN)
+                                                .hasRole(ROLE_ADMIN)
+                                                .requestMatchers(HttpMethod.DELETE, PROFESSIONALS_API_PATTERN)
+                                                .hasRole(ROLE_ADMIN)
+
+                                                // Admin endpoints
+                                                .requestMatchers("/api/admin/**").hasRole(ROLE_ADMIN)
+                                                .requestMatchers("/api/roles/**").hasRole(ROLE_ADMIN)
+
+                                                // Authenticated endpoints
+                                                .requestMatchers(HttpMethod.POST, "/api/auth/logout").authenticated()
+                                                .requestMatchers("/api/users/**").authenticated()
+
+                                                // All other requests require authentication
+                                                .anyRequest().authenticated())
 
                                 .addFilterBefore(
                                                 new JwtAuthorizationFilter(userDetailsService, refreshTokenService),
@@ -149,9 +192,7 @@ public class SecurityConfig {
                         configuration.addAllowedOriginPattern("http://[::1]:*");
                 }
 
-                // ================================
-                // ✅ MÉTODOS HTTP PERMITIDOS
-                // ================================
+                // Allowed methods
                 configuration.addAllowedMethod("GET");
                 configuration.addAllowedMethod("POST");
                 configuration.addAllowedMethod("PUT");
@@ -160,14 +201,10 @@ public class SecurityConfig {
                 configuration.addAllowedMethod("OPTIONS");
                 configuration.addAllowedMethod("HEAD");
 
-                // ================================
-                // ✅ HEADERS PERMITIDOS
-                // ================================
+                // Allowed headers
                 configuration.addAllowedHeader("*");
 
-                // ================================
-                // ✅ HEADERS EXPUESTOS (para que el frontend pueda leerlos)
-                // ================================
+                // Exposed headers
                 configuration.addExposedHeader("Authorization");
                 configuration.addExposedHeader("Refresh-Token");
                 configuration.addExposedHeader("Content-Length");
@@ -178,13 +215,8 @@ public class SecurityConfig {
                 configuration.addExposedHeader("X-RateLimit-IP-Remaining"); // ✅ NUEVO: Para rate limiting
                 configuration.addExposedHeader("X-RateLimit-User-Remaining"); // ✅ NUEVO: Para rate limiting
 
-                // ================================
-                // ✅ CONFIGURACIONES ADICIONALES
-                // ================================
-                // Permitir credentials (cookies, headers de autorización)
+                // Additional configurations
                 configuration.setAllowCredentials(true);
-
-                // Tiempo de cache para preflight requests (1 hora)
                 configuration.setMaxAge(3600L);
 
                 UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -226,22 +258,12 @@ public class SecurityConfig {
                 return (web) -> web.httpFirewall(httpFirewall());
         }
 
-        // ================================
-        // ✅ BEANS DE CODIFICACIÓN DE CONTRASEÑAS
-        // ================================
-
-        /**
-         * Bean específico BCryptPasswordEncoder para inyección directa
-         */
         @Bean
         public BCryptPasswordEncoder bCryptPasswordEncoder() {
                 log.debug("🔐 Creando bean BCryptPasswordEncoder con strength 12");
                 return new BCryptPasswordEncoder(12); // Strength 12 para mayor seguridad
         }
 
-        /**
-         * Bean PasswordEncoder para compatibilidad con Spring Security
-         */
         @Bean
         public PasswordEncoder passwordEncoder() {
                 log.debug("🔐 Creando bean PasswordEncoder con strength 12");
