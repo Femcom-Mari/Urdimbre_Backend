@@ -1,4 +1,4 @@
-package com.urdimbre.urdimbre.dto.activitiesUrdimbre;
+package com.urdimbre.urdimbre.dto.ActivitiesUrdimbre;
 
 
 import com.urdimbre.urdimbre.model.Category;

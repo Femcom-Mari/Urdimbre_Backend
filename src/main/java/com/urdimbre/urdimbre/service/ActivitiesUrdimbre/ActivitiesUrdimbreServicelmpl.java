@@ -5,8 +5,8 @@ import java.time.LocalTime;
 import java.util.List;
 import org.springframework.stereotype.Service;
 
-import com.urdimbre.urdimbre.dto.activitiesUrdimbre.ActivitiesUrdimbreRequestDTO;
-import com.urdimbre.urdimbre.dto.activitiesUrdimbre.ActivitiesUrdimbreResponseDTO;
+import com.urdimbre.urdimbre.dto.ActivitiesUrdimbre.ActivitiesUrdimbreRequestDTO;
+import com.urdimbre.urdimbre.dto.ActivitiesUrdimbre.ActivitiesUrdimbreResponseDTO;
 import com.urdimbre.urdimbre.model.ActivitiesUrdimbre;
 import com.urdimbre.urdimbre.model.Category;
 import com.urdimbre.urdimbre.repository.ActivitiesUrdimbreRepository;
