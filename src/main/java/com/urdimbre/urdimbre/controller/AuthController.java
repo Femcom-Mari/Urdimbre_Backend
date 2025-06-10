@@ -18,9 +18,12 @@ import com.urdimbre.urdimbre.dto.auth.RefreshTokenRequestDTO;
 import com.urdimbre.urdimbre.dto.user.UserRegisterDTO;
 import com.urdimbre.urdimbre.dto.user.UserResponseDTO;
 import com.urdimbre.urdimbre.exception.BadRequestException;
+import com.urdimbre.urdimbre.exception.RateLimitExceededException;
+import com.urdimbre.urdimbre.security.service.RateLimitingService;
 import com.urdimbre.urdimbre.service.auth.AuthService;
 import com.urdimbre.urdimbre.service.invite.InviteCodeService;
 import com.urdimbre.urdimbre.service.token.BlacklistedTokenService;
+import com.urdimbre.urdimbre.util.HtmlSanitizer;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -37,17 +40,26 @@ public class AuthController {
     private final AuthService authService;
     private final InviteCodeService inviteCodeService;
     private final BlacklistedTokenService blacklistedTokenService;
+    private final RateLimitingService rateLimitingService; // ✅ NUEVO: Rate limiting
 
     /**
-     * 📝 Registro de usuario CON CÓDIGO DE INVITACIÓN DINÁMICO
+     * 📝 Registro de usuario CON CÓDIGO DE INVITACIÓN DINÁMICO + RATE LIMITING
      */
     @PostMapping("/register")
-    public ResponseEntity<UserResponseDTO> register(@Valid @RequestBody UserRegisterDTO request) {
+    public ResponseEntity<UserResponseDTO> register(
+            @Valid @RequestBody UserRegisterDTO request,
+            HttpServletRequest httpRequest) { // ✅ NUEVO: Para obtener IP
+
         logger.info("🔐 Intento de registro para usuario: {}", request.getUsername());
 
         try {
+            // ✅ NUEVO: VERIFICAR RATE LIMIT POR IP PRIMERO
+            RateLimitingService.RateLimitResult rateLimitResult = rateLimitingService.checkRegisterByIp(httpRequest);
+            if (!rateLimitResult.isAllowed()) {
+                throw RateLimitExceededException.forRegisterByIp(rateLimitResult.getRetryAfterSeconds());
+            }
+
             // 🎟️ VALIDAR CÓDIGO DE INVITACIÓN ANTES DEL REGISTRO
-            // ✅ CAMBIO: Solo validar, no usar aquí (AuthService lo usará después)
             if (!inviteCodeService.validateInviteCode(request.getInviteCode())) {
                 throw new BadRequestException("Código de invitación inválido, expirado o agotado");
             }
@@ -58,12 +70,21 @@ public class AuthController {
             // 📝 PROCEDER CON EL REGISTRO (AuthService validará y usará el código)
             UserResponseDTO response = authService.register(request);
 
-            logger.info("✅ Usuario registrado exitosamente: {}", request.getUsername());
-            return ResponseEntity.ok(response);
+            logger.info("✅ Usuario registrado exitosamente: {} (Rate limit remaining: {})",
+                    request.getUsername(), rateLimitResult.getRemainingTokens());
 
-        } catch (BadRequestException e) {
-            logger.warn("❌ Error en registro para {}: {}", request.getUsername(), e.getMessage());
+            return ResponseEntity.ok()
+                    .header("X-RateLimit-Remaining", String.valueOf(rateLimitResult.getRemainingTokens()))
+                    .body(response);
+
+        } catch (RateLimitExceededException e) {
+            logger.warn("🚫 Rate limit exceeded en registro para IP: {}",
+                    rateLimitingService.getClientIp(httpRequest));
             throw e;
+        } catch (BadRequestException e) {
+            logger.warn("❌ Error en registro para {}: {}", request.getUsername(), e.getMessage(), e);
+            throw new BadRequestException(
+                    "Error en registro para usuario " + request.getUsername() + ": " + e.getMessage(), e);
         } catch (Exception e) {
             logger.error("❌ Error inesperado en registro para {}: {}", request.getUsername(), e.getMessage());
             throw new BadRequestException("Error interno del servidor");
@@ -71,31 +92,56 @@ public class AuthController {
     }
 
     /**
-     * 🔑 Login de usuario
+     * 🔑 Login de usuario CON RATE LIMITING DUAL (IP + Usuario)
      */
     @PostMapping("/login")
-    public ResponseEntity<AuthResponseDTO> login(@Valid @RequestBody AuthRequestDTO request) {
+    public ResponseEntity<AuthResponseDTO> login(
+            @Valid @RequestBody AuthRequestDTO request,
+            HttpServletRequest httpRequest) { // ✅ NUEVO: Para obtener IP
+
         logger.info("🔑 Intento de login para: {}", request.getUsername());
 
         try {
-            // 🔐 VALIDACIONES DE SEGURIDAD
+            // 🔐 VALIDACIONES DE SEGURIDAD PREVIAS
             validateLoginData(request);
+
+            // ✅ NUEVO: VERIFICAR RATE LIMIT POR IP
+            RateLimitingService.RateLimitResult ipRateLimit = rateLimitingService.checkLoginByIp(httpRequest);
+            if (!ipRateLimit.isAllowed()) {
+                throw RateLimitExceededException.forLoginByIp(ipRateLimit.getRetryAfterSeconds());
+            }
+
+            // ✅ NUEVO: VERIFICAR RATE LIMIT POR USUARIO
+            RateLimitingService.RateLimitResult userRateLimit = rateLimitingService
+                    .checkLoginByUser(request.getUsername());
+            if (!userRateLimit.isAllowed()) {
+                throw RateLimitExceededException.forLoginByUser(request.getUsername(),
+                        userRateLimit.getRetryAfterSeconds());
+            }
 
             // 🔑 PROCEDER CON EL LOGIN
             AuthResponseDTO response = authService.login(request);
 
-            logger.info("✅ Login exitoso para usuario: {}", request.getUsername());
-            return ResponseEntity.ok(response);
+            logger.info("✅ Login exitoso para usuario: {} (IP remaining: {}, User remaining: {})",
+                    request.getUsername(), ipRateLimit.getRemainingTokens(), userRateLimit.getRemainingTokens());
 
+            return ResponseEntity.ok()
+                    .header("X-RateLimit-IP-Remaining", String.valueOf(ipRateLimit.getRemainingTokens()))
+                    .header("X-RateLimit-User-Remaining", String.valueOf(userRateLimit.getRemainingTokens()))
+                    .body(response);
+
+        } catch (RateLimitExceededException e) {
+            logger.warn("🚫 Rate limit exceeded en login para usuario: {} desde IP: {}",
+                    request.getUsername(), rateLimitingService.getClientIp(httpRequest));
+            throw e;
         } catch (BadCredentialsException e) {
             logger.warn("❌ Credenciales inválidas para: {}. Detalle: {}", request.getUsername(), e.getMessage(), e);
             throw new BadCredentialsException(
-                    "Credenciales inválidas para usuario: " + request.getUsername() + ". Detalle: " + e.getMessage(),
+                    "Error de autenticación para usuario: " + request.getUsername() + ". Detalle: " + e.getMessage(),
                     e);
         } catch (Exception e) {
             logger.error("❌ Error inesperado en login para {}: {}", request.getUsername(), e.getMessage(), e);
-            throw new BadCredentialsException("Error interno del servidor para usuario: " + request.getUsername()
-                    + ". Detalle: " + e.getMessage(), e);
+            throw new BadCredentialsException("Error interno del servidor para usuario: " + request.getUsername(), e);
         }
     }
 
@@ -125,8 +171,8 @@ public class AuthController {
             return ResponseEntity.ok(response);
 
         } catch (BadCredentialsException e) {
-            logger.warn("❌ Refresh token inválido: {}", e.getMessage());
-            throw new BadCredentialsException("Refresh token inválido: " + e.getMessage());
+            logger.warn("❌ Refresh token inválido: {}", e.getMessage(), e);
+            throw new BadCredentialsException("Error al renovar token: " + e.getMessage(), e);
         } catch (Exception e) {
             logger.error("❌ Error inesperado en renovación de token: {}", e.getMessage());
             throw new BadCredentialsException("Error interno del servidor durante la renovación de token");
@@ -156,10 +202,7 @@ public class AuthController {
 
         } catch (Exception e) {
             logger.error("❌ Error en logout: {}", e.getMessage());
-            return ResponseEntity.status(org.springframework.http.HttpStatus.OK).body("Sesión cerrada"); // Siempre
-                                                                                                         // confirmar
-                                                                                                         // logout por
-                                                                                                         // seguridad
+            return ResponseEntity.status(org.springframework.http.HttpStatus.OK).body("Sesión cerrada");
         }
     }
 
@@ -230,6 +273,16 @@ public class AuthController {
         }
     }
 
+    /**
+     * ✅ NUEVO: Endpoint para obtener estadísticas de rate limiting (solo para
+     * testing/debug)
+     */
+    @GetMapping("/rate-limit-stats")
+    public ResponseEntity<RateLimitingService.RateLimitStats> getRateLimitStats() {
+        RateLimitingService.RateLimitStats stats = rateLimitingService.getStatistics();
+        return ResponseEntity.ok(stats);
+    }
+
     // ================================
     // MÉTODOS PRIVADOS
     // ================================
@@ -283,6 +336,14 @@ public class AuthController {
         if (username.length() > 50) {
             throw new BadRequestException("El username no puede tener más de 50 caracteres");
         }
+
+        // ✅ NUEVO: Sanitizar y validar que no contenga HTML
+        String sanitized = HtmlSanitizer.sanitizeUserInput(username);
+        if (!sanitized.equals(username)) {
+            logger.warn("🚨 Intento de inyección HTML en username: {}", username);
+            throw new BadRequestException("Username contiene caracteres no permitidos");
+        }
+
         if (!username.matches("^[a-zA-Z0-9_.-]+$")) {
             throw new BadRequestException(
                     "El username solo puede contener letras, números, puntos, guiones y guiones bajos");
@@ -295,6 +356,12 @@ public class AuthController {
         }
         if (email.length() > 100) {
             throw new BadRequestException("Email demasiado largo");
+        }
+
+        // ✅ NUEVO: Verificar que no contenga HTML malicioso
+        if (!HtmlSanitizer.isSafeContent(email)) {
+            logger.warn("🚨 Intento de inyección en email: {}", email);
+            throw new BadRequestException("Email contiene contenido no permitido");
         }
     }
 
@@ -317,6 +384,13 @@ public class AuthController {
         }
         if (fullName.length() > 100) {
             throw new BadRequestException("El nombre completo no puede tener más de 100 caracteres");
+        }
+
+        // ✅ NUEVO: Sanitizar nombre completo (puede contener espacios y acentos)
+        String sanitized = HtmlSanitizer.sanitizeUserInput(fullName);
+        if (!sanitized.equals(fullName)) {
+            logger.warn("🚨 Intento de inyección HTML en fullName: {}", fullName);
+            throw new BadRequestException("Nombre completo contiene caracteres no permitidos");
         }
     }
 

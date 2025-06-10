@@ -57,6 +57,26 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
     }
 
+    /**
+     * 🚫 ✅ NUEVO: Manejar excepciones de Rate Limiting
+     */
+    @ExceptionHandler(RateLimitExceededException.class)
+    public ResponseEntity<Map<String, Object>> handleRateLimitExceededException(RateLimitExceededException ex) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", ex.getMessage());
+        response.put("error", "RATE_LIMIT_EXCEEDED");
+        response.put("retryAfterSeconds", ex.getRetryAfterSeconds());
+        response.put("rateLimitType", ex.getRateLimitType());
+
+        log.warn("🚫 Rate limit exceeded - Type: {}, Retry after: {} seconds, Message: {}",
+                ex.getRateLimitType(), ex.getRetryAfterSeconds(), ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header("Retry-After", String.valueOf(ex.getRetryAfterSeconds()))
+                .header("X-RateLimit-Type", ex.getRateLimitType())
+                .body(response);
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<Map<String, Object>> handleRuntimeException(RuntimeException ex) {
         Map<String, Object> response = new HashMap<>();
