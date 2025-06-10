@@ -1,10 +1,10 @@
-package com.urdimbre.urdimbre.service.ActivitiesUrdimbre;
+package com.urdimbre.urdimbre.service.activitiesUrdimbre;
 
 import java.time.LocalDate;
 import java.util.List;
 
-import com.urdimbre.urdimbre.dto.ActivitiesUrdimbre.ActivitiesUrdimbreRequestDTO;
-import com.urdimbre.urdimbre.dto.ActivitiesUrdimbre.ActivitiesUrdimbreResponseDTO;
+import com.urdimbre.urdimbre.dto.activitiesUrdimbre.ActivitiesUrdimbreRequestDTO;
+import com.urdimbre.urdimbre.dto.activitiesUrdimbre.ActivitiesUrdimbreResponseDTO;
 
 public interface ActivitiesUrdimbreService {
     

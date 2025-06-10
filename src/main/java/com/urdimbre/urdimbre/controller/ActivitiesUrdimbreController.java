@@ -14,9 +14,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.urdimbre.urdimbre.dto.ActivitiesUrdimbre.ActivitiesUrdimbreRequestDTO;
-import com.urdimbre.urdimbre.dto.ActivitiesUrdimbre.ActivitiesUrdimbreResponseDTO;
-import com.urdimbre.urdimbre.service.ActivitiesUrdimbre.ActivitiesUrdimbreService;
+import com.urdimbre.urdimbre.dto.activitiesUrdimbre.ActivitiesUrdimbreRequestDTO;
+import com.urdimbre.urdimbre.dto.activitiesUrdimbre.ActivitiesUrdimbreResponseDTO;
+import com.urdimbre.urdimbre.service.activitiesUrdimbre.ActivitiesUrdimbreService;
+
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 

@@ -1,4 +1,4 @@
-package com.urdimbre.urdimbre.service.Attendance;
+package com.urdimbre.urdimbre.service.attendance;
 
 public class AttendanceService {
 
