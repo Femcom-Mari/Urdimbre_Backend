@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -240,7 +239,7 @@ public class RefreshTokenService {
             // ✅ EXTRAER AUTHORITIES COMO LISTA DE STRINGS
             List<String> authorities = userDetails.getAuthorities().stream()
                     .map(GrantedAuthority::getAuthority)
-                    .collect(Collectors.toList());
+                    .toList();
 
             String accessToken = JWT.create()
                     .withSubject(username)
