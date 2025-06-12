@@ -17,19 +17,12 @@ public class AuditConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(AuditConfig.class);
 
-    /**
-     * 👤 Proveedor de auditores para campos createdBy/lastModifiedBy
-     * (BCryptPasswordEncoder se define en SecurityConfig, no aquí)
-     */
     @Bean
     public AuditorAware<String> auditorProvider() {
         logger.info("👤 Configurando AuditorAware para auditoría automática");
         return new SpringSecurityAuditorAware();
     }
 
-    /**
-     * 🎯 Implementación personalizada del AuditorAware
-     */
     public static class SpringSecurityAuditorAware implements AuditorAware<String> {
 
         private static final Logger logger = LoggerFactory.getLogger(SpringSecurityAuditorAware.class);

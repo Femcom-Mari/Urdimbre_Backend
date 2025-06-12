@@ -19,24 +19,18 @@ public class CacheConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(CacheConfig.class);
 
-    /**
-     * 🗄️ Configurar cache manager para rate limiting
-     */
     @Bean
     public CacheManager cacheManager() {
         logger.info("🗄️ Configurando Cache Manager para Rate Limiting");
 
         CaffeineCacheManager cacheManager = new CaffeineCacheManager();
 
-        // ⚡ CONFIGURACIÓN OPTIMIZADA PARA RATE LIMITING
         cacheManager.setCaffeine(Caffeine.newBuilder()
-                .maximumSize(10_000) // Máximo 10,000 entradas
-                .expireAfterAccess(10, TimeUnit.MINUTES) // Expirar después de 10 minutos sin acceso
-                .expireAfterWrite(30, TimeUnit.MINUTES) // Expirar después de 30 minutos desde escritura
-                .recordStats() // Habilitar estadísticas
-        );
+                .maximumSize(10_000)
+                .expireAfterAccess(10, TimeUnit.MINUTES)
+                .expireAfterWrite(30, TimeUnit.MINUTES)
+                .recordStats());
 
-        // 📊 CACHES ESPECÍFICOS - CORREGIDO PARA SPRING BOOT 3.5
         cacheManager.setCacheNames(List.of("rateLimitBuckets", "inviteCodes", "userSessions"));
 
         logger.info("✅ Cache Manager configurado exitosamente para Rate Limiting");
