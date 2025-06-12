@@ -9,6 +9,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.SequenceGenerator;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -20,15 +21,21 @@ import lombok.NoArgsConstructor;
 public class Attendance {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    @SequenceGenerator(name = "attendance_id_sequence", sequenceName = "attendance_id_sequence", allocationSize = 1, initialValue = 1)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "attendance_id_sequence")
+    private Long id;
 
     @ManyToOne
     @JoinColumn(name = "activities_id", nullable = false)
     private ActivitiesUrdimbre activitiesUrdimbre;
 
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private AttendanceStatus status = AttendanceStatus.PENDING;
+    private AttendanceStatus status = AttendanceStatus.CONFIRMED;
 
+    @ManyToOne
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+    
 }

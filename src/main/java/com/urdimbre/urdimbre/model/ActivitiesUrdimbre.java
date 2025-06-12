@@ -31,7 +31,7 @@ public class ActivitiesUrdimbre {
     @Id
     @SequenceGenerator(name = "activitiesUrdimbre_id_sequence", sequenceName = "activitiesUrdimbre_id_sequence", allocationSize = 1, initialValue = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "activitiesUrdimbre_id_sequence")
-    private Integer id;
+    private Long id;
 
     @Column
     @NotBlank
@@ -68,6 +68,7 @@ public class ActivitiesUrdimbre {
     @Enumerated(EnumType.STRING)
     @NotNull
     private Category category;
+
 
 
     //ralation whit user to catch the name of the coach

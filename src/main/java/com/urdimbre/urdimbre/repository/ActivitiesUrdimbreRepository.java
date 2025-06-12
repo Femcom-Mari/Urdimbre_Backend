@@ -9,9 +9,10 @@ import com.urdimbre.urdimbre.model.ActivitiesUrdimbre;
 import com.urdimbre.urdimbre.model.Category;
 
 @Repository
-public interface ActivitiesUrdimbreRepository extends JpaRepository<ActivitiesUrdimbre, Integer> {
+public interface ActivitiesUrdimbreRepository extends JpaRepository<ActivitiesUrdimbre, Long> {
 
 
     List<ActivitiesUrdimbre> findAllByCategory(Category category);
     List<ActivitiesUrdimbre> findAllByDate(LocalDate date);
+    
 }

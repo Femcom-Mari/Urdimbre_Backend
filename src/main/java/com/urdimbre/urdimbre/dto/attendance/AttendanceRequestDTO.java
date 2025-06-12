@@ -11,6 +11,12 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class AttendanceRequestDTO {
 
-    private Integer activitiesUrdimbreId;
-    private AttendanceStatus status;
+
+private AttendanceStatus status;
+
+private Long activityId;
+private Long userId;
+
+
+
 }
