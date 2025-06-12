@@ -6,5 +6,6 @@ import com.urdimbre.urdimbre.model.Attendance;
 
 @Repository
 public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
-    Boolean existsByUserIdAndActivityId(Long userId, Long activityId);
+Boolean existsByUser_IdAndActivityId_Id(Long userId, Long activityId);
+
 }

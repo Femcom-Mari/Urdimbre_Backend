@@ -38,14 +38,14 @@ public class AttendanceServiceimpl implements AttendanceService {
     ActivitiesUrdimbre activity = activitiesUrdimbreRepository.findById(activityId)
         .orElseThrow(() -> new ActivityNotFoundException("Actividad no encontrada con id: " + activityId));
 
-        boolean alreadyExists = attendanceRepository.existsByUserIdAndActivityId(userId, activityId);
+        boolean alreadyExists = attendanceRepository.existsByUser_IdAndActivityId_Id(userId, activityId);
     if (alreadyExists) {
     throw new AttendanceAlreadyExistsException("La asistencia ya fue registrada para esta actividad.");
 }
 
     Attendance attendance = new Attendance();
     attendance.setUser(user);
-    attendance.setActivitiesUrdimbre(activity);
+    attendance.setActivityId(activity);
     attendance.setStatus(AttendanceStatus.CONFIRMED); 
 
     Attendance saved = attendanceRepository.save(attendance);

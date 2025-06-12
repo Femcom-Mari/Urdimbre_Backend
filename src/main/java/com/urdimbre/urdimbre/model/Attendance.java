@@ -27,7 +27,7 @@ public class Attendance {
 
     @ManyToOne
     @JoinColumn(name = "activities_id", nullable = false)
-    private ActivitiesUrdimbre activitiesUrdimbre;
+    private ActivitiesUrdimbre activityId;
 
 
     @Enumerated(EnumType.STRING)
