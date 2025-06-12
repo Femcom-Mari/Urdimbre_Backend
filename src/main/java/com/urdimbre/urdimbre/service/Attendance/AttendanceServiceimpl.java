@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 
 import com.urdimbre.urdimbre.dto.attendance.AttendanceResponseDTO;
 import com.urdimbre.urdimbre.exception.ActivityNotFoundException;
+import com.urdimbre.urdimbre.exception.AttendanceAlreadyExistsException;
 import com.urdimbre.urdimbre.exception.UserNotFoundException;
 import com.urdimbre.urdimbre.model.ActivitiesUrdimbre;
 import com.urdimbre.urdimbre.model.Attendance;
@@ -30,16 +31,22 @@ public class AttendanceServiceimpl implements AttendanceService {
     @Override
     @Transactional
     public AttendanceResponseDTO registerAttendance(Long activityId, Long userId) {
+        
     User user = userRepository.findById(userId)
         .orElseThrow(() -> new UserNotFoundException("Usuario no encontrado con id: " + userId));
 
     ActivitiesUrdimbre activity = activitiesUrdimbreRepository.findById(activityId)
         .orElseThrow(() -> new ActivityNotFoundException("Actividad no encontrada con id: " + activityId));
 
+        boolean alreadyExists = attendanceRepository.existsByUserIdAndActivityId(userId, activityId);
+    if (alreadyExists) {
+    throw new AttendanceAlreadyExistsException("La asistencia ya fue registrada para esta actividad.");
+}
+
     Attendance attendance = new Attendance();
     attendance.setUser(user);
     attendance.setActivitiesUrdimbre(activity);
-    attendance.setStatus(AttendanceStatus.CONFIRMED); // opcional si ya lo pones por defecto
+    attendance.setStatus(AttendanceStatus.CONFIRMED); 
 
     Attendance saved = attendanceRepository.save(attendance);
 

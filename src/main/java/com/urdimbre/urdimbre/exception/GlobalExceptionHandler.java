@@ -101,12 +101,17 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(UserNotFoundException.class)
     public ResponseEntity<String> handleUserNotFoundException(Exception ex) {
-        return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(ex.getMessage(), HttpStatus.NOT_FOUND);
     }
 
     @ExceptionHandler(ActivityNotFoundException.class)
     public ResponseEntity<String> handleActivityNotFoundException(Exception ex) {
-        return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(ex.getMessage(), HttpStatus.NOT_FOUND);
+    }
+
+        @ExceptionHandler(AttendanceAlreadyExistsException.class)
+    public ResponseEntity<String> handleAttendanceAlreadyExistsException(AttendanceAlreadyExistsException ex) {
+        return new ResponseEntity<>(ex.getMessage(), HttpStatus.CONFLICT);
     }
     
 }
