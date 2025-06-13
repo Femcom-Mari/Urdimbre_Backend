@@ -7,9 +7,12 @@ import org.springframework.stereotype.Service;
 
 import com.urdimbre.urdimbre.dto.activitiesUrdimbre.ActivitiesUrdimbreRequestDTO;
 import com.urdimbre.urdimbre.dto.activitiesUrdimbre.ActivitiesUrdimbreResponseDTO;
+import com.urdimbre.urdimbre.dto.attendance.AttendanceResponseDTO;
 import com.urdimbre.urdimbre.model.ActivitiesUrdimbre;
+import com.urdimbre.urdimbre.model.Attendance;
 import com.urdimbre.urdimbre.model.Category;
 import com.urdimbre.urdimbre.repository.ActivitiesUrdimbreRepository;
+import com.urdimbre.urdimbre.repository.AttendanceRepository;
 
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
@@ -20,6 +23,7 @@ import lombok.AllArgsConstructor;
 public class ActivitiesUrdimbreServicelmpl implements ActivitiesUrdimbreService {
 
     private ActivitiesUrdimbreRepository activitiesUrdimbreRepository;
+    private AttendanceRepository attendanceRepository;
 
     @Override
     public ActivitiesUrdimbreResponseDTO createActivitiesUrdimbre(ActivitiesUrdimbreRequestDTO dto) {
@@ -79,4 +83,18 @@ public class ActivitiesUrdimbreServicelmpl implements ActivitiesUrdimbreService 
                 activities.getEndTime(),
                 activities.getMaxAttendees());
     }
+
+    private AttendanceResponseDTO convertToAttendanceDto(Attendance attendance) {
+        return new AttendanceResponseDTO(
+        );
+    }
+
+        @Override
+    public List<AttendanceResponseDTO> getUserAttendances(Long userId) {
+        return attendanceRepository.findByUserId(userId).stream()
+                .map(this::convertToAttendanceDto)
+                .toList();
+    }
+
+
 }

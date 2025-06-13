@@ -2,6 +2,9 @@ package com.urdimbre.urdimbre.model;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
+
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -9,6 +12,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Min;
@@ -69,12 +73,13 @@ public class ActivitiesUrdimbre {
     @NotNull
     private Category category;
 
+    @OneToMany(mappedBy = "activityId", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Attendance> attendances;
 
 
     //ralation whit user to catch the name of the coach
 
 
-    //relation to attendees
 
 
  }

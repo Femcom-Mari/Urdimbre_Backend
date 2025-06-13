@@ -5,7 +5,7 @@ import java.util.List;
 
 import com.urdimbre.urdimbre.dto.activitiesUrdimbre.ActivitiesUrdimbreRequestDTO;
 import com.urdimbre.urdimbre.dto.activitiesUrdimbre.ActivitiesUrdimbreResponseDTO;
-
+import com.urdimbre.urdimbre.dto.attendance.AttendanceResponseDTO;
 public interface ActivitiesUrdimbreService {
     
 
@@ -14,5 +14,8 @@ public interface ActivitiesUrdimbreService {
     List<ActivitiesUrdimbreResponseDTO> getActivitiesByCategory(String category);
 
     List<ActivitiesUrdimbreResponseDTO> getActivitiesByDate(LocalDate date);
+
+    List<AttendanceResponseDTO> getUserAttendances(Long userId);
+
 
 }
