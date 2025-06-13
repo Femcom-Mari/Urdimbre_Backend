@@ -30,23 +30,17 @@ public class SecurityScheduler {
     @Value("${spring.profiles.active:dev}")
     private String activeProfile;
 
-    /**
-     * 🧹 Limpieza automática de tokens expirados (cada hora)
-     */
     @Scheduled(fixedRateString = "${token.cleanup.interval:3600000}")
     public void cleanupExpiredTokens() {
         try {
             logger.debug("🧹 Iniciando limpieza automática de tokens expirados...");
 
-            // 🚫 LIMPIAR BLACKLIST
             BlacklistedTokenService.BlacklistStats beforeBlacklist = blacklistedTokenService.getStatistics();
             blacklistedTokenService.cleanupExpiredTokens();
             BlacklistedTokenService.BlacklistStats afterBlacklist = blacklistedTokenService.getStatistics();
 
-            // 🔄 LIMPIAR REFRESH TOKENS
             refreshTokenService.cleanupExpiredTokens();
 
-            // 🎟️ LIMPIAR CÓDIGOS DE INVITACIÓN EXPIRADOS
             int expiredCodes = inviteCodeService.manualCleanup();
 
             long blacklistCleaned = beforeBlacklist.getTotalBlacklistedTokens()
@@ -60,9 +54,6 @@ public class SecurityScheduler {
         }
     }
 
-    /**
-     * 🗄️ Limpieza de buckets de rate limiting (cada 30 minutos)
-     */
     @Scheduled(fixedRateString = "${rate-limit.cleanup.interval:1800000}")
     public void cleanupRateLimitingBuckets() {
         try {
@@ -83,10 +74,7 @@ public class SecurityScheduler {
         }
     }
 
-    /**
-     * 📊 Estadísticas de seguridad (cada 6 horas, solo en desarrollo)
-     */
-    @Scheduled(fixedRate = 21600000) // 6 horas
+    @Scheduled(fixedRate = 21600000)
     @ConditionalOnProperty(value = "spring.profiles.active", havingValue = "dev")
     public void logSecurityStatistics() {
         try {
@@ -96,21 +84,16 @@ public class SecurityScheduler {
 
             logger.info("📊 === ESTADÍSTICAS DE SEGURIDAD ===");
 
-            // 🚫 BLACKLIST STATS
             BlacklistedTokenService.BlacklistStats blacklistStats = blacklistedTokenService.getStatistics();
             logger.info("🚫 Blacklist - Total: {}",
                     blacklistStats.getTotalBlacklistedTokens());
 
-            // 🗄️ RATE LIMITING STATS
             RateLimitingService.RateLimitStats rateLimitStats = rateLimitingService.getStatistics();
             logger.info("🗄️ Rate Limiting - Buckets activos: {}, IP: {}, User: {}, Register: {}",
                     rateLimitStats.getActiveBuckets(),
                     rateLimitStats.getIpBuckets(),
                     rateLimitStats.getUserBuckets(),
                     rateLimitStats.getRegisterBuckets());
-
-            // 🎟️ INVITE CODES STATS
-            // Si tu InviteCodeService tiene método getStatistics(), agrégalo aquí
 
             logger.info("📊 === FIN ESTADÍSTICAS ===");
 
@@ -119,17 +102,13 @@ public class SecurityScheduler {
         }
     }
 
-    /**
-     * ❤️ Health check del sistema de seguridad (cada 5 minutos)
-     */
-    @Scheduled(fixedRate = 300000) // 5 minutos
+    @Scheduled(fixedRate = 300000)
     public void securityHealthCheck() {
         try {
-            // 🔍 VERIFICAR QUE LOS SERVICIOS RESPONDAN
+
             BlacklistedTokenService.BlacklistStats blacklistStats = blacklistedTokenService.getStatistics();
             RateLimitingService.RateLimitStats rateLimitStats = rateLimitingService.getStatistics();
 
-            // 🚨 ALERTAS SI HAY PROBLEMAS
             if (blacklistStats.getTotalBlacklistedTokens() > 10000) {
                 logger.warn("⚠️ Blacklist muy grande: {} tokens", blacklistStats.getTotalBlacklistedTokens());
             }
