@@ -26,7 +26,7 @@ import lombok.AllArgsConstructor;
 @RequestMapping("/api/activities")
 public class ActivitiesUrdimbreController {
 
-    private ActivitiesUrdimbreService activitiesUrdimbreService;
+    private final ActivitiesUrdimbreService activitiesUrdimbreService;
 
     @PostMapping("/create")
     public ResponseEntity<ActivitiesUrdimbreResponseDTO> createActivitiesUrdimbre(

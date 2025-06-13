@@ -5,7 +5,6 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.slf4j.Logger;
@@ -99,13 +98,13 @@ public class InviteCodeServiceImpl implements InviteCodeService {
 
         return savedCodes.stream()
                 .map(this::mapToResponseDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
     @Transactional(readOnly = true)
     public boolean validateInviteCode(String code) {
-        // ✅ LÓGICA DE VALIDACIÓN IMPLEMENTADA EN SERVICE (no en Repository)
+
         Optional<InviteCode> inviteCode = findValidByCode(code);
         return inviteCode.isPresent();
     }
@@ -114,7 +113,6 @@ public class InviteCodeServiceImpl implements InviteCodeService {
     public InviteCode useInviteCode(String code, String usedBy) {
         logger.info("🎫 Usando código de invitación: {} por usuario: {}", code, usedBy);
 
-        // ✅ USAR MÉTODO LOCAL DE VALIDACIÓN
         InviteCode inviteCode = findValidByCode(code)
                 .orElseThrow(() -> {
                     logger.warn("❌ Código de invitación inválido o expirado: {}", code);
@@ -148,14 +146,13 @@ public class InviteCodeServiceImpl implements InviteCodeService {
     @Override
     @Transactional(readOnly = true)
     public InviteCodeStatsDTO getStatistics() {
-        // ✅ ESTADÍSTICAS USANDO MÉTODOS AUTOMÁTICOS
+
         long totalCodes = inviteCodeRepository.count();
         long activeCodes = inviteCodeRepository.countByStatus(InviteStatus.ACTIVE);
         long expiredCodes = inviteCodeRepository.countByStatus(InviteStatus.EXPIRED);
         long exhaustedCodes = inviteCodeRepository.countByStatus(InviteStatus.EXHAUSTED);
         long revokedCodes = inviteCodeRepository.countByStatus(InviteStatus.REVOKED);
 
-        // Calcular total de usos
         long totalUses = inviteCodeRepository.findAll().stream()
                 .mapToLong(InviteCode::getCurrentUses)
                 .sum();
@@ -195,13 +192,11 @@ public class InviteCodeServiceImpl implements InviteCodeService {
 
         LocalDateTime now = LocalDateTime.now();
 
-        // ✅ MARCAR CÓDIGOS EXPIRADOS USANDO MÉTODOS AUTOMÁTICOS
         List<InviteCode> expiredCodes = findExpiredCodes();
         expiredCodes.forEach(code -> code.setStatus(InviteStatus.EXPIRED));
         inviteCodeRepository.saveAll(expiredCodes);
         int markedExpired = expiredCodes.size();
 
-        // ✅ ELIMINAR CÓDIGOS ANTIGUOS
         LocalDateTime cutoff = now.minusDays(30);
         List<InviteCode> oldExpiredCodes = inviteCodeRepository.findByStatusAndCreatedAtBefore(InviteStatus.EXPIRED,
                 cutoff);
@@ -221,7 +216,7 @@ public class InviteCodeServiceImpl implements InviteCodeService {
     public Page<InviteCodeResponseDTO> getCodesByStatus(String status, Pageable pageable) {
         try {
             InviteStatus inviteStatus = InviteStatus.valueOf(status.toUpperCase());
-            // ✅ USAR PAGINACIÓN DIRECTA DEL REPOSITORY
+
             return inviteCodeRepository.findByStatus(inviteStatus, pageable)
                     .map(this::mapToResponseDTO);
         } catch (IllegalArgumentException e) {
@@ -232,7 +227,7 @@ public class InviteCodeServiceImpl implements InviteCodeService {
     @Override
     @Transactional(readOnly = true)
     public Page<InviteCodeResponseDTO> getMostUsedCodes(Pageable pageable) {
-        // ✅ USAR MÉTODO AUTOMÁTICO CORREGIDO
+
         return inviteCodeRepository.findByCurrentUsesGreaterThanOrderByCurrentUsesDesc(0, pageable)
                 .map(this::mapToResponseDTO);
     }
@@ -240,7 +235,7 @@ public class InviteCodeServiceImpl implements InviteCodeService {
     @Override
     @Transactional(readOnly = true)
     public Page<InviteCodeResponseDTO> searchCodes(String searchTerm, Pageable pageable) {
-        // ✅ IMPLEMENTACIÓN BÁSICA - se puede expandir con criterios específicos
+
         return inviteCodeRepository.findAllByOrderByCreatedAtDesc(pageable)
                 .map(this::mapToResponseDTO);
     }
@@ -259,13 +254,6 @@ public class InviteCodeServiceImpl implements InviteCodeService {
         }
     }
 
-    // ================================
-    // MÉTODOS PRIVADOS
-    // ================================
-
-    /**
-     * ✅ LÓGICA DE VALIDACIÓN COMPLEJA IMPLEMENTADA EN SERVICE
-     */
     private Optional<InviteCode> findValidByCode(String code) {
         Optional<InviteCode> inviteCode = inviteCodeRepository.findByCodeAndStatus(code, InviteStatus.ACTIVE);
 
@@ -276,12 +264,10 @@ public class InviteCodeServiceImpl implements InviteCodeService {
         InviteCode invite = inviteCode.get();
         LocalDateTime now = LocalDateTime.now();
 
-        // Validar si no ha expirado
         if (invite.getExpiresAt().isBefore(now)) {
             return Optional.empty();
         }
 
-        // Validar si no ha superado el máximo de usos
         if (invite.getMaxUses() != null && invite.getCurrentUses() >= invite.getMaxUses()) {
             return Optional.empty();
         }
@@ -289,9 +275,6 @@ public class InviteCodeServiceImpl implements InviteCodeService {
         return Optional.of(invite);
     }
 
-    /**
-     * ✅ ENCONTRAR CÓDIGOS EXPIRADOS USANDO MÉTODOS AUTOMÁTICOS
-     */
     private List<InviteCode> findExpiredCodes() {
         return inviteCodeRepository.findByStatusAndExpiresAtBefore(InviteStatus.ACTIVE, LocalDateTime.now());
     }
@@ -353,7 +336,7 @@ public class InviteCodeServiceImpl implements InviteCodeService {
     }
 
     private void validateUserLimits(String user) {
-        // ✅ USAR MÉTODO AUTOMÁTICO CORREGIDO
+
         long activeCodes = inviteCodeRepository.countByCreatedByAndStatus(user, InviteStatus.ACTIVE);
 
         if (activeCodes >= MAX_ACTIVE_CODES_PER_USER) {
@@ -363,7 +346,7 @@ public class InviteCodeServiceImpl implements InviteCodeService {
     }
 
     private void validateBulkLimits(String user, int quantity) {
-        // ✅ USAR MÉTODO AUTOMÁTICO CORREGIDO
+
         long activeCodes = inviteCodeRepository.countByCreatedByAndStatus(user, InviteStatus.ACTIVE);
 
         if (activeCodes + quantity > MAX_ACTIVE_CODES_PER_USER) {

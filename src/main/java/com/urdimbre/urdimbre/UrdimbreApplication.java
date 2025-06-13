@@ -17,10 +17,9 @@ public class UrdimbreApplication {
 		logger.info("🚀 Iniciando aplicación Urdimbre...");
 
 		try {
-			// 🔐 CARGAR VARIABLES DE ENTORNO DESDE .env
+
 			loadEnvironmentVariables();
 
-			// 🚀 INICIAR APLICACIÓN SPRING BOOT
 			SpringApplication.run(UrdimbreApplication.class, args);
 
 			logger.info("✅ Aplicación Urdimbre iniciada correctamente");
@@ -31,32 +30,22 @@ public class UrdimbreApplication {
 		}
 	}
 
-	/**
-	 * 🔐 Cargar y validar variables de entorno
-	 */
 	private static void loadEnvironmentVariables() {
 		logger.info("🔧 Cargando variables de entorno...");
 
-		// ✅ CARGAR .env CON CONFIGURACIÓN SEGURA
 		Dotenv dotenv = Dotenv.configure()
-				.ignoreIfMissing() // No fallar si .env no existe (para contenedores)
+				.ignoreIfMissing()
 				.load();
 
-		// 🗃️ VALIDAR VARIABLES DE BASE DE DATOS
 		validateDatabaseConfig(dotenv);
 
-		// 🔐 VALIDAR VARIABLES DE SEGURIDAD
 		validateSecurityConfig(dotenv);
 
-		// 👑 VALIDAR VARIABLES DE ADMINISTRADOR
 		validateAdminConfig(dotenv);
 
 		logger.info("✅ Variables de entorno cargadas y validadas correctamente");
 	}
 
-	/**
-	 * 🗃️ Validar configuración de base de datos
-	 */
 	private static void validateDatabaseConfig(Dotenv dotenv) {
 		String dbUrl = getEnvVariable(dotenv, "DB_URL");
 		String dbUser = getEnvVariable(dotenv, "DB_USERNAME");
@@ -68,13 +57,11 @@ public class UrdimbreApplication {
 			throw new IllegalStateException("Configuración de base de datos incompleta");
 		}
 
-		// ✅ VALIDAR FORMATO DE URL
 		if (!dbUrl.startsWith("jdbc:")) {
 			logger.error("❌ ERROR: DB_URL debe comenzar con 'jdbc:'");
 			throw new IllegalStateException("Formato de DB_URL inválido");
 		}
 
-		// ✅ ESTABLECER PROPIEDADES DEL SISTEMA
 		System.setProperty("DB_URL", dbUrl);
 		System.setProperty("DB_USERNAME", dbUser);
 		System.setProperty("DB_PASSWORD", dbPass);
@@ -85,9 +72,6 @@ public class UrdimbreApplication {
 		}
 	}
 
-	/**
-	 * 🔐 Validar configuración de seguridad
-	 */
 	private static void validateSecurityConfig(Dotenv dotenv) {
 		String jwtSecret = getEnvVariable(dotenv, "JWT_SECRET_KEY");
 
@@ -97,7 +81,6 @@ public class UrdimbreApplication {
 			throw new IllegalStateException("JWT_SECRET_KEY no configurado");
 		}
 
-		// ✅ VALIDAR LONGITUD MÍNIMA
 		if (jwtSecret.length() < 64) {
 			logger.error("❌ ERROR: JWT_SECRET_KEY debe tener al menos 64 caracteres");
 			logger.error("Actual: {} caracteres", jwtSecret.length());
@@ -105,15 +88,12 @@ public class UrdimbreApplication {
 			throw new IllegalStateException("JWT_SECRET_KEY demasiado corto");
 		}
 
-		// ✅ VALIDAR QUE SEA HEXADECIMAL
 		if (!jwtSecret.matches("^[0-9a-fA-F]+$")) {
 			logger.warn("⚠️ JWT_SECRET_KEY no parece ser hexadecimal puro");
 		}
 
-		// ✅ ESTABLECER PROPIEDADES DEL SISTEMA
 		System.setProperty("JWT_SECRET_KEY", jwtSecret);
 
-		// 🔐 CONFIGURAR TIEMPOS DE EXPIRACIÓN
 		String accessExp = getEnvVariable(dotenv, "JWT_ACCESS_EXPIRATION", "900000");
 		String refreshExp = getEnvVariable(dotenv, "JWT_REFRESH_EXPIRATION", "86400000");
 
@@ -126,9 +106,6 @@ public class UrdimbreApplication {
 		logger.info("⏰ Refresh token expiration: {} ms", refreshExp);
 	}
 
-	/**
-	 * 👑 Validar configuración del administrador
-	 */
 	private static void validateAdminConfig(Dotenv dotenv) {
 		String adminUsername = getEnvVariable(dotenv, "ADMIN_USERNAME", "admin");
 		String adminEmail = getEnvVariable(dotenv, "ADMIN_EMAIL");
@@ -139,21 +116,18 @@ public class UrdimbreApplication {
 			logger.warn("Se usarán valores por defecto (NO RECOMENDADO PARA PRODUCCIÓN)");
 		}
 
-		// ✅ VALIDAR CONTRASEÑA SEGURA
 		if (adminPassword != null && !isPasswordSecure(adminPassword)) {
 			logger.error("❌ ERROR: ADMIN_PASSWORD no es suficientemente segura");
 			logger.error("Debe tener al menos 8 caracteres, mayúscula, minúscula, número y símbolo");
 			throw new IllegalStateException("ADMIN_PASSWORD no es segura");
 		}
 
-		// ✅ ESTABLECER PROPIEDADES DEL SISTEMA
 		System.setProperty("ADMIN_USERNAME", adminUsername);
 		if (adminEmail != null)
 			System.setProperty("ADMIN_EMAIL", adminEmail);
 		if (adminPassword != null)
 			System.setProperty("ADMIN_PASSWORD", adminPassword);
 
-		// 🎟️ CÓDIGO DE INVITACIÓN
 		String inviteCode = getEnvVariable(dotenv, "INVITE_CODE", "URDIMBRE2025");
 		System.setProperty("INVITE_CODE", inviteCode);
 
@@ -168,15 +142,12 @@ public class UrdimbreApplication {
 		}
 	}
 
-	/**
-	 * 🔍 Obtener variable de entorno con fallback
-	 */
 	private static String getEnvVariable(Dotenv dotenv, String key) {
 		return getEnvVariable(dotenv, key, null);
 	}
 
 	private static String getEnvVariable(Dotenv dotenv, String key, String defaultValue) {
-		// Prioridad: Variables del sistema > .env > valor por defecto
+
 		String value = System.getenv(key);
 		if (value == null && dotenv != null) {
 			value = dotenv.get(key);
@@ -184,9 +155,6 @@ public class UrdimbreApplication {
 		return value != null ? value : defaultValue;
 	}
 
-	/**
-	 * 🔐 Validar que la contraseña sea segura
-	 */
 	private static boolean isPasswordSecure(String password) {
 		if (password == null || password.length() < 8) {
 			return false;
@@ -200,18 +168,12 @@ public class UrdimbreApplication {
 		return hasLower && hasUpper && hasDigit && hasSymbol;
 	}
 
-	/**
-	 * 🎭 Enmascarar URL para logs
-	 */
 	private static String maskUrl(String url) {
 		if (url == null)
 			return "null";
 		return url.replaceAll("://([^:]+):([^@]+)@", "://*****:*****@");
 	}
 
-	/**
-	 * 📧 Enmascarar email para logs
-	 */
 	private static String maskEmail(String email) {
 		if (email == null)
 			return "null";

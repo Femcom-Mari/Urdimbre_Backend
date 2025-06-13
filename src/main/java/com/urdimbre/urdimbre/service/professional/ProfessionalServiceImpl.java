@@ -74,8 +74,6 @@ public class ProfessionalServiceImpl implements ProfessionalService {
         professionalRepository.deleteById(id);
     }
 
-    // --- Mapping methods ---
-
     private Professional mapToEntity(ProfessionalRequestDTO dto) {
         return Professional.builder()
                 .firstName(dto.getFirstName())
@@ -105,14 +103,13 @@ public class ProfessionalServiceImpl implements ProfessionalService {
     }
 
     private Professional.Pronoun mapStringToPronoun(String pronounString) {
-        // Intentar mapear por display value (Elle, Ella, El)
+
         for (Professional.Pronoun pronoun : Professional.Pronoun.values()) {
             if (pronoun.getDisplayValue().equalsIgnoreCase(pronounString)) {
                 return pronoun;
             }
         }
 
-        // Fallback: intentar mapear por enum name (ELLE, ELLA, EL)
         try {
             return Professional.Pronoun.valueOf(pronounString.toUpperCase());
         } catch (IllegalArgumentException e) {
@@ -127,7 +124,6 @@ public class ProfessionalServiceImpl implements ProfessionalService {
         dto.setFirstName(professional.getFirstName());
         dto.setLastName(professional.getLastName());
 
-        // Mapear usando display values
         dto.setPronouns(
                 professional.getPronouns().stream()
                         .map(Professional.Pronoun::getDisplayValue)

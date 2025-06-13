@@ -30,7 +30,6 @@ public class UserRequestDTO {
 
     private String profileImageUrl;
 
-    // ✅ MÚLTIPLES PRONOMBRES - Ahora es Set<String>
     private Set<String> pronouns;
 
     public boolean isLoginRequest() {

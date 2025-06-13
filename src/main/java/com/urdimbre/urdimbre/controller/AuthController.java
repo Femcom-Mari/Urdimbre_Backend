@@ -40,34 +40,28 @@ public class AuthController {
     private final AuthService authService;
     private final InviteCodeService inviteCodeService;
     private final BlacklistedTokenService blacklistedTokenService;
-    private final RateLimitingService rateLimitingService; // ✅ NUEVO: Rate limiting
+    private final RateLimitingService rateLimitingService;
 
-    /**
-     * 📝 Registro de usuario CON CÓDIGO DE INVITACIÓN DINÁMICO + RATE LIMITING
-     */
     @PostMapping("/register")
     public ResponseEntity<UserResponseDTO> register(
             @Valid @RequestBody UserRegisterDTO request,
-            HttpServletRequest httpRequest) { // ✅ NUEVO: Para obtener IP
+            HttpServletRequest httpRequest) {
 
         logger.info("🔐 Intento de registro para usuario: {}", request.getUsername());
 
         try {
-            // ✅ NUEVO: VERIFICAR RATE LIMIT POR IP PRIMERO
+
             RateLimitingService.RateLimitResult rateLimitResult = rateLimitingService.checkRegisterByIp(httpRequest);
             if (!rateLimitResult.isAllowed()) {
                 throw RateLimitExceededException.forRegisterByIp(rateLimitResult.getRetryAfterSeconds());
             }
 
-            // 🎟️ VALIDAR CÓDIGO DE INVITACIÓN ANTES DEL REGISTRO
             if (!inviteCodeService.validateInviteCode(request.getInviteCode())) {
                 throw new BadRequestException("Código de invitación inválido, expirado o agotado");
             }
 
-            // 🔐 VALIDACIONES ADICIONALES DE SEGURIDAD
             validateRegistrationData(request);
 
-            // 📝 PROCEDER CON EL REGISTRO (AuthService validará y usará el código)
             UserResponseDTO response = authService.register(request);
 
             logger.info("✅ Usuario registrado exitosamente: {} (Rate limit remaining: {})",
@@ -91,27 +85,22 @@ public class AuthController {
         }
     }
 
-    /**
-     * 🔑 Login de usuario CON RATE LIMITING DUAL (IP + Usuario)
-     */
     @PostMapping("/login")
     public ResponseEntity<AuthResponseDTO> login(
             @Valid @RequestBody AuthRequestDTO request,
-            HttpServletRequest httpRequest) { // ✅ NUEVO: Para obtener IP
+            HttpServletRequest httpRequest) {
 
         logger.info("🔑 Intento de login para: {}", request.getUsername());
 
         try {
-            // 🔐 VALIDACIONES DE SEGURIDAD PREVIAS
+
             validateLoginData(request);
 
-            // ✅ NUEVO: VERIFICAR RATE LIMIT POR IP
             RateLimitingService.RateLimitResult ipRateLimit = rateLimitingService.checkLoginByIp(httpRequest);
             if (!ipRateLimit.isAllowed()) {
                 throw RateLimitExceededException.forLoginByIp(ipRateLimit.getRetryAfterSeconds());
             }
 
-            // ✅ NUEVO: VERIFICAR RATE LIMIT POR USUARIO
             RateLimitingService.RateLimitResult userRateLimit = rateLimitingService
                     .checkLoginByUser(request.getUsername());
             if (!userRateLimit.isAllowed()) {
@@ -119,7 +108,6 @@ public class AuthController {
                         userRateLimit.getRetryAfterSeconds());
             }
 
-            // 🔑 PROCEDER CON EL LOGIN
             AuthResponseDTO response = authService.login(request);
 
             logger.info("✅ Login exitoso para usuario: {} (IP remaining: {}, User remaining: {})",
@@ -145,26 +133,21 @@ public class AuthController {
         }
     }
 
-    /**
-     * 🔄 Renovar token de acceso
-     */
     @PostMapping("/refresh")
     public ResponseEntity<AuthResponseDTO> refreshToken(@Valid @RequestBody RefreshTokenRequestDTO request) {
         logger.info("🔄 Intento de renovación de token");
 
         try {
-            // 🔐 VALIDAR REFRESH TOKEN
+
             if (request.getRefreshToken() == null || request.getRefreshToken().trim().isEmpty()) {
                 throw new BadCredentialsException("Refresh token es requerido");
             }
 
-            // 🚫 VERIFICAR QUE NO ESTÉ EN BLACKLIST
             if (blacklistedTokenService.isTokenBlacklisted(request.getRefreshToken())) {
                 logger.warn("❌ Intento de usar refresh token en blacklist");
                 throw new BadCredentialsException("Token inválido");
             }
 
-            // 🔄 PROCEDER CON LA RENOVACIÓN
             AuthResponseDTO response = authService.refreshToken(request.getRefreshToken());
 
             logger.info("✅ Token renovado exitosamente para usuario: {}", response.getUsername());
@@ -179,22 +162,16 @@ public class AuthController {
         }
     }
 
-    /**
-     * 🚪 Cerrar sesión CON BLACKLIST
-     */
     @PostMapping("/logout")
     public ResponseEntity<String> logout(HttpServletRequest request, HttpServletResponse response) {
         try {
             String username = SecurityContextHolder.getContext().getAuthentication().getName();
             logger.info("🚪 Intento de logout para usuario: {}", username);
 
-            // 🚫 AGREGAR TOKENS A BLACKLIST
             addTokensToBlacklist(request, username);
 
-            // 🚪 PROCEDER CON EL LOGOUT
             authService.logout(request, response);
 
-            // 🧹 LIMPIAR CONTEXTO DE SEGURIDAD
             SecurityContextHolder.clearContext();
 
             logger.info("✅ Logout exitoso para usuario: {}", username);
@@ -206,14 +183,6 @@ public class AuthController {
         }
     }
 
-    // ================================
-    // ✅ NUEVOS ENDPOINTS PÚBLICOS PARA CÓDIGOS DE INVITACIÓN
-    // ================================
-
-    /**
-     * ✅ Validar código de invitación (PÚBLICO - para frontend)
-     * Este endpoint NO requiere autenticación
-     */
     @GetMapping("/invite-codes/validate")
     public ResponseEntity<Boolean> validateInviteCodePublic(@RequestParam String code) {
         logger.debug("✅ Validando código de invitación público: {}", code);
@@ -232,10 +201,6 @@ public class AuthController {
         }
     }
 
-    /**
-     * ℹ️ Obtener información básica del código (sin datos sensibles)
-     * Útil para mostrar al usuario si el código es válido antes del registro
-     */
     @GetMapping("/invite-codes/info")
     public ResponseEntity<InviteCodePublicInfo> getInviteCodeInfo(@RequestParam String code) {
         logger.debug("ℹ️ Obteniendo info pública del código: {}", code);
@@ -248,7 +213,7 @@ public class AuthController {
         }
 
         try {
-            // Validar que el código existe y está activo
+
             boolean isValid = inviteCodeService.validateInviteCode(code);
 
             if (!isValid) {
@@ -273,26 +238,15 @@ public class AuthController {
         }
     }
 
-    /**
-     * ✅ NUEVO: Endpoint para obtener estadísticas de rate limiting (solo para
-     * testing/debug)
-     */
     @GetMapping("/rate-limit-stats")
     public ResponseEntity<RateLimitingService.RateLimitStats> getRateLimitStats() {
         RateLimitingService.RateLimitStats stats = rateLimitingService.getStatistics();
         return ResponseEntity.ok(stats);
     }
 
-    // ================================
-    // MÉTODOS PRIVADOS
-    // ================================
-
-    /**
-     * 🚫 Agregar tokens a blacklist durante logout
-     */
     private void addTokensToBlacklist(HttpServletRequest request, String username) {
         try {
-            // 🎫 OBTENER ACCESS TOKEN DEL HEADER
+
             String authHeader = request.getHeader("Authorization");
             if (authHeader != null && authHeader.startsWith("Bearer ")) {
                 String accessToken = authHeader.substring(7);
@@ -302,7 +256,6 @@ public class AuthController {
                         "Logout manual");
             }
 
-            // 🔄 OBTENER REFRESH TOKEN
             String refreshToken = request.getHeader("Refresh-Token");
             if (refreshToken != null && !refreshToken.trim().isEmpty()) {
                 blacklistedTokenService.blacklistToken(
@@ -318,9 +271,6 @@ public class AuthController {
         }
     }
 
-    /**
-     * 🔍 Validar datos de registro
-     */
     private void validateRegistrationData(UserRegisterDTO request) {
         validateUsername(request.getUsername());
         validateEmail(request.getEmail());
@@ -337,7 +287,6 @@ public class AuthController {
             throw new BadRequestException("El username no puede tener más de 50 caracteres");
         }
 
-        // ✅ NUEVO: Sanitizar y validar que no contenga HTML
         String sanitized = HtmlSanitizer.sanitizeUserInput(username);
         if (!sanitized.equals(username)) {
             logger.warn("🚨 Intento de inyección HTML en username: {}", username);
@@ -358,7 +307,6 @@ public class AuthController {
             throw new BadRequestException("Email demasiado largo");
         }
 
-        // ✅ NUEVO: Verificar que no contenga HTML malicioso
         if (!HtmlSanitizer.isSafeContent(email)) {
             logger.warn("🚨 Intento de inyección en email: {}", email);
             throw new BadRequestException("Email contiene contenido no permitido");
@@ -386,7 +334,6 @@ public class AuthController {
             throw new BadRequestException("El nombre completo no puede tener más de 100 caracteres");
         }
 
-        // ✅ NUEVO: Sanitizar nombre completo (puede contener espacios y acentos)
         String sanitized = HtmlSanitizer.sanitizeUserInput(fullName);
         if (!sanitized.equals(fullName)) {
             logger.warn("🚨 Intento de inyección HTML en fullName: {}", fullName);
@@ -400,11 +347,8 @@ public class AuthController {
         }
     }
 
-    /**
-     * 🔍 Validar datos de login
-     */
     private void validateLoginData(AuthRequestDTO request) {
-        // ✅ VALIDAR USERNAME/EMAIL
+
         if (request.getUsername() == null || request.getUsername().trim().isEmpty()) {
             throw new BadCredentialsException("Username o email es requerido");
         }
@@ -413,7 +357,6 @@ public class AuthController {
             throw new BadCredentialsException("Username/email demasiado largo");
         }
 
-        // ✅ VALIDAR CONTRASEÑA
         if (request.getPassword() == null || request.getPassword().trim().isEmpty()) {
             throw new BadCredentialsException("Contraseña es requerida");
         }
@@ -423,16 +366,10 @@ public class AuthController {
         }
     }
 
-    /**
-     * 📧 Validar formato de email
-     */
     private boolean isValidEmail(String email) {
         return email != null && email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
     }
 
-    /**
-     * 🔐 Validar que la contraseña sea segura
-     */
     private boolean isPasswordSecure(String password) {
         if (password == null || password.length() < 8) {
             return false;
@@ -446,17 +383,11 @@ public class AuthController {
         return hasLower && hasUpper && hasDigit && hasSymbol;
     }
 
-    // ================================
-    // DTO INTERNO PARA INFORMACIÓN PÚBLICA
-    // ================================
-
     @lombok.Builder
     @lombok.Data
     public static class InviteCodePublicInfo {
         private boolean valid;
         private String message;
-        // Podrías agregar más campos como:
-        // private Integer remainingUses;
-        // private Long hoursUntilExpiration;
+
     }
 }

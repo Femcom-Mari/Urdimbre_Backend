@@ -35,9 +35,6 @@ public class InviteCodeController {
 
     private final InviteCodeService inviteCodeService;
 
-    /**
-     * 🎟️ Generar código de invitación individual
-     */
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<InviteCodeResponseDTO> generateCode(@Valid @RequestBody InviteCodeRequestDTO request) {
@@ -51,9 +48,6 @@ public class InviteCodeController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    /**
-     * 🎯 Generar múltiples códigos (bulk)
-     */
     @PostMapping("/bulk")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<InviteCodeResponseDTO>> generateBulkCodes(
@@ -67,9 +61,6 @@ public class InviteCodeController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    /**
-     * 📋 Obtener todos los códigos
-     */
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Page<InviteCodeResponseDTO>> getAllCodes(@PageableDefault(size = 20) Pageable pageable) {
@@ -80,9 +71,6 @@ public class InviteCodeController {
         return ResponseEntity.ok(codes);
     }
 
-    /**
-     * 📋 Obtener códigos del usuario actual
-     */
     @GetMapping("/my-codes")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Page<InviteCodeResponseDTO>> getMyCodes(@PageableDefault(size = 20) Pageable pageable) {
@@ -93,9 +81,6 @@ public class InviteCodeController {
         return ResponseEntity.ok(codes);
     }
 
-    /**
-     * ✅ Validar código de invitación
-     */
     @GetMapping("/validate")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Boolean> validateCode(@RequestParam String code) {
@@ -106,9 +91,6 @@ public class InviteCodeController {
         return ResponseEntity.ok(isValid);
     }
 
-    /**
-     * 📊 Obtener estadísticas
-     */
     @GetMapping("/stats")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<InviteCodeStatsDTO> getStatistics() {
@@ -119,9 +101,6 @@ public class InviteCodeController {
         return ResponseEntity.ok(stats);
     }
 
-    /**
-     * 🚫 Revocar código
-     */
     @PutMapping("/{id}/revoke")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<InviteCodeResponseDTO> revokeCode(@PathVariable Long id) {
@@ -134,9 +113,6 @@ public class InviteCodeController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * 🧹 Limpiar códigos expirados manualmente
-     */
     @PostMapping("/cleanup")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> cleanupExpiredCodes() {
@@ -147,9 +123,6 @@ public class InviteCodeController {
         return ResponseEntity.ok("Limpieza completada: " + cleaned + " códigos procesados");
     }
 
-    /**
-     * 📈 Obtener códigos más usados
-     */
     @GetMapping("/most-used")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Page<InviteCodeResponseDTO>> getMostUsedCodes(@PageableDefault(size = 10) Pageable pageable) {
@@ -160,9 +133,6 @@ public class InviteCodeController {
         return ResponseEntity.ok(codes);
     }
 
-    /**
-     * 🔍 Buscar códigos por estado
-     */
     @GetMapping("/by-status")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Page<InviteCodeResponseDTO>> getCodesByStatus(
@@ -176,9 +146,6 @@ public class InviteCodeController {
         return ResponseEntity.ok(codes);
     }
 
-    /**
-     * 🔍 Buscar códigos por criterio
-     */
     @GetMapping("/search")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Page<InviteCodeResponseDTO>> searchCodes(
