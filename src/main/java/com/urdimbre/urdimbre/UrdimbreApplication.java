@@ -8,7 +8,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import io.github.cdimascio.dotenv.Dotenv;
 
 @SpringBootApplication
-
 public class UrdimbreApplication {
 
 	private static final Logger logger = LoggerFactory.getLogger(UrdimbreApplication.class);
@@ -17,7 +16,7 @@ public class UrdimbreApplication {
 		logger.info("🚀 Iniciando aplicación Urdimbre...");
 
 		try {
-
+			// ✅ CARGAR .env ANTES QUE NADA
 			loadEnvironmentVariables();
 
 			SpringApplication.run(UrdimbreApplication.class, args);
@@ -37,13 +36,57 @@ public class UrdimbreApplication {
 				.ignoreIfMissing()
 				.load();
 
+		// ✅ ESTABLECER PERFIL ACTIVO ANTES QUE NADA
+		setupSpringProfile(dotenv);
+
+		// ✅ CARGAR RATE LIMITING PERMISIVO
+		setupRateLimiting(dotenv);
+
 		validateDatabaseConfig(dotenv);
-
 		validateSecurityConfig(dotenv);
-
 		validateAdminConfig(dotenv);
 
 		logger.info("✅ Variables de entorno cargadas y validadas correctamente");
+	}
+
+	// ✅ NUEVO: Configurar perfil de Spring ANTES de iniciar
+	private static void setupSpringProfile(Dotenv dotenv) {
+		String profile = getEnvVariable(dotenv, "SPRING_PROFILES_ACTIVE", "dev");
+		System.setProperty("spring.profiles.active", profile);
+		logger.info("🔧 Spring Profile establecido: {}", profile);
+	}
+
+	// Constante para duración por defecto de rate limiting
+	private static final String DEFAULT_RATE_LIMIT_DURATION = "PT30S";
+
+	// ✅ NUEVO: Configurar rate limiting permisivo para desarrollo
+	private static void setupRateLimiting(Dotenv dotenv) {
+		// Rate limiting para registro
+		String registerCapacity = getEnvVariable(dotenv, "RATE_LIMIT_REGISTER_IP_CAPACITY", "100");
+		String registerDuration = getEnvVariable(dotenv, "RATE_LIMIT_REGISTER_IP_DURATION",
+				DEFAULT_RATE_LIMIT_DURATION);
+
+		// Rate limiting para login por IP
+		String loginIpCapacity = getEnvVariable(dotenv, "RATE_LIMIT_LOGIN_IP_CAPACITY", "100");
+		String loginIpDuration = getEnvVariable(dotenv, "RATE_LIMIT_LOGIN_IP_DURATION", DEFAULT_RATE_LIMIT_DURATION);
+
+		// Rate limiting para login por usuario
+		String loginUserCapacity = getEnvVariable(dotenv, "RATE_LIMIT_LOGIN_USER_CAPACITY", "50");
+		String loginUserDuration = getEnvVariable(dotenv, "RATE_LIMIT_LOGIN_USER_DURATION",
+				DEFAULT_RATE_LIMIT_DURATION);
+
+		// ✅ ESTABLECER SYSTEM PROPERTIES PARA QUE SPRING LOS USE
+		System.setProperty("rate-limit.register.ip.capacity", registerCapacity);
+		System.setProperty("rate-limit.register.ip.refill-duration", registerDuration);
+		System.setProperty("rate-limit.login.ip.capacity", loginIpCapacity);
+		System.setProperty("rate-limit.login.ip.refill-duration", loginIpDuration);
+		System.setProperty("rate-limit.login.user.capacity", loginUserCapacity);
+		System.setProperty("rate-limit.login.user.refill-duration", loginUserDuration);
+
+		logger.info("🎛️ Rate Limiting configurado:");
+		logger.info("   📝 Registro: {} intentos cada {}", registerCapacity, registerDuration);
+		logger.info("   🔑 Login IP: {} intentos cada {}", loginIpCapacity, loginIpDuration);
+		logger.info("   👤 Login User: {} intentos cada {}", loginUserCapacity, loginUserDuration);
 	}
 
 	private static void validateDatabaseConfig(Dotenv dotenv) {
@@ -51,7 +94,7 @@ public class UrdimbreApplication {
 		String dbUser = getEnvVariable(dotenv, "DB_USERNAME");
 		String dbPass = getEnvVariable(dotenv, "DB_PASSWORD");
 
-		if (dbUrl == null || dbUser == null || dbPass == null) {
+		if (dbUrl == null || dbUser == null) {
 			logger.error("❌ ERROR: Faltan variables de entorno para la base de datos");
 			logger.error("Variables requeridas: DB_URL, DB_USERNAME, DB_PASSWORD");
 			throw new IllegalStateException("Configuración de base de datos incompleta");
@@ -62,9 +105,11 @@ public class UrdimbreApplication {
 			throw new IllegalStateException("Formato de DB_URL inválido");
 		}
 
-		System.setProperty("DB_URL", dbUrl);
-		System.setProperty("DB_USERNAME", dbUser);
-		System.setProperty("DB_PASSWORD", dbPass);
+		System.setProperty("spring.datasource.url", dbUrl);
+		System.setProperty("spring.datasource.username", dbUser);
+		if (dbPass != null) {
+			System.setProperty("spring.datasource.password", dbPass);
+		}
 
 		logger.info("✅ Configuración de base de datos validada");
 		if (logger.isInfoEnabled()) {
@@ -92,13 +137,13 @@ public class UrdimbreApplication {
 			logger.warn("⚠️ JWT_SECRET_KEY no parece ser hexadecimal puro");
 		}
 
-		System.setProperty("JWT_SECRET_KEY", jwtSecret);
+		System.setProperty("jwt.secret", jwtSecret);
 
 		String accessExp = getEnvVariable(dotenv, "JWT_ACCESS_EXPIRATION", "900000");
 		String refreshExp = getEnvVariable(dotenv, "JWT_REFRESH_EXPIRATION", "86400000");
 
-		System.setProperty("JWT_ACCESS_EXPIRATION", accessExp);
-		System.setProperty("JWT_REFRESH_EXPIRATION", refreshExp);
+		System.setProperty("jwt.access-token-expiration", accessExp);
+		System.setProperty("jwt.refresh-token-expiration", refreshExp);
 
 		logger.info("✅ Configuración de seguridad validada");
 		logger.info("🔐 JWT Secret length: {} caracteres", jwtSecret.length());
@@ -122,14 +167,14 @@ public class UrdimbreApplication {
 			throw new IllegalStateException("ADMIN_PASSWORD no es segura");
 		}
 
-		System.setProperty("ADMIN_USERNAME", adminUsername);
+		System.setProperty("admin.username", adminUsername);
 		if (adminEmail != null)
-			System.setProperty("ADMIN_EMAIL", adminEmail);
+			System.setProperty("admin.email", adminEmail);
 		if (adminPassword != null)
-			System.setProperty("ADMIN_PASSWORD", adminPassword);
+			System.setProperty("admin.password", adminPassword);
 
 		String inviteCode = getEnvVariable(dotenv, "INVITE_CODE", "URDIMBRE2025");
-		System.setProperty("INVITE_CODE", inviteCode);
+		System.setProperty("invite.code.default", inviteCode);
 
 		logger.info("✅ Configuración de administrador validada");
 		logger.info("👑 Admin username: {}", adminUsername);
@@ -147,8 +192,11 @@ public class UrdimbreApplication {
 	}
 
 	private static String getEnvVariable(Dotenv dotenv, String key, String defaultValue) {
-
-		String value = System.getenv(key);
+		// Prioridad: System properties > Environment variables > .env file > default
+		String value = System.getProperty(key);
+		if (value == null) {
+			value = System.getenv(key);
+		}
 		if (value == null && dotenv != null) {
 			value = dotenv.get(key);
 		}

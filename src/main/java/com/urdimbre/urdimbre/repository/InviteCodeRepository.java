@@ -51,4 +51,7 @@ public interface InviteCodeRepository extends JpaRepository<InviteCode, Long> {
         List<InviteCode> findAllByOrderByCreatedAtDesc();
 
         Page<InviteCode> findAllByOrderByCreatedAtDesc(Pageable pageable);
+
+        Page<InviteCode> findByCodeContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
+                        String code, String description, Pageable pageable);
 }
