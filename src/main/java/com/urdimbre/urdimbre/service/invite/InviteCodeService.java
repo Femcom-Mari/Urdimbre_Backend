@@ -1,6 +1,7 @@
 package com.urdimbre.urdimbre.service.invite;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -12,6 +13,8 @@ import com.urdimbre.urdimbre.dto.invite.InviteCodeStatsDTO;
 import com.urdimbre.urdimbre.model.InviteCode;
 
 public interface InviteCodeService {
+
+    Optional<InviteCode> findByCode(String code);
 
     InviteCodeResponseDTO generateCode(InviteCodeRequestDTO request);
 
