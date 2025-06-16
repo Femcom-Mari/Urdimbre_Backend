@@ -1,6 +1,8 @@
 package com.urdimbre.urdimbre.service.professional;
 
 import java.io.BufferedReader;
+
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 
@@ -18,41 +20,59 @@ public class ProfessionalsCSVLoader {
     private ProfessionalsRepository professionalsRepository;
 
     @PostConstruct
-    public void loadProfessionals() throws Exception {
-        BufferedReader reader = new BufferedReader(
-                new InputStreamReader(
-                        getClass().getResourceAsStream("/professional/ProfessionalExcel.csv"),
-                        StandardCharsets.UTF_8));
+    public void loadProfessionals() {
+        try {
+            InputStream inputStream = Thread.currentThread().getContextClassLoader()
+                    .getResourceAsStream("professionals/professionalsExcel.csv");
 
-        String line;
-        boolean firstLine = true;
-
-        while ((line = reader.readLine()) != null) {
-            if (firstLine) {
-                firstLine = false;
-                continue;
+            if (inputStream == null) {
+                System.err.println("No se encontró el archivo professionalsExcel.csv");
+                return;
             }
-            String[] campos = line.split(";");
-            if (campos.length < 10)
-                continue;
 
-            Professional p = new Professional();
-            p.setCiudad(campos[0]);
-            p.setNombre(campos[1]);
-            p.setDescripcion(campos[2]);
-            p.setTelefono(campos[3]);
-            p.setEmail(campos[4]);
-            p.setWeb(campos[5]);
-            p.setRedes(campos[6]);
-            p.setPoblacion(campos[7]);
-            p.setActividades(campos[8]);
-            p.setPrecio(campos[9]);
+            BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(inputStream, StandardCharsets.UTF_8));
 
-            professionalsRepository.save(p);
+            String line;
+            boolean firstLine = true;
 
+            while ((line = reader.readLine()) != null) {
+                if (firstLine) {
+                    firstLine = false;
+                    continue;
+                }
+
+                try {
+                    String[] campos = line.split(";");
+                    if (campos.length < 10) {
+                        System.out.println("⚠️ Línea con pocos campos: " + line);
+                        continue;
+                    }
+
+                    Professional p = new Professional();
+                    p.setCiudad(campos[0]);
+                    p.setNombre(campos[1]);
+                    p.setDescripcion(campos[2]);
+                    p.setTelefono(campos[3]);
+                    p.setEmail(campos[4]);
+                    p.setWeb(campos[5]);
+                    p.setRedes(campos[6]);
+                    p.setPoblacion(campos[7]);
+                    p.setActividades(campos[8]);
+                    p.setPrecio(campos[9]);
+
+                    professionalsRepository.save(p);
+                    System.out.println("Insertado: " + p.getNombre());
+
+                } catch (Exception e) {
+                    System.err.println(" Error al procesar línea: " + line);
+                    e.printStackTrace();
+                }
+            }
+
+        } catch (Exception e) {
+            System.err.println(" Error general en el loader:");
+            e.printStackTrace();
         }
-        reader.close();
-        System.out.println("Profesionales cargados");
-
     }
 }

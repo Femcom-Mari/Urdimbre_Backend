@@ -11,12 +11,14 @@ public class Professional {
 
     private String ciudad;
     private String nombre;
+    @Column(length = 2000)
     private String descripcion;
     private String telefono;
     private String email;
     private String web;
     private String redes;
     private String poblacion;
+    @Column(length = 2000)
     private String actividades;
     private String precio;
 

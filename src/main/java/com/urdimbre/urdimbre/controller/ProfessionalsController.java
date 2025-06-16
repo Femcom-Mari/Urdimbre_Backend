@@ -1,14 +1,13 @@
 package com.urdimbre.urdimbre.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.urdimbre.urdimbre.repository.ProfessionalsRepository;
-import org.springframework.web.bind.annotation.GetMapping;
-
+import com.urdimbre.urdimbre.service.professional.ProfessionalService;
 import com.urdimbre.urdimbre.model.Professional;
+
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -17,11 +16,14 @@ import java.util.List;
 @CrossOrigin(origins = "*")
 public class ProfessionalsController {
 
-    @Autowired
-    private ProfessionalsRepository professionalsRepository;
+    private ProfessionalService professionalService;
+
+    public ProfessionalsController(ProfessionalService professionalService) {
+        this.professionalService = professionalService;
+    }
 
     @GetMapping
     public List<Professional> getAll() {
-        return professionalsRepository.findAll();
+        return professionalService.getAllProfessionals();
     }
 }

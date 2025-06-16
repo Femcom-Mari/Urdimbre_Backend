@@ -9,7 +9,10 @@ import io.github.cdimascio.dotenv.Dotenv;
 public class UrdimbreApplication {
 
 	public static void main(String[] args) {
-		Dotenv dotenv = Dotenv.configure().ignoreIfMissing().load();
+		Dotenv dotenv = Dotenv.configure()
+				.directory("./Urdimbre_Backend")
+				.ignoreIfMissing()
+				.load();
 
 		String dbUrl = dotenv.get("DB_URL");
 		String dbUser = dotenv.get("DB_USERNAME");
