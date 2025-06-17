@@ -28,4 +28,6 @@ public ResponseEntity<AttendanceResponseDTO> registerAttendance(
     return ResponseEntity.status(HttpStatus.CREATED).body(response);
 }
 
+
+
 }

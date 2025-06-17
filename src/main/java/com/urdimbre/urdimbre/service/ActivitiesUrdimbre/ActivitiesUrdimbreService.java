@@ -17,5 +17,9 @@ public interface ActivitiesUrdimbreService {
 
     List<AttendanceResponseDTO> getUserAttendances(Long userId);
 
+    void deleteActivity(Long id);
+
+
+
 
 }

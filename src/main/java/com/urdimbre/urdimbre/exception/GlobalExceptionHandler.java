@@ -1,5 +1,6 @@
 package com.urdimbre.urdimbre.exception;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -9,6 +10,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.WebRequest;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -114,4 +116,13 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(ex.getMessage(), HttpStatus.CONFLICT);
     }
     
+@ExceptionHandler(EntityNotFoundException.class)
+public ResponseEntity<ErrorDetails> handleEntityNotFound(EntityNotFoundException ex, WebRequest request) {
+    ErrorDetails errorDetails = new ErrorDetails(
+        new Date(),
+        ex.getMessage(),
+        request.getDescription(false)
+    );
+    return new ResponseEntity<>(errorDetails, HttpStatus.NOT_FOUND);
+}
 }

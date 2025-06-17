@@ -3,17 +3,18 @@ package com.urdimbre.urdimbre.service.activitiesUrdimbre;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+
 import org.springframework.stereotype.Service;
 
 import com.urdimbre.urdimbre.dto.activitiesUrdimbre.ActivitiesUrdimbreRequestDTO;
 import com.urdimbre.urdimbre.dto.activitiesUrdimbre.ActivitiesUrdimbreResponseDTO;
 import com.urdimbre.urdimbre.dto.attendance.AttendanceResponseDTO;
+import com.urdimbre.urdimbre.exception.EntityNotFoundException;
 import com.urdimbre.urdimbre.model.ActivitiesUrdimbre;
 import com.urdimbre.urdimbre.model.Attendance;
 import com.urdimbre.urdimbre.model.Category;
 import com.urdimbre.urdimbre.repository.ActivitiesUrdimbreRepository;
 import com.urdimbre.urdimbre.repository.AttendanceRepository;
-
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 
@@ -27,6 +28,8 @@ public class ActivitiesUrdimbreServicelmpl implements ActivitiesUrdimbreService 
 
     @Override
     public ActivitiesUrdimbreResponseDTO createActivitiesUrdimbre(ActivitiesUrdimbreRequestDTO dto) {
+
+
         ActivitiesUrdimbre activity = new ActivitiesUrdimbre();
         activity.setCategory(dto.getCategory());
         activity.setTitle(dto.getTitle());
@@ -96,5 +99,12 @@ public class ActivitiesUrdimbreServicelmpl implements ActivitiesUrdimbreService 
                 .toList();
     }
 
+@Override
+public void deleteActivity(Long id) {
+    ActivitiesUrdimbre activity = activitiesUrdimbreRepository.findById(id)
+        .orElseThrow(() -> new EntityNotFoundException("Activity not found"));
+
+    activitiesUrdimbreRepository.deleteById(activity.getId());
+}
 
 }

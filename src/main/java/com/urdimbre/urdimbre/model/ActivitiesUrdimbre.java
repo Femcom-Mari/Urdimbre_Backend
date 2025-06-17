@@ -76,6 +76,8 @@ public class ActivitiesUrdimbre {
     @OneToMany(mappedBy = "activityId", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Attendance> attendances;
 
+    
+
 
     //ralation whit user to catch the name of the coach
 
