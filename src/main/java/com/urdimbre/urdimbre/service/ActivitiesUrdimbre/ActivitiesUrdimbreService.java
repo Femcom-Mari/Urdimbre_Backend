@@ -19,6 +19,8 @@ public interface ActivitiesUrdimbreService {
 
     void deleteActivity(Long id);
 
+    ActivitiesUrdimbreResponseDTO updateActivities (ActivitiesUrdimbreRequestDTO activitiesUrdimbreDTO);
+
 
 
 

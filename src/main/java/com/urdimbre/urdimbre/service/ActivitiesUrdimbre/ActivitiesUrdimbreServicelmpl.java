@@ -107,4 +107,26 @@ public void deleteActivity(Long id) {
     activitiesUrdimbreRepository.deleteById(activity.getId());
 }
 
+@Override
+public ActivitiesUrdimbreResponseDTO updateActivities (ActivitiesUrdimbreRequestDTO dto) {
+    ActivitiesUrdimbre activity = activitiesUrdimbreRepository.findById(dto.getId())
+    .orElseThrow(() -> new EntityNotFoundException("Activity not found"));
+    populateActivitiesFromDto(activity, dto);
+    ActivitiesUrdimbre updated = activitiesUrdimbreRepository.save(activity);
+    return convertToDto(updated);
+    
+}
+
+
+private void populateActivitiesFromDto (ActivitiesUrdimbre activity, ActivitiesUrdimbreRequestDTO dto) {
+            activity.setCategory(dto.getCategory());
+        activity.setTitle(dto.getTitle());
+        activity.setDescription(dto.getDescription());
+        activity.setLanguage(dto.getLanguage());
+        activity.setDate(LocalDate.parse(dto.getDate()));
+        activity.setStartTime(LocalTime.parse(dto.getStartTime()));
+        activity.setEndTime(LocalTime.parse(dto.getEndTime()));
+        activity.setMaxAttendees(dto.getMaxAttendees());
+}
+
 }

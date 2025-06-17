@@ -29,6 +29,6 @@ public class ActivitiesUrdimbreResponseDTO {
     private LocalTime startTime;
     @JsonFormat(pattern = "HH:mm")
     private LocalTime endTime;
-    private Integer maxAttendees;
+    private Long maxAttendees;
 
 }

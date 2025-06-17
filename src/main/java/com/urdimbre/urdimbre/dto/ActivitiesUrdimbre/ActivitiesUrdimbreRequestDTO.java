@@ -17,7 +17,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ActivitiesUrdimbreRequestDTO {
 
-    private Integer id;
+    private Long id;
 
     @NotNull(message = "(!) ERROR: You need to select a category")
     private Category category;
@@ -48,6 +48,6 @@ public class ActivitiesUrdimbreRequestDTO {
     @Column
     @NotNull
     @Min(value = 1, message = "(!) ERROR: The maximum participants field must have a minimim value of 1")
-    private Integer maxAttendees;
+    private Long maxAttendees;
 
 }

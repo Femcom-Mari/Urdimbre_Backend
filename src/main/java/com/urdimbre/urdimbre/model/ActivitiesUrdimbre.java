@@ -66,7 +66,7 @@ public class ActivitiesUrdimbre {
 
     @Column
     @Min(value = 1)
-    private Integer maxAttendees;
+    private Long maxAttendees;
 
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
