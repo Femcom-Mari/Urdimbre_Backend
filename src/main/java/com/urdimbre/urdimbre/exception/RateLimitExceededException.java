@@ -3,7 +3,10 @@ package com.urdimbre.urdimbre.exception;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
+import lombok.Getter;
+
 @ResponseStatus(HttpStatus.TOO_MANY_REQUESTS)
+@Getter
 public class RateLimitExceededException extends RuntimeException {
 
     private final long retryAfterSeconds;
@@ -17,14 +20,6 @@ public class RateLimitExceededException extends RuntimeException {
 
     public RateLimitExceededException(String message, long retryAfterSeconds) {
         this(message, retryAfterSeconds, "general");
-    }
-
-    public long getRetryAfterSeconds() {
-        return retryAfterSeconds;
-    }
-
-    public String getRateLimitType() {
-        return rateLimitType;
     }
 
     public static RateLimitExceededException forLoginByIp(long retryAfterSeconds) {
