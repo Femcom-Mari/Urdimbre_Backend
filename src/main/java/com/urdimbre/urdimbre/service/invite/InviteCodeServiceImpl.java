@@ -1,3 +1,4 @@
+// src/main/java/com/urdimbre/urdimbre/service/invite/InviteCodeServiceImpl.java
 package com.urdimbre.urdimbre.service.invite;
 
 import java.security.SecureRandom;
@@ -5,11 +6,12 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -22,6 +24,7 @@ import com.urdimbre.urdimbre.dto.invite.InviteCodeRequestDTO;
 import com.urdimbre.urdimbre.dto.invite.InviteCodeResponseDTO;
 import com.urdimbre.urdimbre.dto.invite.InviteCodeStatsDTO;
 import com.urdimbre.urdimbre.exception.BadRequestException;
+import com.urdimbre.urdimbre.exception.InviteCodeException;
 import com.urdimbre.urdimbre.exception.ResourceNotFoundException;
 import com.urdimbre.urdimbre.model.InviteCode;
 import com.urdimbre.urdimbre.model.InviteCode.InviteStatus;
@@ -30,8 +33,8 @@ import com.urdimbre.urdimbre.repository.InviteCodeRepository;
 import lombok.RequiredArgsConstructor;
 
 @Service
-@RequiredArgsConstructor
 @Transactional
+@RequiredArgsConstructor
 public class InviteCodeServiceImpl implements InviteCodeService {
 
     private static final Logger logger = LoggerFactory.getLogger(InviteCodeServiceImpl.class);
@@ -39,8 +42,26 @@ public class InviteCodeServiceImpl implements InviteCodeService {
     private static final int DEFAULT_CODE_LENGTH = 12;
     private static final int MAX_ACTIVE_CODES_PER_USER = 50;
 
+    // ✅ Constructor injection para dependencias normales
     private final InviteCodeRepository inviteCodeRepository;
     private final SecureRandom secureRandom = new SecureRandom();
+
+    // ✅ Self-injection: Field injection necesario para evitar dependencia circular
+    @SuppressWarnings("java:S6813") // SonarQube: Field injection requerido para self-injection
+    @Autowired
+    @Lazy
+    private InviteCodeService self;
+
+    // ===================================================
+    // MÉTODOS PÚBLICOS DE LA INTERFAZ
+    // ===================================================
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<InviteCode> findByCode(String code) {
+        logger.debug("🔍 Buscando código de invitación: {}", code);
+        return inviteCodeRepository.findByCode(code);
+    }
 
     @Override
     public InviteCodeResponseDTO generateCode(InviteCodeRequestDTO request) {
@@ -64,15 +85,14 @@ public class InviteCodeServiceImpl implements InviteCodeService {
                 .build();
 
         InviteCode saved = inviteCodeRepository.save(inviteCode);
-
-        logger.info("✅ Código de invitación generado: {} (expira: {})", code, expiresAt);
+        logger.info("✅ Código generado: {} (expira: {})", code, expiresAt);
 
         return mapToResponseDTO(saved);
     }
 
     @Override
     public List<InviteCodeResponseDTO> generateBulkCodes(BulkInviteCodeRequestDTO request) {
-        logger.info("🎯 Generando {} códigos de invitación en lote", request.getQuantity());
+        logger.info("🎯 Generando {} códigos en lote", request.getQuantity());
 
         String currentUser = getCurrentUser();
         validateBulkLimits(currentUser, request.getQuantity());
@@ -94,37 +114,35 @@ public class InviteCodeServiceImpl implements InviteCodeService {
                 .toList();
 
         List<InviteCode> savedCodes = inviteCodeRepository.saveAll(codes);
+        logger.info("✅ {} códigos generados en lote", savedCodes.size());
 
-        logger.info("✅ {} códigos de invitación generados en lote", savedCodes.size());
-
-        return savedCodes.stream()
-                .map(this::mapToResponseDTO)
-                .collect(Collectors.toList());
+        return savedCodes.stream().map(this::mapToResponseDTO).toList();
     }
 
     @Override
     @Transactional(readOnly = true)
     public boolean validateInviteCode(String code) {
-        // ✅ LÓGICA DE VALIDACIÓN IMPLEMENTADA EN SERVICE (no en Repository)
+        logger.debug("✅ Validando código: {}", code);
         Optional<InviteCode> inviteCode = findValidByCode(code);
-        return inviteCode.isPresent();
+        boolean isValid = inviteCode.isPresent();
+        logger.debug("Código {} es válido: {}", code, isValid);
+        return isValid;
     }
 
     @Override
     public InviteCode useInviteCode(String code, String usedBy) {
-        logger.info("🎫 Usando código de invitación: {} por usuario: {}", code, usedBy);
+        logger.info("🎫 Usando código: {} por usuario: {}", code, usedBy);
 
-        // ✅ USAR MÉTODO LOCAL DE VALIDACIÓN
         InviteCode inviteCode = findValidByCode(code)
                 .orElseThrow(() -> {
-                    logger.warn("❌ Código de invitación inválido o expirado: {}", code);
+                    logger.warn("❌ Código inválido: {}", code);
                     return new BadRequestException("Código de invitación inválido o expirado");
                 });
 
         inviteCode.incrementUses(usedBy);
         InviteCode updated = inviteCodeRepository.save(inviteCode);
 
-        logger.info("✅ Código usado exitosamente: {} (usos: {}/{})",
+        logger.info("✅ Código usado: {} (usos: {}/{})",
                 code, updated.getCurrentUses(), updated.getMaxUses());
 
         return updated;
@@ -134,6 +152,8 @@ public class InviteCodeServiceImpl implements InviteCodeService {
     @Transactional(readOnly = true)
     public Page<InviteCodeResponseDTO> getUserCodes(Pageable pageable) {
         String currentUser = getCurrentUser();
+        logger.debug("📋 Obteniendo códigos del usuario: {}", currentUser);
+
         return inviteCodeRepository.findByCreatedByOrderByCreatedAtDesc(currentUser, pageable)
                 .map(this::mapToResponseDTO);
     }
@@ -141,6 +161,7 @@ public class InviteCodeServiceImpl implements InviteCodeService {
     @Override
     @Transactional(readOnly = true)
     public Page<InviteCodeResponseDTO> getAllCodes(Pageable pageable) {
+        logger.debug("📋 Obteniendo todos los códigos");
         return inviteCodeRepository.findAllByOrderByCreatedAtDesc(pageable)
                 .map(this::mapToResponseDTO);
     }
@@ -148,14 +169,14 @@ public class InviteCodeServiceImpl implements InviteCodeService {
     @Override
     @Transactional(readOnly = true)
     public InviteCodeStatsDTO getStatistics() {
-        // ✅ ESTADÍSTICAS USANDO MÉTODOS AUTOMÁTICOS
+        logger.debug("📊 Calculando estadísticas");
+
         long totalCodes = inviteCodeRepository.count();
         long activeCodes = inviteCodeRepository.countByStatus(InviteStatus.ACTIVE);
         long expiredCodes = inviteCodeRepository.countByStatus(InviteStatus.EXPIRED);
         long exhaustedCodes = inviteCodeRepository.countByStatus(InviteStatus.EXHAUSTED);
         long revokedCodes = inviteCodeRepository.countByStatus(InviteStatus.REVOKED);
 
-        // Calcular total de usos
         long totalUses = inviteCodeRepository.findAll().stream()
                 .mapToLong(InviteCode::getCurrentUses)
                 .sum();
@@ -175,42 +196,41 @@ public class InviteCodeServiceImpl implements InviteCodeService {
 
     @Override
     public InviteCodeResponseDTO revokeCode(Long id) {
-        logger.info("🚫 Revocando código de invitación ID: {}", id);
+        logger.info("🚫 Revocando código ID: {}", id);
 
         InviteCode inviteCode = inviteCodeRepository.findById(id)
-                .orElseThrow(
-                        () -> new ResourceNotFoundException("Código de invitación no encontrado", "InviteCode", id));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Código de invitación no encontrado", "InviteCode", id));
 
         inviteCode.revoke();
         InviteCode updated = inviteCodeRepository.save(inviteCode);
 
         logger.info("✅ Código revocado: {}", updated.getCode());
-
         return mapToResponseDTO(updated);
     }
 
     @Override
+    @Transactional
     public int manualCleanup() {
-        logger.info("🧹 Ejecutando limpieza manual de códigos expirados...");
+        logger.info("🧹 Ejecutando limpieza manual...");
 
         LocalDateTime now = LocalDateTime.now();
 
-        // ✅ MARCAR CÓDIGOS EXPIRADOS USANDO MÉTODOS AUTOMÁTICOS
+        // Marcar códigos expirados
         List<InviteCode> expiredCodes = findExpiredCodes();
         expiredCodes.forEach(code -> code.setStatus(InviteStatus.EXPIRED));
         inviteCodeRepository.saveAll(expiredCodes);
         int markedExpired = expiredCodes.size();
 
-        // ✅ ELIMINAR CÓDIGOS ANTIGUOS
+        // Eliminar códigos muy antiguos
         LocalDateTime cutoff = now.minusDays(30);
-        List<InviteCode> oldExpiredCodes = inviteCodeRepository.findByStatusAndCreatedAtBefore(InviteStatus.EXPIRED,
-                cutoff);
+        List<InviteCode> oldExpiredCodes = inviteCodeRepository
+                .findByStatusAndCreatedAtBefore(InviteStatus.EXPIRED, cutoff);
         inviteCodeRepository.deleteAll(oldExpiredCodes);
         int deletedOld = oldExpiredCodes.size();
 
         int totalCleaned = markedExpired + deletedOld;
-
-        logger.info("✅ Limpieza manual completada: {} marcados como expirados, {} eliminados",
+        logger.info("✅ Limpieza completada: {} marcados, {} eliminados",
                 markedExpired, deletedOld);
 
         return totalCleaned;
@@ -219,9 +239,10 @@ public class InviteCodeServiceImpl implements InviteCodeService {
     @Override
     @Transactional(readOnly = true)
     public Page<InviteCodeResponseDTO> getCodesByStatus(String status, Pageable pageable) {
+        logger.debug("🔍 Buscando códigos por estado: {}", status);
+
         try {
             InviteStatus inviteStatus = InviteStatus.valueOf(status.toUpperCase());
-            // ✅ USAR PAGINACIÓN DIRECTA DEL REPOSITORY
             return inviteCodeRepository.findByStatus(inviteStatus, pageable)
                     .map(this::mapToResponseDTO);
         } catch (IllegalArgumentException e) {
@@ -232,7 +253,7 @@ public class InviteCodeServiceImpl implements InviteCodeService {
     @Override
     @Transactional(readOnly = true)
     public Page<InviteCodeResponseDTO> getMostUsedCodes(Pageable pageable) {
-        // ✅ USAR MÉTODO AUTOMÁTICO CORREGIDO
+        logger.debug("🔍 Buscando códigos más usados");
         return inviteCodeRepository.findByCurrentUsesGreaterThanOrderByCurrentUsesDesc(0, pageable)
                 .map(this::mapToResponseDTO);
     }
@@ -240,32 +261,41 @@ public class InviteCodeServiceImpl implements InviteCodeService {
     @Override
     @Transactional(readOnly = true)
     public Page<InviteCodeResponseDTO> searchCodes(String searchTerm, Pageable pageable) {
-        // ✅ IMPLEMENTACIÓN BÁSICA - se puede expandir con criterios específicos
-        return inviteCodeRepository.findAllByOrderByCreatedAtDesc(pageable)
+        logger.debug("🔍 Buscando códigos con término: {}", searchTerm);
+
+        // ✅ Usar 'self' para llamadas internas a métodos transaccionales
+        if (searchTerm == null || searchTerm.trim().isEmpty()) {
+            return self.getAllCodes(pageable);
+        }
+
+        return inviteCodeRepository.findByCodeContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
+                searchTerm, searchTerm, pageable)
                 .map(this::mapToResponseDTO);
     }
 
-    @Scheduled(fixedRate = 3600000)
+    // ===================================================
+    // MÉTODOS PROGRAMADOS (SCHEDULED)
+    // ===================================================
+
+    @Scheduled(fixedRate = 3600000) // Cada hora
     public void scheduledCleanupExpiredCodes() {
-        logger.debug("🧹 Iniciando limpieza automática de códigos expirados...");
+        logger.debug("🧹 Limpieza automática...");
 
         try {
-            int cleaned = manualCleanup();
+            // ✅ Usar 'self' para que la transacción funcione correctamente
+            int cleaned = self.manualCleanup();
             if (cleaned > 0) {
                 logger.info("🧹 Limpieza automática: {} códigos procesados", cleaned);
             }
         } catch (Exception e) {
-            logger.error("❌ Error en limpieza automática: {}", e.getMessage());
+            logger.error("❌ Error en limpieza automática: {}", e.getMessage(), e);
         }
     }
 
-    // ================================
-    // MÉTODOS PRIVADOS
-    // ================================
+    // ===================================================
+    // MÉTODOS PRIVADOS DE VALIDACIÓN Y UTILIDADES
+    // ===================================================
 
-    /**
-     * ✅ LÓGICA DE VALIDACIÓN COMPLEJA IMPLEMENTADA EN SERVICE
-     */
     private Optional<InviteCode> findValidByCode(String code) {
         Optional<InviteCode> inviteCode = inviteCodeRepository.findByCodeAndStatus(code, InviteStatus.ACTIVE);
 
@@ -276,12 +306,12 @@ public class InviteCodeServiceImpl implements InviteCodeService {
         InviteCode invite = inviteCode.get();
         LocalDateTime now = LocalDateTime.now();
 
-        // Validar si no ha expirado
+        // Verificar si está expirado
         if (invite.getExpiresAt().isBefore(now)) {
             return Optional.empty();
         }
 
-        // Validar si no ha superado el máximo de usos
+        // Verificar si ya alcanzó el máximo de usos
         if (invite.getMaxUses() != null && invite.getCurrentUses() >= invite.getMaxUses()) {
             return Optional.empty();
         }
@@ -289,9 +319,6 @@ public class InviteCodeServiceImpl implements InviteCodeService {
         return Optional.of(invite);
     }
 
-    /**
-     * ✅ ENCONTRAR CÓDIGOS EXPIRADOS USANDO MÉTODOS AUTOMÁTICOS
-     */
     private List<InviteCode> findExpiredCodes() {
         return inviteCodeRepository.findByStatusAndExpiresAtBefore(InviteStatus.ACTIVE, LocalDateTime.now());
     }
@@ -303,7 +330,7 @@ public class InviteCodeServiceImpl implements InviteCodeService {
             code = generateRandomCode(DEFAULT_CODE_LENGTH);
             attempts++;
             if (attempts > 100) {
-                throw new RuntimeException("No se pudo generar código único después de 100 intentos");
+                throw new InviteCodeException("No se pudo generar código único después de 100 intentos");
             }
         } while (inviteCodeRepository.existsByCode(code));
 
@@ -319,7 +346,7 @@ public class InviteCodeServiceImpl implements InviteCodeService {
             code = basePrefix + generateRandomCode(8);
             attempts++;
             if (attempts > 100) {
-                throw new RuntimeException("No se pudo generar código único con prefijo después de 100 intentos");
+                throw new InviteCodeException("No se pudo generar código único con prefijo después de 100 intentos");
             }
         } while (inviteCodeRepository.existsByCode(code));
 
@@ -349,11 +376,14 @@ public class InviteCodeServiceImpl implements InviteCodeService {
     }
 
     private String getCurrentUser() {
-        return SecurityContextHolder.getContext().getAuthentication().getName();
+        try {
+            return SecurityContextHolder.getContext().getAuthentication().getName();
+        } catch (Exception e) {
+            return "system";
+        }
     }
 
     private void validateUserLimits(String user) {
-        // ✅ USAR MÉTODO AUTOMÁTICO CORREGIDO
         long activeCodes = inviteCodeRepository.countByCreatedByAndStatus(user, InviteStatus.ACTIVE);
 
         if (activeCodes >= MAX_ACTIVE_CODES_PER_USER) {
@@ -363,7 +393,6 @@ public class InviteCodeServiceImpl implements InviteCodeService {
     }
 
     private void validateBulkLimits(String user, int quantity) {
-        // ✅ USAR MÉTODO AUTOMÁTICO CORREGIDO
         long activeCodes = inviteCodeRepository.countByCreatedByAndStatus(user, InviteStatus.ACTIVE);
 
         if (activeCodes + quantity > MAX_ACTIVE_CODES_PER_USER) {

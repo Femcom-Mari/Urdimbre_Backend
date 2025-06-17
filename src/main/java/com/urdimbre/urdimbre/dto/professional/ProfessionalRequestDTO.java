@@ -21,7 +21,7 @@ public class ProfessionalRequestDTO {
     private String lastName;
 
     @NotEmpty(message = "At least one pronoun is required")
-    private Set<String> pronouns; // Enum values as String: SHE, HE, THEY
+    private Set<String> pronouns;
 
     @Size(max = 100)
     private String title;

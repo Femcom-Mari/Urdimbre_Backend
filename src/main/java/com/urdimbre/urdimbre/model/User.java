@@ -68,7 +68,6 @@ public class User {
     @Column(name = "profile_image_url")
     private String profileImageUrl;
 
-    // ✅ MÚLTIPLES PRONOMBRES CON VALIDACIÓN MÍNIMA
     @ElementCollection(targetClass = Pronoun.class, fetch = FetchType.EAGER)
     @Enumerated(EnumType.STRING)
     @CollectionTable(name = "user_pronouns", joinColumns = @JoinColumn(name = "user_id"))
@@ -88,10 +87,6 @@ public class User {
     @Builder.Default
     private Set<Role> roles = new HashSet<>();
 
-    // ========================================
-    // AUDITORÍA COMPLETA
-    // ========================================
-
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -110,9 +105,8 @@ public class User {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private transient Set<Attendance> attendances = new HashSet<>();
-    
-    
+    private Set<Attendance> attendances = new HashSet<>();
+
     public boolean isEnabled() {
         return this.status == UserStatus.ACTIVE;
     }

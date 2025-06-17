@@ -23,29 +23,22 @@ public class BlacklistedTokenService {
 
     private static final Logger logger = LoggerFactory.getLogger(BlacklistedTokenService.class);
 
-    // 🔐 INYECCIÓN DIRECTA DE JWT SECRET (sin usar SecurityConstants)
     @Value("${jwt.secret}")
     private String jwtSecret;
 
     private final BlacklistedTokenRepository blacklistedTokenRepository;
 
-    /**
-     * 🚫 Agregar token a la blacklist (método principal)
-     */
     @Transactional
     public void blacklistToken(String tokenId, String username, String tokenType, LocalDateTime expiresAt,
             String reason) {
-        // ✅ EXTRAER LÓGICA A MÉTODO PRIVADO PARA EVITAR SONAR WARNING
+
         saveBlacklistedToken(tokenId, username, tokenType, expiresAt, reason);
     }
 
-    /**
-     * 🚫 Agregar token completo (extrae datos automáticamente)
-     */
     @Transactional
     public void blacklistToken(String fullToken, String reason) {
         try {
-            // 🔍 DECODIFICAR JWT PARA EXTRAER INFORMACIÓN
+
             Algorithm algorithm = Algorithm.HMAC512(jwtSecret);
             DecodedJWT jwt = JWT.require(algorithm).build().verify(fullToken);
 
@@ -60,38 +53,28 @@ public class BlacklistedTokenService {
                     ? jwt.getExpiresAt().toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDateTime()
                     : LocalDateTime.now().plusDays(1);
 
-            // ✅ USAR MÉTODO PRIVADO EN LUGAR DE LLAMADA INTERNA @Transactional
             saveBlacklistedToken(tokenId, username, tokenType, expiresAt, reason);
 
         } catch (Exception e) {
             logger.warn("⚠️ Error decodificando token para blacklist: {}", e.getMessage());
-            // ✅ USAR MÉTODO PRIVADO AQUÍ TAMBIÉN
+
             String tokenId = generateTokenId(fullToken);
             saveBlacklistedToken(tokenId, "unknown", "unknown", LocalDateTime.now().plusDays(1),
                     reason + " (error decoding)");
         }
     }
 
-    /**
-     * ✅ Verificar si un token está en blacklist
-     */
     @Transactional(readOnly = true)
     public boolean isTokenBlacklisted(String tokenId) {
         return blacklistedTokenRepository.existsByTokenId(tokenId);
     }
 
-    /**
-     * ✅ Verificar token completo
-     */
     @Transactional(readOnly = true)
     public boolean isFullTokenBlacklisted(String fullToken) {
         String tokenId = generateTokenId(fullToken);
         return blacklistedTokenRepository.existsByTokenId(tokenId);
     }
 
-    /**
-     * 🗑️ Invalidar todos los tokens de un usuario
-     */
     @Transactional
     public void blacklistAllUserTokens(String username, String reason) {
         try {
@@ -102,9 +85,6 @@ public class BlacklistedTokenService {
         }
     }
 
-    /**
-     * 🧹 Limpiar tokens expirados automáticamente (cada hora)
-     */
     @Scheduled(fixedRate = 3600000) // 3600000 ms = 1 hora
     @Transactional
     public void cleanupExpiredTokens() {
@@ -126,9 +106,6 @@ public class BlacklistedTokenService {
         }
     }
 
-    /**
-     * 🧹 Limpieza manual (para endpoints admin)
-     */
     @Transactional
     public long manualCleanup() {
         LocalDateTime now = LocalDateTime.now();
@@ -147,9 +124,6 @@ public class BlacklistedTokenService {
         }
     }
 
-    /**
-     * 📊 Obtener estadísticas de blacklist
-     */
     @Transactional(readOnly = true)
     public BlacklistStats getStatistics() {
         try {
@@ -171,22 +145,11 @@ public class BlacklistedTokenService {
         }
     }
 
-    /**
-     * 🔍 Buscar token en blacklist
-     */
     @Transactional(readOnly = true)
     public boolean findBlacklistedToken(String tokenId) {
         return blacklistedTokenRepository.findByTokenId(tokenId).isPresent();
     }
 
-    // ================================
-    // MÉTODOS PRIVADOS (SIN @Transactional)
-    // ================================
-
-    /**
-     * 💾 Método privado para guardar token en blacklist
-     * (Evita warning SonarLint S6809)
-     */
     private void saveBlacklistedToken(String tokenId, String username, String tokenType,
             LocalDateTime expiresAt, String reason) {
 
@@ -211,9 +174,6 @@ public class BlacklistedTokenService {
                 tokenIdShort, username, reason);
     }
 
-    /**
-     * 🔧 Generar ID único para el token
-     */
     private String generateTokenId(String fullToken) {
         if (fullToken == null || fullToken.length() < 10) {
             return "invalid_token_" + System.currentTimeMillis();
@@ -226,9 +186,6 @@ public class BlacklistedTokenService {
         return start + "_" + end + "_" + hash;
     }
 
-    // ================================
-    // CLASE INTERNA PARA ESTADÍSTICAS
-    // ================================
     @lombok.Builder
     @lombok.Data
     public static class BlacklistStats {

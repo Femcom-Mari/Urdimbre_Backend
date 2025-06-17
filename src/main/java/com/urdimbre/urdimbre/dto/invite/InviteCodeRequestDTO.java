@@ -9,9 +9,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-// ================================
-// REQUEST DTO
-// ================================
 @Data
 @Builder
 @NoArgsConstructor
@@ -31,5 +28,5 @@ public class InviteCodeRequestDTO {
     private Integer maxUses;
 
     @Size(max = 50, message = "El código personalizado no puede exceder 50 caracteres")
-    private String customCode; // Opcional: código personalizado
+    private String customCode;
 }

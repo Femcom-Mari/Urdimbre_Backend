@@ -27,7 +27,6 @@ public class DataInitializer {
     private static final String ROLE_ADMIN = "ROLE_ADMIN";
     private static final String ROLE_USER = "ROLE_USER";
 
-    // 🔐 INYECCIÓN SEGURA DE VARIABLES DE ENTORNO
     @Value("${admin.username}")
     private String adminUsername;
 
@@ -37,7 +36,6 @@ public class DataInitializer {
     @Value("${admin.password}")
     private String adminPassword;
 
-    // 🌍 DETECTAR ENTORNO
     @Value("${spring.profiles.active:dev}")
     private String activeProfile;
 
@@ -45,29 +43,22 @@ public class DataInitializer {
     public CommandLineRunner initData(
             RoleRepository roleRepository,
             UserRepository userRepository,
-            PasswordEncoder passwordEncoder) { // ✅ CAMBIADO: usar PasswordEncoder en lugar de BCryptPasswordEncoder
+            PasswordEncoder passwordEncoder) {
         return args -> {
             logger.info("🚀 Inicializando datos del sistema (Perfil: {})...", activeProfile);
 
-            // 🔐 VALIDACIONES DE SEGURIDAD ESTRICTAS
             validateSecurityRequirements();
 
-            // 🎭 INICIALIZAR ROLES Y USUARIO ADMIN
             initRoles(roleRepository);
             initAdminUser(userRepository, roleRepository, passwordEncoder);
 
-            // 📊 MOSTRAR ESTADÍSTICAS FINALES
             showInitializationStats(roleRepository, userRepository);
         };
     }
 
-    /**
-     * 🔐 Validaciones de seguridad estrictas
-     */
     private void validateSecurityRequirements() {
         logger.info("🔍 Ejecutando validaciones de seguridad...");
 
-        // ✅ VALIDAR USUARIO ADMINISTRADOR
         if (adminUsername == null || adminUsername.trim().isEmpty()) {
             throw new IllegalStateException("❌ ADMIN_USERNAME no puede estar vacío");
         }
@@ -76,19 +67,16 @@ public class DataInitializer {
             throw new IllegalStateException("❌ ADMIN_EMAIL no puede estar vacío");
         }
 
-        // ✅ VALIDAR EMAIL FORMATO
         if (!isValidEmail(adminEmail)) {
             throw new IllegalStateException("❌ ADMIN_EMAIL tiene formato inválido: " + adminEmail);
         }
 
-        // ✅ VALIDAR CONTRASEÑA SEGURA
         if (adminPassword == null || !isPasswordSecure(adminPassword)) {
             throw new IllegalStateException(
                     "❌ ADMIN_PASSWORD debe tener al menos 8 caracteres, mayúscula, minúscula, número y símbolo especial (@$!%*?&). "
                             + "Actual: " + (adminPassword != null ? adminPassword.length() + " caracteres" : "null"));
         }
 
-        // 🚨 VALIDACIONES ESPECÍFICAS PARA PRODUCCIÓN
         if ("prod".equals(activeProfile) || "production".equals(activeProfile)) {
             validateProductionRequirements();
         }
@@ -96,13 +84,9 @@ public class DataInitializer {
         logger.info("✅ Todas las validaciones de seguridad pasaron correctamente");
     }
 
-    /**
-     * 🏭 Validaciones específicas para producción
-     */
     private void validateProductionRequirements() {
         logger.info("🏭 Aplicando validaciones de producción...");
 
-        // ❌ NO PERMITIR CREDENCIALES POR DEFECTO EN PRODUCCIÓN
         if ("admin".equals(adminUsername)) {
             throw new IllegalStateException("❌ No usar 'admin' como username en producción");
         }
@@ -115,7 +99,6 @@ public class DataInitializer {
             throw new IllegalStateException("❌ Cambiar contraseña por defecto en producción");
         }
 
-        // ✅ VALIDAR LONGITUD MÍNIMA EN PRODUCCIÓN
         if (adminPassword.length() < 12) {
             throw new IllegalStateException("❌ En producción, ADMIN_PASSWORD debe tener al menos 12 caracteres");
         }
@@ -123,15 +106,11 @@ public class DataInitializer {
         logger.info("✅ Validaciones de producción completadas");
     }
 
-    /**
-     * 🎭 Inicializar roles del sistema
-     */
     private void initRoles(RoleRepository roleRepository) {
         logger.info("🎭 Inicializando roles del sistema...");
 
         int initialRoleCount = (int) roleRepository.count();
 
-        // 🎯 CREAR ROLES BÁSICOS
         createRoleIfNotExists(roleRepository, ROLE_USER, "Default role for registered users");
         createRoleIfNotExists(roleRepository, ROLE_ADMIN, "Role for system administrators");
 
@@ -142,9 +121,6 @@ public class DataInitializer {
         logger.info("📊 Roles totales: {}, Roles creados: {}", finalRoleCount, rolesCreated);
     }
 
-    /**
-     * 🏗️ Crear rol si no existe
-     */
     private void createRoleIfNotExists(RoleRepository roleRepository, String roleName, String description) {
         if (roleRepository.findByName(roleName).isEmpty()) {
             logger.info("➕ Creando rol: {}", roleName);
@@ -160,15 +136,11 @@ public class DataInitializer {
         }
     }
 
-    /**
-     * 👑 Inicializar usuario administrador con múltiples pronombres
-     */
     private void initAdminUser(UserRepository userRepository, RoleRepository roleRepository,
-            PasswordEncoder passwordEncoder) { // ✅ CAMBIADO: usar PasswordEncoder
+            PasswordEncoder passwordEncoder) {
 
         logger.info("👑 Verificando usuario administrador...");
 
-        // 🔍 VERIFICAR SI YA EXISTE POR USERNAME O EMAIL
         if (userRepository.findByUsername(adminUsername).isPresent()) {
             logger.info("ℹ️ Usuario administrador ya existe (username): {}", adminUsername);
             return;
@@ -183,11 +155,9 @@ public class DataInitializer {
 
         logger.info("🏗️ Creando usuario administrador: {}", adminUsername);
 
-        // ✅ CREAR SET DE PRONOMBRES PARA ADMIN (ejemplo con múltiples)
         Set<User.Pronoun> adminPronouns = new HashSet<>();
-        adminPronouns.add(User.Pronoun.EL); // Pronombre por defecto para admin
+        adminPronouns.add(User.Pronoun.EL);
 
-        // 🏗️ CREAR USUARIO ADMINISTRADOR CON MÚLTIPLES PRONOMBRES
         User admin = User.builder()
                 .username(adminUsername)
                 .email(adminEmail)
@@ -195,15 +165,13 @@ public class DataInitializer {
                 .fullName("System Administrator")
                 .biography("Administrator user created automatically by the system")
                 .location("System")
-                .pronouns(adminPronouns) // ✅ SET DE PRONOMBRES
+                .pronouns(adminPronouns)
                 .status(UserStatus.ACTIVE)
                 .roles(new HashSet<>())
                 .build();
 
-        // 🎭 ASIGNAR ROLES AL ADMINISTRADOR
         int rolesAssigned = 0;
 
-        // ROL DE ADMINISTRADOR
         roleRepository.findByName(ROLE_ADMIN).ifPresentOrElse(
                 adminRole -> {
                     admin.getRoles().add(adminRole);
@@ -211,7 +179,6 @@ public class DataInitializer {
                 },
                 () -> logger.error("❌ Rol {} no encontrado en la base de datos", ROLE_ADMIN));
 
-        // ROL DE USUARIO (para acceso básico)
         roleRepository.findByName(ROLE_USER).ifPresentOrElse(
                 userRole -> {
                     admin.getRoles().add(userRole);
@@ -221,7 +188,6 @@ public class DataInitializer {
 
         rolesAssigned = admin.getRoles().size();
 
-        // 💾 GUARDAR USUARIO ADMINISTRADOR
         User savedAdmin = userRepository.save(admin);
 
         logger.info("✅ Usuario administrador creado exitosamente");
@@ -231,15 +197,11 @@ public class DataInitializer {
         logger.info("🎭 Roles asignados: {}", rolesAssigned);
         logger.info("🏷️ Pronombres: {}", savedAdmin.getPronouns().size());
 
-        // 🚨 RECORDATORIO DE SEGURIDAD
         if ("dev".equals(activeProfile)) {
             logger.warn("🔐 RECUERDA CAMBIAR LAS CREDENCIALES POR DEFECTO ANTES DE PRODUCCIÓN!");
         }
     }
 
-    /**
-     * 📊 Mostrar estadísticas de inicialización
-     */
     private void showInitializationStats(RoleRepository roleRepository, UserRepository userRepository) {
         long totalRoles = roleRepository.count();
         long totalUsers = userRepository.count();
@@ -252,16 +214,10 @@ public class DataInitializer {
         logger.info("🚀 Sistema inicializado correctamente para el perfil: {}", activeProfile);
     }
 
-    /**
-     * 📧 Validar formato de email
-     */
     private boolean isValidEmail(String email) {
         return email != null && email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
     }
 
-    /**
-     * 🔐 Validar que la contraseña sea segura
-     */
     private boolean isPasswordSecure(String password) {
         if (password == null || password.length() < 8) {
             return false;
@@ -275,9 +231,6 @@ public class DataInitializer {
         return hasLower && hasUpper && hasDigit && hasSymbol;
     }
 
-    /**
-     * 🎭 Enmascarar email para logs
-     */
     private String maskEmail(String email) {
         if (email == null || !email.contains("@"))
             return email;

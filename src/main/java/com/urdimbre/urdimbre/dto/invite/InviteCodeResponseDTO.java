@@ -26,7 +26,6 @@ public class InviteCodeResponseDTO {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    // ✅ CAMPOS CALCULADOS
     private boolean isValid;
     private boolean isExpired;
     private boolean isMaxUsesReached;

@@ -33,5 +33,5 @@ public class BulkInviteCodeRequestDTO {
     private Integer maxUses;
 
     @Size(max = 20, message = "El prefijo no puede exceder 20 caracteres")
-    private String prefix; // Prefijo para los códigos generados
+    private String prefix;
 }

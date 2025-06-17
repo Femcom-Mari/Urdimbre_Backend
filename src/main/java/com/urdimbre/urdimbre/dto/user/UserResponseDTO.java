@@ -23,12 +23,10 @@ public class UserResponseDTO {
     private String location;
     private String profileImageUrl;
 
-    // ✅ MÚLTIPLES PRONOMBRES
     private Set<String> pronouns;
 
     private String status;
 
-    // ✅ AUDITORÍA COMPLETA
     private String createdAt;
     private String updatedAt;
     private String createdBy;

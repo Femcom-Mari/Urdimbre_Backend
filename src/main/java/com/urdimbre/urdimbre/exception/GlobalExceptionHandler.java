@@ -59,9 +59,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
     }
 
-    /**
-     * 🚫 ✅ NUEVO: Manejar excepciones de Rate Limiting
-     */
     @ExceptionHandler(RateLimitExceededException.class)
     public ResponseEntity<Map<String, Object>> handleRateLimitExceededException(RateLimitExceededException ex) {
         Map<String, Object> response = new HashMap<>();
@@ -111,7 +108,7 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(ex.getMessage(), HttpStatus.NOT_FOUND);
     }
 
-        @ExceptionHandler(AttendanceAlreadyExistsException.class)
+    @ExceptionHandler(AttendanceAlreadyExistsException.class)
     public ResponseEntity<String> handleAttendanceAlreadyExistsException(AttendanceAlreadyExistsException ex) {
         return new ResponseEntity<>(ex.getMessage(), HttpStatus.CONFLICT);
     }
@@ -126,3 +123,5 @@ public ResponseEntity<ErrorDetails> handleEntityNotFound(EntityNotFoundException
     return new ResponseEntity<>(errorDetails, HttpStatus.NOT_FOUND);
 }
 }
+
+

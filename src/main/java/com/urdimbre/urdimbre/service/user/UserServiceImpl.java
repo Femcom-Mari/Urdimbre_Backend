@@ -81,7 +81,6 @@ public class UserServiceImpl implements UserService {
             user.setProfileImageUrl(userDTO.getProfileImageUrl());
         }
 
-        // ✅ MÚLTIPLES PRONOMBRES - Convertir Set<String> a Set<Pronoun>
         if (userDTO.getPronouns() != null && !userDTO.getPronouns().isEmpty()) {
             Set<User.Pronoun> pronounSet = new HashSet<>();
 
@@ -138,10 +137,6 @@ public class UserServiceImpl implements UserService {
         return mapToResponseDTO(updatedUser);
     }
 
-    // ========================================
-    // MÉTODOS PRIVADOS AUXILIARES
-    // ========================================
-
     private void validateUniqueUsernameAndEmail(String username, String email) {
         if (userRepository.existsByUsername(username)) {
             throw new RuntimeException("El nombre de usuario ya está en uso");
@@ -162,7 +157,6 @@ public class UserServiceImpl implements UserService {
                 .profileImageUrl(dto.getProfileImageUrl())
                 .status(User.UserStatus.ACTIVE);
 
-        // ✅ MÚLTIPLES PRONOMBRES - Convertir Set<String> a Set<Pronoun>
         if (dto.getPronouns() != null && !dto.getPronouns().isEmpty()) {
             Set<User.Pronoun> pronounSet = new HashSet<>();
 
@@ -192,7 +186,6 @@ public class UserServiceImpl implements UserService {
         response.setLocation(user.getLocation());
         response.setProfileImageUrl(user.getProfileImageUrl());
 
-        // ✅ MÚLTIPLES PRONOMBRES - Convertir Set<Pronoun> a Set<String>
         if (user.getPronouns() != null && !user.getPronouns().isEmpty()) {
             Set<String> pronounStrings = user.getPronouns().stream()
                     .map(User.Pronoun::getDisplayValue)
@@ -202,7 +195,6 @@ public class UserServiceImpl implements UserService {
 
         response.setStatus(user.getStatus() != null ? user.getStatus().name() : null);
 
-        // ✅ AUDITORÍA COMPLETA
         response.setCreatedAt(user.getCreatedAt() != null ? user.getCreatedAt().toString() : null);
         response.setUpdatedAt(user.getUpdatedAt() != null ? user.getUpdatedAt().toString() : null);
         response.setCreatedBy(user.getCreatedBy());

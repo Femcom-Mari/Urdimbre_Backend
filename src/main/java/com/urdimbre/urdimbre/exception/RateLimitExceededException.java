@@ -27,9 +27,6 @@ public class RateLimitExceededException extends RuntimeException {
         return rateLimitType;
     }
 
-    /**
-     * 🔑 Factory method para rate limit de login por IP
-     */
     public static RateLimitExceededException forLoginByIp(long retryAfterSeconds) {
         return new RateLimitExceededException(
                 "Demasiados intentos de login desde esta IP. Intenta nuevamente en " + retryAfterSeconds + " segundos.",
@@ -37,9 +34,6 @@ public class RateLimitExceededException extends RuntimeException {
                 "login_ip");
     }
 
-    /**
-     * 👤 Factory method para rate limit de login por usuario
-     */
     public static RateLimitExceededException forLoginByUser(String username, long retryAfterSeconds) {
         return new RateLimitExceededException(
                 "Demasiados intentos de login para el usuario '" + username + "'. Intenta nuevamente en "
@@ -48,9 +42,6 @@ public class RateLimitExceededException extends RuntimeException {
                 "login_user");
     }
 
-    /**
-     * 📝 Factory method para rate limit de registro por IP
-     */
     public static RateLimitExceededException forRegisterByIp(long retryAfterSeconds) {
         return new RateLimitExceededException(
                 "Demasiados intentos de registro desde esta IP. Intenta nuevamente en " + retryAfterSeconds

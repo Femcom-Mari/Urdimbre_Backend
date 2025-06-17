@@ -33,7 +33,6 @@ public class UserRegisterDTO {
     @Pattern(regexp = "^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\\s]+$", message = "El apellido solo puede contener letras y espacios")
     private String lastName;
 
-    // ✅ MÚLTIPLES PRONOMBRES - Ahora es Set<String>
     @NotEmpty(message = "Debe seleccionar al menos un pronombre")
     private Set<String> pronouns;
 

@@ -23,8 +23,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-
-
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -40,7 +38,7 @@ public class ActivitiesUrdimbre {
     @Column
     @NotBlank
     @Size(max = 30)
-    private String title; 
+    private String title;
 
     @Column
     @NotBlank
@@ -55,7 +53,7 @@ public class ActivitiesUrdimbre {
     @Column
     @NotNull
     private LocalDate date;
-    
+
     @Column
     @NotNull
     private LocalTime startTime;

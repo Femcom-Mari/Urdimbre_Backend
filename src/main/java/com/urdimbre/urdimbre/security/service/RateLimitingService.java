@@ -15,10 +15,6 @@ import io.github.resilience4j.ratelimiter.RateLimiterRegistry;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.Data;
 
-/**
- * 🛡️ SERVICIO DE RATE LIMITING CON RESILIENCE4J
- * Alternativa robusta y simple a Bucket4j
- */
 @Service
 public class RateLimitingService {
 
@@ -27,7 +23,6 @@ public class RateLimitingService {
     private final RateLimiterRegistry rateLimiterRegistry;
     private final Map<String, RateLimiter> rateLimiters = new ConcurrentHashMap<>();
 
-    // ⚙️ CONFIGURACIONES
     @Value("${rate-limit.login.ip.capacity:10}")
     private int loginIpCapacity;
 
@@ -50,9 +45,6 @@ public class RateLimitingService {
         this.rateLimiterRegistry = RateLimiterRegistry.ofDefaults();
     }
 
-    /**
-     * 🔑 Verificar rate limit para LOGIN por IP
-     */
     public RateLimitResult checkLoginByIp(HttpServletRequest request) {
         String ip = getClientIp(request);
         String key = "login_ip_" + ip;
@@ -71,9 +63,6 @@ public class RateLimitingService {
         }
     }
 
-    /**
-     * 👤 Verificar rate limit para LOGIN por usuario
-     */
     public RateLimitResult checkLoginByUser(String username) {
         String key = "login_user_" + username;
 
@@ -91,9 +80,6 @@ public class RateLimitingService {
         }
     }
 
-    /**
-     * 📝 Verificar rate limit para REGISTRO por IP
-     */
     public RateLimitResult checkRegisterByIp(HttpServletRequest request) {
         String ip = getClientIp(request);
         String key = "register_ip_" + ip;
@@ -112,9 +98,6 @@ public class RateLimitingService {
         }
     }
 
-    /**
-     * 🌐 Obtener IP real del cliente
-     */
     public String getClientIp(HttpServletRequest request) {
         String clientIp = request.getHeader("X-Forwarded-For");
         if (clientIp != null && !clientIp.isEmpty() && !"unknown".equalsIgnoreCase(clientIp)) {
@@ -129,18 +112,12 @@ public class RateLimitingService {
         return request.getRemoteAddr();
     }
 
-    /**
-     * 🧹 Limpiar rate limiters antiguos
-     */
     public void cleanupOldBuckets() {
         int initialSize = rateLimiters.size();
         rateLimiters.clear();
         logger.info("🧹 Limpieza de rate limiters completada - Removidos: {}", initialSize);
     }
 
-    /**
-     * 📊 Obtener estadísticas
-     */
     public RateLimitStats getStatistics() {
         return RateLimitStats.builder()
                 .activeBuckets(rateLimiters.size())
@@ -149,10 +126,6 @@ public class RateLimitingService {
                 .registerBuckets((int) rateLimiters.keySet().stream().filter(k -> k.startsWith("register_")).count())
                 .build();
     }
-
-    // ================================
-    // MÉTODOS PRIVADOS
-    // ================================
 
     private RateLimiter getOrCreateRateLimiter(String key, int limit, Duration duration) {
         return rateLimiters.computeIfAbsent(key, k -> {
@@ -167,14 +140,9 @@ public class RateLimitingService {
     }
 
     private long getRemainingPermissions(RateLimiter rateLimiter) {
-        // Resilience4j no proporciona remaining tokens directamente
-        // Aproximación basada en la configuración
+
         return Math.max(0, rateLimiter.getRateLimiterConfig().getLimitForPeriod() - 1);
     }
-
-    // ================================
-    // CLASES INTERNAS
-    // ================================
 
     @Data
     public static class RateLimitResult {
