@@ -28,20 +28,9 @@ public class ActivitiesUrdimbreServicelmpl implements ActivitiesUrdimbreService 
 
     @Override
     public ActivitiesUrdimbreResponseDTO createActivitiesUrdimbre(ActivitiesUrdimbreRequestDTO dto) {
-
-
         ActivitiesUrdimbre activity = new ActivitiesUrdimbre();
-        activity.setCategory(dto.getCategory());
-        activity.setTitle(dto.getTitle());
-        activity.setDescription(dto.getDescription());
-        activity.setLanguage(dto.getLanguage());
-        activity.setDate(LocalDate.parse(dto.getDate()));
-        activity.setStartTime(LocalTime.parse(dto.getStartTime()));
-        activity.setEndTime(LocalTime.parse(dto.getEndTime()));
-        activity.setMaxAttendees(dto.getMaxAttendees());
-
+        populateActivitiesFromDto(activity, dto);
         ActivitiesUrdimbre saved = activitiesUrdimbreRepository.save(activity);
-
         ActivitiesUrdimbreResponseDTO response = ActivitiesUrdimbreResponseDTO.builder()
                 .category(saved.getCategory())
                 .title(dto.getTitle())
@@ -52,20 +41,18 @@ public class ActivitiesUrdimbreServicelmpl implements ActivitiesUrdimbreService 
                 .endTime(saved.getEndTime())
                 .maxAttendees(saved.getMaxAttendees())
                 .build();
-
         return response;
-
     }
 
     @Override
     public List<ActivitiesUrdimbreResponseDTO> getActivitiesByCategory(String categoryStr) {
         Category category = Category.valueOf(categoryStr.toUpperCase());
-
         return activitiesUrdimbreRepository.findAllByCategory(category)
                 .stream()
                 .map(this::convertToDto)
                 .toList();
     }
+
 
     @Override
     public List<ActivitiesUrdimbreResponseDTO> getActivitiesByDate(LocalDate date) {
@@ -75,20 +62,10 @@ public class ActivitiesUrdimbreServicelmpl implements ActivitiesUrdimbreService 
                 .toList();
     }
 
-    private ActivitiesUrdimbreResponseDTO convertToDto(ActivitiesUrdimbre activities) {
-        return new ActivitiesUrdimbreResponseDTO(
-                activities.getCategory(),
-                activities.getTitle(),
-                activities.getDescription(),
-                activities.getLanguage(),
-                activities.getDate(),
-                activities.getStartTime(),
-                activities.getEndTime(),
-                activities.getMaxAttendees());
-    }
 
     private AttendanceResponseDTO convertToAttendanceDto(Attendance attendance) {
         return new AttendanceResponseDTO(
+            
         );
     }
 
@@ -128,5 +105,17 @@ private void populateActivitiesFromDto (ActivitiesUrdimbre activity, ActivitiesU
         activity.setEndTime(LocalTime.parse(dto.getEndTime()));
         activity.setMaxAttendees(dto.getMaxAttendees());
 }
+
+    private ActivitiesUrdimbreResponseDTO convertToDto(ActivitiesUrdimbre activities) {
+        return new ActivitiesUrdimbreResponseDTO(
+                activities.getCategory(),
+                activities.getTitle(),
+                activities.getDescription(),
+                activities.getLanguage(),
+                activities.getDate(),
+                activities.getStartTime(),
+                activities.getEndTime(),
+                activities.getMaxAttendees());
+    }
 
 }

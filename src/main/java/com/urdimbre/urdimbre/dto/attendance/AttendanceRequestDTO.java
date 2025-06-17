@@ -13,7 +13,6 @@ public class AttendanceRequestDTO {
 
 
 private AttendanceStatus status;
-
 private Long activityId;
 private Long userId;
 
