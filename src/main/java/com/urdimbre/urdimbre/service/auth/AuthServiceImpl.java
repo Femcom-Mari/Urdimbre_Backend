@@ -17,6 +17,7 @@ import com.urdimbre.urdimbre.dto.auth.AuthResponseDTO;
 import com.urdimbre.urdimbre.dto.user.UserRegisterDTO;
 import com.urdimbre.urdimbre.dto.user.UserResponseDTO;
 import com.urdimbre.urdimbre.exception.BadRequestException;
+import com.urdimbre.urdimbre.model.Pronoun;
 import com.urdimbre.urdimbre.model.Role;
 import com.urdimbre.urdimbre.model.User;
 import com.urdimbre.urdimbre.repository.RoleRepository;
@@ -64,7 +65,7 @@ public class AuthServiceImpl implements AuthService {
                 .status(User.UserStatus.ACTIVE)
                 .biography("Nuevo usuario registrado");
 
-        Set<User.Pronoun> pronounSet = validateAndMapPronouns(dto.getPronouns());
+        Set<Pronoun> pronounSet = validateAndMapPronouns(dto.getPronouns());
         userBuilder.pronouns(pronounSet);
 
         User user = userBuilder.build();
@@ -94,7 +95,7 @@ public class AuthServiceImpl implements AuthService {
 
         if (savedUser.getPronouns() != null && !savedUser.getPronouns().isEmpty()) {
             Set<String> pronounStrings = savedUser.getPronouns().stream()
-                    .map(User.Pronoun::getDisplayValue)
+                    .map(Pronoun::getDisplayValue)
                     .collect(Collectors.toSet());
             response.setPronouns(pronounStrings);
         }
@@ -114,14 +115,14 @@ public class AuthServiceImpl implements AuthService {
         return response;
     }
 
-    private Set<User.Pronoun> validateAndMapPronouns(Set<String> pronouns) {
+    private Set<Pronoun> validateAndMapPronouns(Set<String> pronouns) {
         if (pronouns == null || pronouns.isEmpty()) {
             throw new BadRequestException("Debe seleccionar al menos un pronombre");
         }
-        Set<User.Pronoun> pronounSet = new HashSet<>();
+        Set<Pronoun> pronounSet = new HashSet<>();
         for (String pronounString : pronouns) {
             try {
-                User.Pronoun pronoun = User.Pronoun.fromDisplayValue(pronounString);
+                Pronoun pronoun = Pronoun.fromDisplayValue(pronounString);
                 pronounSet.add(pronoun);
             } catch (IllegalArgumentException e) {
                 throw new BadRequestException("Pronombre inválido: " + pronounString +

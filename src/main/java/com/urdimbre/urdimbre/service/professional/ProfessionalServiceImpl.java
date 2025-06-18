@@ -9,8 +9,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.urdimbre.urdimbre.dto.professional.ProfessionalRequestDTO;
 import com.urdimbre.urdimbre.dto.professional.ProfessionalResponseDTO;
 import com.urdimbre.urdimbre.model.Professional;
+import com.urdimbre.urdimbre.model.Pronoun;
 import com.urdimbre.urdimbre.repository.ProfessionalRepository;
-
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -83,11 +83,11 @@ public class ProfessionalServiceImpl implements ProfessionalService {
         }
     }
 
-    private Set<Professional.Pronoun> mapPronouns(Set<String> pronounStrings) {
-        Set<Professional.Pronoun> pronouns = new HashSet<>();
+    private Set<Pronoun> mapPronouns(Set<String> pronounStrings) {
+        Set<Pronoun> pronouns = new HashSet<>();
         for (String str : pronounStrings) {
             try {
-                pronouns.add(Professional.Pronoun.fromDisplayValue(str));
+                pronouns.add(Pronoun.fromDisplayValue(str));
             } catch (IllegalArgumentException e) {
                 throw new RuntimeException("Pronombre inválido: " + str +
                         ". Valores válidos: Elle, Ella, El");
@@ -103,7 +103,7 @@ public class ProfessionalServiceImpl implements ProfessionalService {
         dto.setCity(professional.getCity());
         if (professional.getPronouns() != null && !professional.getPronouns().isEmpty()) {
             Set<String> pronounStrings = professional.getPronouns().stream()
-                    .map(Professional.Pronoun::getDisplayValue)
+                    .map(Pronoun::getDisplayValue)
                     .collect(Collectors.toSet());
             dto.setPronouns(pronounStrings);
         }

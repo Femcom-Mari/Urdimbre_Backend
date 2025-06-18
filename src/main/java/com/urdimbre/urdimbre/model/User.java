@@ -3,15 +3,11 @@ package com.urdimbre.urdimbre.model;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
-
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-
-import com.fasterxml.jackson.annotation.JsonValue;
-
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
@@ -80,8 +76,6 @@ public class User {
     @Builder.Default
     private UserStatus status = UserStatus.ACTIVE;
 
-    
-
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
     @Builder.Default
@@ -111,39 +105,7 @@ public class User {
         return this.status == UserStatus.ACTIVE;
     }
 
-    // ✅ ENUM SIN CAMBIOS
-    public enum Pronoun {
-        ELLE("Elle"),
-        ELLA("Ella"),
-        EL("El");
-
-        private final String displayValue;
-
-        Pronoun(String displayValue) {
-            this.displayValue = displayValue;
-        }
-
-        @JsonValue
-        public String getDisplayValue() {
-            return displayValue;
-        }
-
-        public static Pronoun fromDisplayValue(String displayValue) {
-            for (Pronoun pronoun : values()) {
-                if (pronoun.displayValue.equals(displayValue)) {
-                    return pronoun;
-                }
-            }
-            throw new IllegalArgumentException("Pronombre inválido: " + displayValue +
-                    ". Valores válidos: Elle, Ella, El");
-        }
-
-        @Override
-        public String toString() {
-            return displayValue;
-        }
-    }
-
+   
     public enum UserStatus {
         ACTIVE, INACTIVE, BANNED, DELETED
     }

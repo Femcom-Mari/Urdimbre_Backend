@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import com.urdimbre.urdimbre.dto.user.UserRequestDTO;
 import com.urdimbre.urdimbre.dto.user.UserResponseDTO;
+import com.urdimbre.urdimbre.model.Pronoun;
 import com.urdimbre.urdimbre.model.Role;
 import com.urdimbre.urdimbre.model.User;
 import com.urdimbre.urdimbre.repository.RoleRepository;
@@ -82,11 +83,11 @@ public class UserServiceImpl implements UserService {
         }
 
         if (userDTO.getPronouns() != null && !userDTO.getPronouns().isEmpty()) {
-            Set<User.Pronoun> pronounSet = new HashSet<>();
+            Set<Pronoun> pronounSet = new HashSet<>();
 
             for (String pronounString : userDTO.getPronouns()) {
                 try {
-                    User.Pronoun pronoun = User.Pronoun.fromDisplayValue(pronounString);
+                    Pronoun pronoun = Pronoun.fromDisplayValue(pronounString);
                     pronounSet.add(pronoun);
                 } catch (IllegalArgumentException e) {
                     throw new RuntimeException("Pronombre inválido: " + pronounString +
@@ -158,11 +159,11 @@ public class UserServiceImpl implements UserService {
                 .status(User.UserStatus.ACTIVE);
 
         if (dto.getPronouns() != null && !dto.getPronouns().isEmpty()) {
-            Set<User.Pronoun> pronounSet = new HashSet<>();
+            Set<Pronoun> pronounSet = new HashSet<>();
 
             for (String pronounString : dto.getPronouns()) {
                 try {
-                    User.Pronoun pronoun = User.Pronoun.fromDisplayValue(pronounString);
+                    Pronoun pronoun = Pronoun.fromDisplayValue(pronounString);
                     pronounSet.add(pronoun);
                 } catch (IllegalArgumentException e) {
                     throw new RuntimeException("Pronombre inválido: " + pronounString +
@@ -188,7 +189,7 @@ public class UserServiceImpl implements UserService {
 
         if (user.getPronouns() != null && !user.getPronouns().isEmpty()) {
             Set<String> pronounStrings = user.getPronouns().stream()
-                    .map(User.Pronoun::getDisplayValue)
+                    .map(Pronoun::getDisplayValue)
                     .collect(Collectors.toSet());
             response.setPronouns(pronounStrings);
         }
