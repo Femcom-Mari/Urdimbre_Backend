@@ -18,16 +18,23 @@ import lombok.NoArgsConstructor;
 @Builder
 public class ActivitiesUrdimbreResponseDTO {
 
+    private Long id;
+
     private Category category;
     private String title;
     private String description;
     private Language language;
+
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate date;
+
     @JsonFormat(pattern = "HH:mm")
     private LocalTime startTime;
+
     @JsonFormat(pattern = "HH:mm")
     private LocalTime endTime;
+
     private Integer maxAttendees;
+    private Integer currentAttendees;
 
 }

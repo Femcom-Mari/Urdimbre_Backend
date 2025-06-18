@@ -2,6 +2,7 @@ package com.urdimbre.urdimbre.dto.attendance;
 
 import com.urdimbre.urdimbre.model.AttendanceStatus;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -11,11 +12,11 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class AttendanceRequestDTO {
 
+    private AttendanceStatus status;
 
-private AttendanceStatus status;
-private Long activityId;
-private Long userId;
+    @NotNull(message = "El ID de la actividad es obligatorio")
+    private Long activityId;
 
-
-
+    @NotNull(message = "El ID del usuario es obligatorio")
+    private Long userId;
 }

@@ -64,13 +64,12 @@ public class AuthController {
         logger.info("🔐 Intento de registro para usuario: {}", request.getUsername());
 
         try {
-            // ✅ RATE LIMITING
+
             RateLimitingService.RateLimitResult rateLimitResult = rateLimitingService.checkRegisterByIp(httpRequest);
             if (!rateLimitResult.isAllowed()) {
                 throw RateLimitExceededException.forRegisterByIp(rateLimitResult.getRetryAfterSeconds());
             }
 
-            // ✅ VALIDACIÓN ESPECÍFICA DEL CÓDIGO DE INVITACIÓN
             if (!inviteCodeService.validateInviteCode(request.getInviteCode())) {
                 logger.warn("❌ Código de invitación inválido para {}: {}", request.getUsername(),
                         request.getInviteCode());
@@ -79,7 +78,7 @@ public class AuthController {
                 throw new BadRequestException("Código de invitación: " + specificMessage);
             }
 
-            // ✅ VALIDACIONES ESPECÍFICAS DE USUARIO
+            // VALIDACIONES ESPECÍFICAS DE USUARIO
             validateRegistrationDataWithSpecificErrors(request);
 
             UserResponseDTO response = authService.register(request);
@@ -96,6 +95,7 @@ public class AuthController {
                     request.getUsername(), rateLimitingService.getClientIp(httpRequest),
                     e.getRateLimitType(), e.getRetryAfterSeconds(), e);
 
+            // Rethrow with contextual information
             throw new RateLimitExceededException(
                     String.format("Rate limit exceeded para registro - Usuario: %s desde IP: %s. %s",
                             request.getUsername(), rateLimitingService.getClientIp(httpRequest), e.getMessage()),

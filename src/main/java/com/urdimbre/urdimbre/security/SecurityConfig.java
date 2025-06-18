@@ -301,7 +301,7 @@ public class SecurityConfig {
         }
 
         /**
-         * 🔧 Verificar si estamos en entorno de desarrollo (para endpoints
+         * Verificar si estamos en entorno de desarrollo (para endpoints
          * condicionales)
          */
         private org.springframework.security.authorization.AuthorizationDecision isDevelopmentEnvironment(
@@ -320,11 +320,11 @@ public class SecurityConfig {
         }
 
         /**
-         * 🛡️ Construir Content Security Policy según el entorno
+         * Construir Content Security Policy según el entorno
          */
         private String buildContentSecurityPolicy() {
                 if (isProductionEnvironment()) {
-                        // 🚀 CSP ESTRICTO PARA PRODUCCIÓN
+                        // CSP ESTRICTO PARA PRODUCCIÓN
                         return "default-src 'self'; " +
                                         "script-src 'self'; " +
                                         "style-src 'self' 'unsafe-inline'; " +
@@ -337,7 +337,7 @@ public class SecurityConfig {
                                         "object-src 'none'; " +
                                         "upgrade-insecure-requests";
                 } else {
-                        // 🔧 CSP MÁS PERMISIVO PARA DESARROLLO
+                        // CSP MÁS PERMISIVO PARA DESARROLLO
                         return "default-src 'self'; " +
                                         "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
                                         "style-src 'self' 'unsafe-inline'; " +
