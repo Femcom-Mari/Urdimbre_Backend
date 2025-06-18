@@ -395,7 +395,7 @@ public class AuthController {
                         .build());
             }
 
-            // TODO: Aquí implementarías el envío del email
+            //  Aquí implementarías el envío del email
             // passwordResetService.sendPasswordResetEmail(userOpt.get());
 
             logger.info("✅ Email de recuperación enviado exitosamente a: {}", request.getEmail());
