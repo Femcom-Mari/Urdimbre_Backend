@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import com.urdimbre.urdimbre.model.Pronoun;
 import com.urdimbre.urdimbre.model.Role;
 import com.urdimbre.urdimbre.model.User;
 import com.urdimbre.urdimbre.model.User.UserStatus;
@@ -155,8 +156,8 @@ public class DataInitializer {
 
         logger.info("🏗️ Creando usuario administrador: {}", adminUsername);
 
-        Set<User.Pronoun> adminPronouns = new HashSet<>();
-        adminPronouns.add(User.Pronoun.EL);
+        Set<Pronoun> adminPronouns = new HashSet<>();
+        adminPronouns.add(Pronoun.EL);
 
         User admin = User.builder()
                 .username(adminUsername)
