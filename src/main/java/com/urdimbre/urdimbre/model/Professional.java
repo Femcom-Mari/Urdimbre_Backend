@@ -4,6 +4,9 @@ package com.urdimbre.urdimbre.model;
 import java.util.HashSet;
 import java.util.Set;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+import com.fasterxml.jackson.annotation.JsonValue;
+
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 
@@ -30,13 +33,13 @@ public class Professional {
     @Size(max = 100)
     private String name;
 
-    @ElementCollection(targetClass = Pronouns.class, fetch = FetchType.EAGER)
+    @ElementCollection(targetClass = Pronoun.class, fetch = FetchType.EAGER)
     @Enumerated(EnumType.STRING)
-    @CollectionTable(name = "user_pronouns", joinColumns = @JoinColumn(name = "professional_id"))
+    @CollectionTable(name = "professional_pronouns", joinColumns = @JoinColumn(name = "professional_id"))
     @Column(name = "pronoun")
     @NotEmpty(message = "You must select at least one pronoun")
     @Builder.Default
-    private Set<Pronouns> pronouns = new HashSet<>();
+    private Set<Pronoun> pronouns = new HashSet<>();
 
 
     @Size(max = 1000)
@@ -69,5 +72,38 @@ public class Professional {
     @Enumerated(EnumType.STRING)
     @Column(name = "community_status", length = 20, nullable = false)
     private CommunityStatus communityStatus;
+
+    
+    public enum Pronoun {
+        ELLE("Elle"),
+        ELLA("Ella"),
+        EL("El");
+
+        private final String displayValue;
+
+        Pronoun(String displayValue) {
+            this.displayValue = displayValue;
+        }
+
+        @JsonValue
+        public String getDisplayValue() {
+            return displayValue;
+        }
+
+        public static Pronoun fromDisplayValue(String displayValue) {
+            for (Pronoun pronoun : values()) {
+                if (pronoun.displayValue.equals(displayValue)) {
+                    return pronoun;
+                }
+            }
+            throw new IllegalArgumentException("Pronombre inválido: " + displayValue +
+                    ". Valores válidos: Elle, Ella, El");
+        }
+
+        @Override
+        public String toString() {
+            return displayValue;
+        }
+    }
 
 }

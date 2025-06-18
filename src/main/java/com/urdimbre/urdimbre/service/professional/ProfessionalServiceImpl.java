@@ -1,16 +1,14 @@
 package com.urdimbre.urdimbre.service.professional;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import com.urdimbre.urdimbre.dto.professional.ProfessionalRequestDTO;
 import com.urdimbre.urdimbre.dto.professional.ProfessionalResponseDTO;
 import com.urdimbre.urdimbre.model.Professional;
-import com.urdimbre.urdimbre.model.User;
 import com.urdimbre.urdimbre.repository.ProfessionalRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -24,7 +22,8 @@ public class ProfessionalServiceImpl implements ProfessionalService {
     @Override
     @Transactional
     public ProfessionalResponseDTO createProfessional(ProfessionalRequestDTO dto) {
-        Professional professional = mapToEntity(dto);
+        Professional professional = new Professional();
+        applyDtoToProfessional(dto, professional);
         Professional saved = professionalRepository.save(professional);
         return mapToResponseDTO(saved);
     }
@@ -34,36 +33,24 @@ public class ProfessionalServiceImpl implements ProfessionalService {
     public ProfessionalResponseDTO updateProfessional(Long id, ProfessionalRequestDTO dto) {
         Professional professional = professionalRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Professional not found"));
-        professional.setCity(dto.getCity());
-        professional.setName(dto.getName());
-        professional.setPronouns(mapPronouns(dto.getPronouns()));
-        professional.setDescription(dto.getDescription());
-        professional.setPhone(dto.getPhone());
-        professional.setEmail(dto.getEmail());
-        professional.setWebsite(dto.getWebsite());
-        professional.setSocialMedia(dto.getSocialMedia());
-        professional.setTown(dto.getTown());
-        professional.setActivities(dto.getActivities());
-        professional.setPrice(dto.getPrice());
-        professional.setCommunityStatus(dto.getCommunityStatus());
 
-
+        applyDtoToProfessional(dto, professional);
         Professional updated = professionalRepository.save(professional);
         return mapToResponseDTO(updated);
     }
 
     @Override
     public ProfessionalResponseDTO getProfessional(Long id) {
-        Professional professional = professionalRepository.findById(id)
+        return professionalRepository.findById(id)
+                .map(this::mapToResponseDTO)
                 .orElseThrow(() -> new RuntimeException("Professional not found"));
-        return mapToResponseDTO(professional);
     }
 
     @Override
     public List<ProfessionalResponseDTO> getAllProfessionals() {
         return professionalRepository.findAll().stream()
                 .map(this::mapToResponseDTO)
-                .toList();
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -75,73 +62,61 @@ public class ProfessionalServiceImpl implements ProfessionalService {
         professionalRepository.deleteById(id);
     }
 
-    private Professional mapToEntity(ProfessionalRequestDTO dto) {
-        return Professional.builder()
-                .name(dto.getName())
-                .city(dto.getCity())
-                .pronouns(mapPronouns(dto.getPronouns()))
-                .description(dto.getDescription())
-                .phone(dto.getPhone())
-                .email(dto.getEmail())
-                .town(dto.getTown())
-                .website(dto.getWebsite())
-                .socialMedia(dto.getSocialMedia())
-                .activities(dto.getActivities())
-                .price(dto.getPrice())
-                .communityStatus(dto.getCommunityStatus())
-                .build();
+
+    private void applyDtoToProfessional(ProfessionalRequestDTO dto, Professional professional) {
+        professional.setName(dto.getName());
+        professional.setCity(dto.getCity());
+        professional.setDescription(dto.getDescription());
+        professional.setPhone(dto.getPhone());
+        professional.setEmail(dto.getEmail());
+        professional.setWebsite(dto.getWebsite());
+        professional.setSocialMedia(dto.getSocialMedia());
+        professional.setTown(dto.getTown());
+        professional.setActivities(dto.getActivities());
+        professional.setPrice(dto.getPrice());
+        professional.setCommunityStatus(dto.getCommunityStatus());
+
+        if (dto.getPronouns() != null && !dto.getPronouns().isEmpty()) {
+            professional.setPronouns(mapPronouns(dto.getPronouns()));
+        } else {
+            professional.setPronouns(new HashSet<>()); // evita nulls
+        }
     }
 
-    private Set<Professional.Pronoun> mapPronouns(Set<String> pronouns) {
-        return pronouns.stream().map(s -> {
+    private Set<Professional.Pronoun> mapPronouns(Set<String> pronounStrings) {
+        Set<Professional.Pronoun> pronouns = new HashSet<>();
+        for (String str : pronounStrings) {
             try {
-                return mapStringToPronoun(s);
+                pronouns.add(Professional.Pronoun.fromDisplayValue(str));
             } catch (IllegalArgumentException e) {
-                throw new RuntimeException("Pronombre inválido: " + s +
+                throw new RuntimeException("Pronombre inválido: " + str +
                         ". Valores válidos: Elle, Ella, El");
             }
-        }).collect(Collectors.toSet());
-    }
-
-    private Professional.Pronoun mapStringToPronoun(String pronounString) {
-
-        for (Professional.Pronoun pronoun : Professional.Pronoun.values()) {
-            if (pronoun.getDisplayValue().equalsIgnoreCase(pronounString)) {
-                return pronoun;
-            }
         }
-
-        try {
-            return Professional.Pronoun.valueOf(pronounString.toUpperCase());
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Pronombre no válido: " + pronounString +
-                    ". Valores válidos: Elle, Ella, El");
-        }
+        return pronouns;
     }
 
     private ProfessionalResponseDTO mapToResponseDTO(Professional professional) {
         ProfessionalResponseDTO dto = new ProfessionalResponseDTO();
         dto.setId(professional.getId());
-        dto.setFirstName(professional.getFirstName());
-        dto.setLastName(professional.getLastName());
-
-        dto.setPronouns(
-                professional.getPronouns().stream()
-                        .map(Professional.Pronoun::getDisplayValue)
-                        .collect(Collectors.toSet()));
-
-        dto.setTitle(professional.getTitle());
-        dto.setBio(professional.getBio());
+        dto.setName(professional.getName());
+        dto.setCity(professional.getCity());
+        if (professional.getPronouns() != null && !professional.getPronouns().isEmpty()) {
+            Set<String> pronounStrings = professional.getPronouns().stream()
+                    .map(Professional.Pronoun::getDisplayValue)
+                    .collect(Collectors.toSet());
+            dto.setPronouns(pronounStrings);
+        }
+        dto.setDescription(professional.getDescription());
         dto.setPhone(professional.getPhone());
         dto.setEmail(professional.getEmail());
-        dto.setLocation(professional.getLocation());
-        dto.setProfileImageUrl(professional.getProfileImageUrl());
-        dto.setUrl1(professional.getUrl1());
-        dto.setUrl2(professional.getUrl2());
-        dto.setUrl3(professional.getUrl3());
-        dto.setStatus(professional.getStatus().name());
-        dto.setCreatedAt(professional.getCreatedAt());
-        dto.setUpdatedAt(professional.getUpdatedAt());
+        dto.setWebsite(professional.getWebsite());
+        dto.setSocialMedia(professional.getSocialMedia());
+        dto.setTown(professional.getTown());
+        dto.setActivities(professional.getActivities());
+        dto.setPrice(professional.getPrice());
+        dto.setCommunityStatus(professional.getCommunityStatus());
         return dto;
     }
 }
+

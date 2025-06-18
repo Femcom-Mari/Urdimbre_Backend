@@ -3,7 +3,6 @@ package com.urdimbre.urdimbre.dto.professional;
 import java.util.Set;
 
 import com.urdimbre.urdimbre.model.CommunityStatus;
-import com.urdimbre.urdimbre.model.Pronouns;
 import jakarta.validation.constraints.*;
 
 import lombok.Data;
@@ -20,7 +19,8 @@ public class ProfessionalRequestDTO {
     private String name;
 
     @NotNull(message = "Pronouns are required")
-     private Set<Pronouns> pronouns;
+    private Set<String> pronouns;
+
 
     @Size(max = 1000)
     private String description;
