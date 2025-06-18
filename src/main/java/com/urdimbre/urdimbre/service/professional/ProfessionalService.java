@@ -1,20 +1,25 @@
 package com.urdimbre.urdimbre.service.professional;
 
-import com.urdimbre.urdimbre.model.Professional;
+import com.urdimbre.urdimbre.dto.professional.ProfessionalRequestDTO;
+import com.urdimbre.urdimbre.dto.professional.ProfessionalResponseDTO;
 import org.springframework.stereotype.Service;
-import com.urdimbre.urdimbre.repository.ProfessionalsRepository;
 
 import java.util.List;
 
 @Service
-public class ProfessionalService {
-    private final ProfessionalsRepository professionalsRepository;
+public interface ProfessionalService {
 
-    public ProfessionalService(ProfessionalsRepository professionalsRepository) {
-        this.professionalsRepository = professionalsRepository;
-    }
 
-    public List<Professional> getAllProfessionals() {
-        return professionalsRepository.findAll();
-    }
+    ProfessionalResponseDTO createProfessional(ProfessionalRequestDTO dto);
+
+    ProfessionalResponseDTO updateProfessional(Long id, ProfessionalRequestDTO dto);
+
+    ProfessionalResponseDTO getProfessional(Long id);
+
+    List<ProfessionalResponseDTO> getAllProfessionals();
+
+    void deleteProfessional(Long id);
 }
+
+
+

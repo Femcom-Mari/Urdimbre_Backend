@@ -1,113 +1,67 @@
 package com.urdimbre.urdimbre.model;
 
+
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
+
+import lombok.*;
 
 @Entity
+@Table(name = "professionals")
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@EntityListeners(AuditingEntityListener.class)
 public class Professional {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String ciudad;
-    private String nombre;
-    @Column(length = 2000)
-    private String descripcion;
-    private String telefono;
+    @NotBlank(message = "City is required")
+    @Size(max = 100)
+    private String city;
+
+    @NotBlank(message = "Name is required")
+    @Size(max = 100)
+    private String name;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private Pronouns pronouns;
+
+
+    @Size(max = 1000)
+    private String description;
+
+    @Pattern(regexp = "^\\+?[0-9\\-\\s()]{7,20}$", message = "Invalid phone number format")
+    private String phone;
+
+    @NotBlank(message = "Email is required")
+    @Email(message = "Invalid email format")
     private String email;
-    private String web;
-    private String redes;
-    private String poblacion;
-    @Column(length = 2000)
-    private String actividades;
-    private String precio;
 
-    public Long getId() {
-        return this.id;
-    }
+    @Size(max = 255)
+    @Pattern(regexp = "^(https?://)?[\\w.-]+\\.[a-zA-Z]{2,}.*$", message = "Invalid website URL format")
+    private String website;
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    @Size(max = 255)
+    private String socialMedia;
 
-    public String getCiudad() {
-        return this.ciudad;
-    }
+    @Size(max = 100)
+    private String town;
 
-    public void setCiudad(String ciudad) {
-        this.ciudad = ciudad;
-    }
+    @Size(max = 500)
+    private String activities;
 
-    public String getNombre() {
-        return this.nombre;
-    }
+    @Size(max = 100)
+    private String price;
 
-    public void setNombre(String nombre) {
-        this.nombre = nombre;
-    }
-
-    public String getDescripcion() {
-        return this.descripcion;
-    }
-
-    public void setDescripcion(String descripcion) {
-        this.descripcion = descripcion;
-    }
-
-    public String getTelefono() {
-        return this.telefono;
-    }
-
-    public void setTelefono(String telefono) {
-        this.telefono = telefono;
-    }
-
-    public String getEmail() {
-        return this.email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getWeb() {
-        return this.web;
-    }
-
-    public void setWeb(String web) {
-        this.web = web;
-    }
-
-    public String getRedes() {
-        return this.redes;
-    }
-
-    public void setRedes(String redes) {
-        this.redes = redes;
-    }
-
-    public String getPoblacion() {
-        return this.poblacion;
-    }
-
-    public void setPoblacion(String poblacion) {
-        this.poblacion = poblacion;
-    }
-
-    public String getActividades() {
-        return this.actividades;
-    }
-
-    public void setActividades(String actividades) {
-        this.actividades = actividades;
-    }
-
-    public String getPrecio() {
-        return this.precio;
-    }
-
-    public void setPrecio(String precio) {
-        this.precio = precio;
-    }
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(name = "community_status", length = 20, nullable = false)
+    private CommunityStatus communityStatus;
 
 }
