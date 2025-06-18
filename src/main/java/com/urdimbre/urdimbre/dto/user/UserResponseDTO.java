@@ -1,6 +1,7 @@
 package com.urdimbre.urdimbre.dto.user;
 
 import java.util.List;
+import java.util.Set;
 
 import jakarta.validation.constraints.Email;
 import lombok.AllArgsConstructor;
@@ -22,10 +23,14 @@ public class UserResponseDTO {
     private String location;
     private String profileImageUrl;
 
-    private String pronouns;
+    private Set<String> pronouns;
 
     private String status;
+
     private String createdAt;
     private String updatedAt;
+    private String createdBy;
+    private String lastModifiedBy;
+
     private List<String> roles;
 }

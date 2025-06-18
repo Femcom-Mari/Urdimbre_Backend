@@ -4,13 +4,18 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.EnumType;
@@ -22,7 +27,9 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotEmpty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -61,13 +68,19 @@ public class User {
     @Column(name = "profile_image_url")
     private String profileImageUrl;
 
-    // ✅ ENUM CORREGIDO CON VALORES VÁLIDOS EN JAVA
+    @ElementCollection(targetClass = Pronoun.class, fetch = FetchType.EAGER)
     @Enumerated(EnumType.STRING)
-    private Pronoun pronouns;
+    @CollectionTable(name = "user_pronouns", joinColumns = @JoinColumn(name = "user_id"))
+    @Column(name = "pronoun")
+    @NotEmpty(message = "Debe seleccionar al menos un pronombre")
+    @Builder.Default
+    private Set<Pronoun> pronouns = new HashSet<>();
 
     @Enumerated(EnumType.STRING)
     @Builder.Default
     private UserStatus status = UserStatus.ACTIVE;
+
+    
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
@@ -82,11 +95,23 @@ public class User {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @CreatedBy
+    @Column(name = "created_by", updatable = false)
+    private String createdBy;
+
+    @LastModifiedBy
+    @Column(name = "last_modified_by")
+    private String lastModifiedBy;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private Set<Attendance> attendances = new HashSet<>();
+
     public boolean isEnabled() {
         return this.status == UserStatus.ACTIVE;
     }
 
-    // ✅ ENUM CORREGIDO: Nombres técnicos con valores de presentación
+    // ✅ ENUM SIN CAMBIOS
     public enum Pronoun {
         ELLE("Elle"),
         ELLA("Ella"),
@@ -98,12 +123,11 @@ public class User {
             this.displayValue = displayValue;
         }
 
-        @JsonValue // ✅ Esto hace que Jackson serialice el displayValue
+        @JsonValue
         public String getDisplayValue() {
             return displayValue;
         }
 
-        // ✅ Método para buscar por valor de display
         public static Pronoun fromDisplayValue(String displayValue) {
             for (Pronoun pronoun : values()) {
                 if (pronoun.displayValue.equals(displayValue)) {

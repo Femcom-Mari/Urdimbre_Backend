@@ -1,7 +1,6 @@
 package com.urdimbre.urdimbre.service.role;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
@@ -61,7 +60,7 @@ public class RoleServiceImpl implements RoleService {
     public List<RoleResponseDTO> getAllRoles() {
         return roleRepository.findAll().stream()
                 .map(this::mapToResponseDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
