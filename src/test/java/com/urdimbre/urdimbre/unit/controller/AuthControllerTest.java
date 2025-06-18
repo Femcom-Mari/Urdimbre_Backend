@@ -12,9 +12,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 // import org.springframework.test.context.bean.override.mockito.MockitoBean;
 // import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
+
+import com.urdimbre.urdimbre.config.TestSecurityConfig;
 import com.urdimbre.urdimbre.controller.AuthController;
 import com.urdimbre.urdimbre.dto.user.UserRegisterDTO;
 import com.urdimbre.urdimbre.dto.user.UserResponseDTO;
@@ -30,6 +33,7 @@ import org.springframework.http.MediaType;
 import jakarta.servlet.http.HttpServletRequest;
 
 @WebMvcTest(AuthController.class)
+@Import(TestSecurityConfig.class)
 class AuthControllerTest {
     @Autowired
     private MockMvc mockMvc;
@@ -54,13 +58,12 @@ class AuthControllerTest {
 
     @Test
     void testRegister_success() throws Exception {
-         System.out.println("✅ Ejecutando testRegister_success");
         // Arrange
         UserRegisterDTO dto = UserRegisterDTO.builder()
                 .username("carla123")
                 .firstName("Carla")
                 .lastName("Gómez")
-                .pronouns(Set.of("ella"))
+                .pronouns(Set.of("Ella"))
                 .password("Password1@")
                 .email("carla@email.com")
                 .inviteCode("INVITE123")
@@ -71,12 +74,12 @@ class AuthControllerTest {
             responseDTO.setUsername("carla123");
             responseDTO.setEmail("carla@email.com");
             responseDTO.setFullName("Carla Test");
-            responseDTO.setPronouns(Set.of("ella"));
+            responseDTO.setPronouns(Set.of("Ella"));
             responseDTO.setStatus("ACTIVE");
-            responseDTO.setCreatedAt("2025-06-17T12:00:00Z");
+            responseDTO.setCreatedAt("2025-06-18T12:00:00Z");
             responseDTO.setRoles(List.of("USER"));
 
-         RateLimitingService.RateLimitResult rateLimitResult = new RateLimitingService.RateLimitResult(true, 10, 0);
+         RateLimitingService.RateLimitResult rateLimitResult = new RateLimitingService.RateLimitResult(true, 10, 10);
 
 
         when(rateLimitingService.checkRegisterByIp(any(HttpServletRequest.class))).thenReturn(rateLimitResult);
