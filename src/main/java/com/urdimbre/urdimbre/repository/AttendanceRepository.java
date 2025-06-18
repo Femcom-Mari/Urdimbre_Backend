@@ -4,13 +4,17 @@ import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+
+import com.urdimbre.urdimbre.model.ActivitiesUrdimbre;
 import com.urdimbre.urdimbre.model.Attendance;
 
 @Repository
 public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
 
+    Boolean existsByUser_IdAndActivityId_Id(Long userId, Long activityId);
 
-Boolean existsByUser_IdAndActivityId_Id(Long userId, Long activityId);
+    List<Attendance> findByUserId(Long userId);
 
-List<Attendance> findByUserId(Long userId);
+    int countByActivityId(ActivitiesUrdimbre activityId);
+
 }

@@ -40,31 +40,29 @@ public class SecurityConfig {
         private final UserDetailsServiceImpl userDetailsService;
         private final RefreshTokenService refreshTokenService;
 
-        // 🌍 DETECTAR ENTORNO PARA CONFIGURACIONES ESPECÍFICAS
         @Value("${spring.profiles.active:dev}")
         private String activeProfile;
 
         @Bean
         public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-                log.info("🔒 Configurando Security Filter Chain - VERSIÓN PRODUCCIÓN CON NUEVOS ENDPOINTS");
+                log.info("🔒 Configurando Security Filter Chain SEGURO - Perfil: {}", activeProfile);
 
                 http
                                 .csrf(csrf -> csrf.disable())
                                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
                                 // ================================
-                                // ✅ HEADERS DE SEGURIDAD HTTP - PARA SPRING BOOT 3.5
+                                // HEADERS DE SEGURIDAD MÁXIMA
                                 // ================================
                                 .headers(headers -> headers
-                                                // 🛡️ Anti-Clickjacking
-                                                .frameOptions(org.springframework.security.config.Customizer
-                                                                .withDefaults())
+                                                // Anti-Clickjacking (nueva sintaxis)
+                                                .frameOptions(frameOptions -> frameOptions.deny())
 
-                                                // 🔒 Content Type Protection
+                                                // Content Type Protection (nueva sintaxis)
                                                 .contentTypeOptions(contentTypeOptions -> {
                                                 })
 
-                                                // 🛡️ HSTS Protection
+                                                // HSTS Protection (solo HTTPS en producción)
                                                 .httpStrictTransportSecurity(hstsConfig -> {
                                                         if (isProductionEnvironment()) {
                                                                 hstsConfig
@@ -74,90 +72,94 @@ public class SecurityConfig {
                                                         }
                                                 })
 
-                                                // 🛡️ Content Security Policy
+                                                // Content Security Policy
                                                 .contentSecurityPolicy(cspConfig -> cspConfig
                                                                 .policyDirectives(buildContentSecurityPolicy()))
 
-                                                // ✅ Headers personalizados
+                                                // Headers de seguridad adicionales
                                                 .addHeaderWriter((request, response) -> {
-                                                        // XSS Protection manual
+                                                        // XSS Protection
                                                         response.setHeader("X-XSS-Protection", "1; mode=block");
-                                                        // Referrer Policy manual
+                                                        // Referrer Policy
                                                         response.setHeader("Referrer-Policy",
                                                                         "strict-origin-when-cross-origin");
                                                         // Permissions Policy
                                                         response.setHeader("Permissions-Policy",
-                                                                        "geolocation=(), microphone=(), camera=(), " +
-                                                                                        "payment=(), usb=(), magnetometer=(), gyroscope=()");
+                                                                        "geolocation=(), microphone=(), camera=(), payment=(), usb=(), "
+                                                                                        +
+                                                                                        "magnetometer=(), gyroscope=(), clipboard-read=(), clipboard-write=()");
+                                                        // Cache Control para endpoints sensibles
+                                                        if (request.getRequestURI().startsWith("/api/auth") ||
+                                                                        request.getRequestURI()
+                                                                                        .startsWith("/api/admin")) {
+                                                                response.setHeader("Cache-Control",
+                                                                                "no-store, no-cache, must-revalidate, max-age=0");
+                                                                response.setHeader("Pragma", "no-cache");
+                                                                response.setHeader("Expires", "0");
+                                                        }
                                                 }))
 
                                 .sessionManagement(session -> session
                                                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
                                 // ================================
-                                // ✅ CONFIGURACIÓN DE AUTORIZACIÓN PARA PRODUCCIÓN
+                                // AUTORIZACIÓN SEGURA
                                 // ================================
                                 .authorizeHttpRequests(auth -> auth
                                                 // ================================
-                                                // ✅ ENDPOINTS PÚBLICOS (sin autenticación)
+                                                // ENDPOINTS PÚBLICOS (mínimos necesarios)
                                                 // ================================
                                                 .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                                                 .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
                                                 .requestMatchers(HttpMethod.POST, "/api/auth/refresh").permitAll()
                                                 .requestMatchers(HttpMethod.POST, "/api/auth/forgot-password")
-                                                .permitAll() // ✅ NUEVO
-                                                .requestMatchers(HttpMethod.GET, "/api/auth/check-username").permitAll() // ✅
-                                                                                                                         // NUEVO
-                                                .requestMatchers(HttpMethod.GET, "/api/auth/check-email").permitAll() // ✅
-                                                                                                                      // NUEVO
+                                                .permitAll()
+
+                                                // Endpoints de validación (solo GET)
+                                                .requestMatchers(HttpMethod.GET, "/api/auth/check-username").permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/api/auth/check-email").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/api/auth/invite-codes/validate")
                                                 .permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/api/auth/invite-codes/info")
                                                 .permitAll()
+
+                                                // Health checks
                                                 .requestMatchers("/actuator/health").permitAll()
-                                                .requestMatchers("/actuator/info").permitAll()
                                                 .requestMatchers("/error").permitAll()
 
                                                 // ================================
-                                                // 🔧 ENDPOINTS DE DESARROLLO - CONDICIONALES
-                                                // Solo activos en entorno de desarrollo
+                                                // 🔧 ENDPOINTS DE DESARROLLO (SOLO EN DEV)
                                                 // ================================
-                                                .requestMatchers("/api/dev/**").access((authentication, context) -> {
-                                                        boolean isDev = "dev".equals(activeProfile) ||
-                                                                        "development".equals(activeProfile) ||
-                                                                        "local".equals(activeProfile);
-
-                                                        if (!isDev) {
-                                                                log.warn("🚫 Intento de acceso a endpoint de desarrollo en entorno: {}",
-                                                                                activeProfile);
-                                                        }
-
-                                                        return new org.springframework.security.authorization.AuthorizationDecision(
-                                                                        isDev);
-                                                })
-                                                .requestMatchers("/actuator/dev/**")
-                                                .access(this::isDevelopmentEnvironment)
-                                                .requestMatchers("/api/test/**").access(this::isDevelopmentEnvironment)
+                                                .requestMatchers("/api/dev/**")
+                                                .access((authentication, context) -> isDevelopmentEnvironment())
+                                                .requestMatchers("/actuator/**")
+                                                .access((authentication, context) -> isDevelopmentEnvironment())
+                                                .requestMatchers("/api/test/**")
+                                                .access((authentication, context) -> isDevelopmentEnvironment())
 
                                                 // ================================
-                                                // ✅ ENDPOINTS DE ADMIN (requieren rol ADMIN)
+                                                // ✅ ENDPOINTS DE ADMIN (máxima seguridad)
                                                 // ================================
                                                 .requestMatchers("/api/admin/**").hasRole(ROLE_ADMIN)
                                                 .requestMatchers("/api/roles/**").hasRole(ROLE_ADMIN)
-                                                .requestMatchers("/api/auth/rate-limit-stats").hasRole(ROLE_ADMIN) // ✅
-                                                                                                                   // Solo
-                                                                                                                   // admin
+                                                .requestMatchers("/api/auth/rate-limit-stats").hasRole(ROLE_ADMIN)
+                                                .requestMatchers("/api/invite-codes/**").hasRole(ROLE_ADMIN) // Gestión
+                                                                                                             // de
+                                                                                                             // códigos
+
+                                                // Endpoints administrativos específicos
+                                                .requestMatchers(HttpMethod.DELETE, "/api/**").hasRole(ROLE_ADMIN)
+                                                .requestMatchers("/api/users/admin/**").hasRole(ROLE_ADMIN)
 
                                                 // ================================
-                                                // ✅ PROFESSIONALS ENDPOINTS
+                                                // PROFESSIONALS ENDPOINTS (control granular)
                                                 // ================================
-                                                // Professional endpoints - read access for users and admins
                                                 .requestMatchers(HttpMethod.GET, "/api/professionals")
                                                 .hasAnyRole(ROLE_USER, ROLE_ADMIN)
                                                 .requestMatchers(HttpMethod.GET, PROFESSIONALS_API_PATTERN)
                                                 .hasAnyRole(ROLE_USER, ROLE_ADMIN)
 
-                                                // Professional endpoints - write access only for admins
+                                                // Solo admins pueden modificar
                                                 .requestMatchers(HttpMethod.POST, "/api/professionals")
                                                 .hasRole(ROLE_ADMIN)
                                                 .requestMatchers(HttpMethod.PUT, PROFESSIONALS_API_PATTERN)
@@ -168,13 +170,16 @@ public class SecurityConfig {
                                                 .hasRole(ROLE_ADMIN)
 
                                                 // ================================
-                                                // ✅ ENDPOINTS AUTENTICADOS (requieren login)
+                                                // ENDPOINTS AUTENTICADOS
                                                 // ================================
                                                 .requestMatchers(HttpMethod.POST, "/api/auth/logout").authenticated()
-                                                .requestMatchers("/api/users/**").authenticated()
+                                                .requestMatchers(HttpMethod.GET, "/api/users/me").authenticated()
+                                                .requestMatchers(HttpMethod.PUT, "/api/users/me").authenticated()
+                                                .requestMatchers(HttpMethod.GET, "/api/users/profile/**")
+                                                .authenticated()
 
                                                 // ================================
-                                                // ✅ RESTO DE ENDPOINTS (DEBE SER EL ÚLTIMO)
+                                                // ✅ RESTO DE ENDPOINTS AUTENTICADOS
                                                 // ================================
                                                 .anyRequest().authenticated())
 
@@ -182,91 +187,91 @@ public class SecurityConfig {
                                                 new JwtAuthorizationFilter(userDetailsService, refreshTokenService),
                                                 UsernamePasswordAuthenticationFilter.class);
 
-                log.info("✅ Security Filter Chain configurado para PRODUCCIÓN con nuevos endpoints de auth y protección condicional de dev");
+                log.info("✅ Security Filter Chain configurado con máxima seguridad para: {}", activeProfile);
                 return http.build();
         }
 
         @Bean
         public CorsConfigurationSource corsConfigurationSource() {
-                log.info("🌐 Configurando CORS con headers de seguridad para producción");
+                log.info("🌐 Configurando CORS seguro para: {}", activeProfile);
 
                 CorsConfiguration configuration = new CorsConfiguration();
 
                 // ================================
-                // ✅ ORÍGENES PERMITIDOS (configuración para producción)
+                // ORÍGENES SEGUROS POR ENTORNO
                 // ================================
                 if (isProductionEnvironment()) {
-                        // 🚀 PRODUCCIÓN: Solo dominios específicos
-                        configuration.addAllowedOriginPattern("https://tu-dominio.com");
-                        configuration.addAllowedOriginPattern("https://*.tu-dominio.com");
-                        configuration.addAllowedOriginPattern("https://app.tu-dominio.com");
-                        log.info("🔒 CORS configurado para PRODUCCIÓN - solo HTTPS permitido");
+                        // 🚀 PRODUCCIÓN: Solo dominios específicos con HTTPS
+                        configuration.addAllowedOriginPattern("https://urdimbre.com");
+                        configuration.addAllowedOriginPattern("https://*.urdimbre.com");
+                        configuration.addAllowedOriginPattern("https://app.urdimbre.com");
+                        log.info("🔒 CORS configurado para PRODUCCIÓN - solo HTTPS");
                 } else {
-                        // 🔧 DESARROLLO: Localhost en cualquier puerto
-                        configuration.addAllowedOriginPattern("http://localhost:*");
-                        configuration.addAllowedOriginPattern("http://127.0.0.1:*");
-                        configuration.addAllowedOriginPattern("http://[::1]:*");
-                        log.info("🔧 CORS configurado para DESARROLLO - localhost permitido");
+                        // 🔧 DESARROLLO: Localhost limitado
+                        configuration.addAllowedOriginPattern("http://localhost:3000");
+                        configuration.addAllowedOriginPattern("http://localhost:3001");
+                        configuration.addAllowedOriginPattern("http://localhost:5173"); // Vite
+                        configuration.addAllowedOriginPattern("http://127.0.0.1:3000");
+                        log.info("🔧 CORS configurado para DESARROLLO - puertos específicos");
                 }
 
-                // Allowed methods
+                // Métodos HTTP permitidos
                 configuration.addAllowedMethod("GET");
                 configuration.addAllowedMethod("POST");
                 configuration.addAllowedMethod("PUT");
                 configuration.addAllowedMethod("PATCH");
                 configuration.addAllowedMethod("DELETE");
                 configuration.addAllowedMethod("OPTIONS");
-                configuration.addAllowedMethod("HEAD");
 
-                // Allowed headers
-                configuration.addAllowedHeader("*");
+                // Headers permitidos
+                configuration.addAllowedHeader("Authorization");
+                configuration.addAllowedHeader("Content-Type");
+                configuration.addAllowedHeader("Accept");
+                configuration.addAllowedHeader("Origin");
+                configuration.addAllowedHeader("X-Requested-With");
+                configuration.addAllowedHeader("Refresh-Token");
 
-                // Exposed headers - incluye los nuevos para rate limiting
+                // Headers expuestos (para el frontend)
                 configuration.addExposedHeader("Authorization");
                 configuration.addExposedHeader("Refresh-Token");
-                configuration.addExposedHeader("Content-Length");
-                configuration.addExposedHeader("Content-Type");
-                configuration.addExposedHeader("Retry-After"); // ✅ Para rate limiting
-                configuration.addExposedHeader("X-RateLimit-Type"); // ✅ Para rate limiting
-                configuration.addExposedHeader("X-RateLimit-Remaining"); // ✅ Para rate limiting
-                configuration.addExposedHeader("X-RateLimit-IP-Remaining"); // ✅ Para rate limiting
-                configuration.addExposedHeader("X-RateLimit-User-Remaining"); // ✅ Para rate limiting
+                configuration.addExposedHeader("X-RateLimit-Remaining");
+                configuration.addExposedHeader("X-RateLimit-IP-Remaining");
+                configuration.addExposedHeader("X-RateLimit-User-Remaining");
+                configuration.addExposedHeader("Retry-After");
 
-                // Additional configurations
+                // Configuraciones adicionales seguras
                 configuration.setAllowCredentials(true);
-                configuration.setMaxAge(3600L);
+                configuration.setMaxAge(isProductionEnvironment() ? 1800L : 3600L); // Menor en prod
 
                 UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
                 source.registerCorsConfiguration("/**", configuration);
 
-                log.info("✅ CORS configurado correctamente para entorno: {}", activeProfile);
                 return source;
         }
 
         @Bean
         public HttpFirewall httpFirewall() {
-                log.info("🛡️ Configurando HTTP Firewall con seguridad máxima para producción");
+                log.info("🛡️ Configurando HTTP Firewall ULTRA SEGURO");
 
                 StrictHttpFirewall firewall = new StrictHttpFirewall();
 
                 // ================================
-                // ✅ CONFIGURACIONES DE SEGURIDAD ESTRICTAS
+                // CONFIGURACIÓN SUPER ESTRICTA
                 // ================================
-                firewall.setAllowUrlEncodedCarriageReturn(false); // Prevenir CRLF injection
-                firewall.setAllowUrlEncodedPercent(true); // Necesario para query params
-                firewall.setAllowUrlEncodedSlash(false); // Prevenir path traversal
-                firewall.setAllowUrlEncodedPeriod(false); // Prevenir directory traversal
-                firewall.setAllowBackSlash(false); // Prevenir Windows path traversal
-                firewall.setAllowUrlEncodedLineFeed(false); // Prevenir line feed injection
-                firewall.setAllowSemicolon(false); // Prevenir parameter pollution
-                firewall.setAllowUrlEncodedDoubleSlash(false); // Prevenir path manipulation
+                firewall.setAllowUrlEncodedCarriageReturn(false);
+                firewall.setAllowUrlEncodedPercent(false); // Más restrictivo
+                firewall.setAllowUrlEncodedSlash(false);
+                firewall.setAllowUrlEncodedPeriod(false);
+                firewall.setAllowBackSlash(false);
+                firewall.setAllowUrlEncodedLineFeed(false);
+                firewall.setAllowSemicolon(false);
+                firewall.setAllowUrlEncodedDoubleSlash(false);
+                firewall.setAllowNull(false);
 
-                // ================================
-                // ✅ CARACTERES BLOQUEADOS ADICIONALES
-                // ================================
-                firewall.setAllowNull(false); // Bloquear caracteres null
+                // Bloquear caracteres peligrosos (métodos existentes)
+                firewall.setAllowNull(false);
 
-                log.info("✅ HTTP Firewall configurado con protección máxima contra ataques de seguridad");
+                log.info(" HTTP Firewall configurado con protección MÁXIMA");
                 return firewall;
         }
 
@@ -277,67 +282,60 @@ public class SecurityConfig {
 
         @Bean
         public BCryptPasswordEncoder bCryptPasswordEncoder() {
-                log.debug("🔐 Creando bean BCryptPasswordEncoder con strength 12 para producción");
-                return new BCryptPasswordEncoder(12); // Strength 12 para mayor seguridad
+                int strength = isProductionEnvironment() ? 14 : 12; // Más fuerte en producción
+                log.debug("🔐 BCryptPasswordEncoder con strength: {}", strength);
+                return new BCryptPasswordEncoder(strength);
         }
 
         @Bean
         public PasswordEncoder passwordEncoder() {
-                log.debug("🔐 Creando bean PasswordEncoder con strength 12 para producción");
-                return new BCryptPasswordEncoder(12); // Strength 12 para mayor seguridad
+                int strength = isProductionEnvironment() ? 14 : 12;
+                log.debug("🔐 PasswordEncoder con strength: {}", strength);
+                return new BCryptPasswordEncoder(strength);
         }
 
         // ================================
-        // ✅ MÉTODOS PRIVADOS PARA CONFIGURACIÓN
+        // MÉTODOS DE SEGURIDAD
         // ================================
 
-        /**
-         * 🌍 Verificar si estamos en entorno de producción
-         */
         private boolean isProductionEnvironment() {
                 return "prod".equals(activeProfile) ||
                                 "production".equals(activeProfile) ||
                                 "prd".equals(activeProfile);
         }
 
-        /**
-         * 🔧 Verificar si estamos en entorno de desarrollo (para endpoints
-         * condicionales)
-         */
-        private org.springframework.security.authorization.AuthorizationDecision isDevelopmentEnvironment(
-                        java.util.function.Supplier<org.springframework.security.core.Authentication> authentication,
-                        org.springframework.security.web.access.intercept.RequestAuthorizationContext context) {
-
+        private org.springframework.security.authorization.AuthorizationDecision isDevelopmentEnvironment() {
                 boolean isDev = "dev".equals(activeProfile) ||
                                 "development".equals(activeProfile) ||
                                 "local".equals(activeProfile);
 
                 if (!isDev) {
-                        log.warn("🚫 Intento de acceso a endpoint de desarrollo en entorno: {}", activeProfile);
+                        log.warn("🚫 Acceso denegado a endpoint de desarrollo en: {}", activeProfile);
                 }
 
                 return new org.springframework.security.authorization.AuthorizationDecision(isDev);
         }
 
-        /**
-         * 🛡️ Construir Content Security Policy según el entorno
-         */
         private String buildContentSecurityPolicy() {
                 if (isProductionEnvironment()) {
-                        // 🚀 CSP ESTRICTO PARA PRODUCCIÓN
-                        return "default-src 'self'; " +
+                        // CSP ULTRA ESTRICTO PARA PRODUCCIÓN
+                        return "default-src 'none'; " +
                                         "script-src 'self'; " +
                                         "style-src 'self' 'unsafe-inline'; " +
                                         "img-src 'self' data: https:; " +
                                         "font-src 'self'; " +
-                                        "connect-src 'self'; " +
+                                        "connect-src 'self' https:; " +
                                         "frame-ancestors 'none'; " +
                                         "form-action 'self'; " +
                                         "base-uri 'self'; " +
                                         "object-src 'none'; " +
-                                        "upgrade-insecure-requests";
+                                        "media-src 'none'; " +
+                                        "worker-src 'none'; " +
+                                        "manifest-src 'self'; " +
+                                        "upgrade-insecure-requests; " +
+                                        "block-all-mixed-content";
                 } else {
-                        // 🔧 CSP MÁS PERMISIVO PARA DESARROLLO
+                        // CSP PERMISIVO PARA DESARROLLO
                         return "default-src 'self'; " +
                                         "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
                                         "style-src 'self' 'unsafe-inline'; " +

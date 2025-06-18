@@ -2,6 +2,7 @@ package com.urdimbre.urdimbre.controller;
 
 import java.time.LocalDate;
 import java.util.List;
+
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,9 +15,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import com.urdimbre.urdimbre.dto.activitiesUrdimbre.ActivitiesUrdimbreRequestDTO;
-import com.urdimbre.urdimbre.dto.activitiesUrdimbre.ActivitiesUrdimbreResponseDTO;
-import com.urdimbre.urdimbre.service.activitiesUrdimbre.ActivitiesUrdimbreService;
+
+import com.urdimbre.urdimbre.dto.activities_urdimbre.ActivitiesUrdimbreRequestDTO;
+import com.urdimbre.urdimbre.dto.activities_urdimbre.ActivitiesUrdimbreResponseDTO;
+import com.urdimbre.urdimbre.service.activities_urdimbre.ActivitiesUrdimbreService;
+
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 
@@ -26,7 +29,6 @@ import lombok.AllArgsConstructor;
 public class ActivitiesUrdimbreController {
 
     private final ActivitiesUrdimbreService activitiesUrdimbreService;
-
 
     @PostMapping("/create")
     public ResponseEntity<ActivitiesUrdimbreResponseDTO> createActivitiesUrdimbre(
@@ -51,24 +53,21 @@ public class ActivitiesUrdimbreController {
         return ResponseEntity.ok(activities);
     }
 
-@DeleteMapping("/delete/{id}")
-public ResponseEntity<Void> deleteActivity(@PathVariable Long id) {
-    activitiesUrdimbreService.deleteActivity(id);
-    return ResponseEntity.noContent().build();
-}
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<Void> deleteActivity(@PathVariable Long id) {
+        activitiesUrdimbreService.deleteActivity(id);
+        return ResponseEntity.noContent().build();
+    }
 
-@PutMapping("/edit/{id}")
-public ResponseEntity<ActivitiesUrdimbreResponseDTO> updateActivities(
-    @PathVariable Long id,
-    @Valid @RequestBody ActivitiesUrdimbreRequestDTO activitiesUrdimbreRequestDTO
-) {
-    activitiesUrdimbreRequestDTO.setId(id);
-    ActivitiesUrdimbreResponseDTO updateActivities = activitiesUrdimbreService.updateActivities(activitiesUrdimbreRequestDTO);
-    return ResponseEntity.ok(updateActivities);
+    @PutMapping("/edit/{id}")
+    public ResponseEntity<ActivitiesUrdimbreResponseDTO> updateActivities(
+            @PathVariable Long id,
+            @Valid @RequestBody ActivitiesUrdimbreRequestDTO activitiesUrdimbreRequestDTO) {
+        activitiesUrdimbreRequestDTO.setId(id);
+        ActivitiesUrdimbreResponseDTO updateActivities = activitiesUrdimbreService
+                .updateActivities(activitiesUrdimbreRequestDTO);
+        return ResponseEntity.ok(updateActivities);
 
-}
-
-
-
+    }
 
 }
