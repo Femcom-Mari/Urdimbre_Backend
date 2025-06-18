@@ -1,25 +1,27 @@
 package com.urdimbre.urdimbre.dto.professional;
 
-import lombok.Data;
-import java.time.LocalDateTime;
+
 import java.util.Set;
+
+import com.urdimbre.urdimbre.model.CommunityStatus;
+import com.urdimbre.urdimbre.model.Pronouns;
+import lombok.Data;
 
 @Data
 public class ProfessionalResponseDTO {
+
     private Long id;
-    private String firstName;
-    private String lastName;
-    private Set<String> pronouns;
-    private String title;
-    private String bio;
+    private String city;
+    private String name;
+    private Set<Pronouns> pronouns;
+    private String description;
     private String phone;
     private String email;
-    private String location;
-    private String profileImageUrl;
-    private String url1;
-    private String url2;
-    private String url3;
-    private String status;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private String website;
+    private String socialMedia;
+    private String town;
+    private String activities;
+    private String price;
+    private CommunityStatus communityStatus;
 }
+

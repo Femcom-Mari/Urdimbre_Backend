@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.urdimbre.urdimbre.dto.professional.ProfessionalRequestDTO;
 import com.urdimbre.urdimbre.dto.professional.ProfessionalResponseDTO;
 import com.urdimbre.urdimbre.model.Professional;
+import com.urdimbre.urdimbre.model.User;
 import com.urdimbre.urdimbre.repository.ProfessionalRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -33,19 +34,19 @@ public class ProfessionalServiceImpl implements ProfessionalService {
     public ProfessionalResponseDTO updateProfessional(Long id, ProfessionalRequestDTO dto) {
         Professional professional = professionalRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Professional not found"));
-
-        professional.setFirstName(dto.getFirstName());
-        professional.setLastName(dto.getLastName());
+        professional.setCity(dto.getCity());
+        professional.setName(dto.getName());
         professional.setPronouns(mapPronouns(dto.getPronouns()));
-        professional.setTitle(dto.getTitle());
-        professional.setBio(dto.getBio());
+        professional.setDescription(dto.getDescription());
         professional.setPhone(dto.getPhone());
         professional.setEmail(dto.getEmail());
-        professional.setLocation(dto.getLocation());
-        professional.setProfileImageUrl(dto.getProfileImageUrl());
-        professional.setUrl1(dto.getUrl1());
-        professional.setUrl2(dto.getUrl2());
-        professional.setUrl3(dto.getUrl3());
+        professional.setWebsite(dto.getWebsite());
+        professional.setSocialMedia(dto.getSocialMedia());
+        professional.setTown(dto.getTown());
+        professional.setActivities(dto.getActivities());
+        professional.setPrice(dto.getPrice());
+        professional.setCommunityStatus(dto.getCommunityStatus());
+
 
         Professional updated = professionalRepository.save(professional);
         return mapToResponseDTO(updated);
@@ -76,18 +77,18 @@ public class ProfessionalServiceImpl implements ProfessionalService {
 
     private Professional mapToEntity(ProfessionalRequestDTO dto) {
         return Professional.builder()
-                .firstName(dto.getFirstName())
-                .lastName(dto.getLastName())
+                .name(dto.getName())
+                .city(dto.getCity())
                 .pronouns(mapPronouns(dto.getPronouns()))
-                .title(dto.getTitle())
-                .bio(dto.getBio())
+                .description(dto.getDescription())
                 .phone(dto.getPhone())
                 .email(dto.getEmail())
-                .location(dto.getLocation())
-                .profileImageUrl(dto.getProfileImageUrl())
-                .url1(dto.getUrl1())
-                .url2(dto.getUrl2())
-                .url3(dto.getUrl3())
+                .town(dto.getTown())
+                .website(dto.getWebsite())
+                .socialMedia(dto.getSocialMedia())
+                .activities(dto.getActivities())
+                .price(dto.getPrice())
+                .communityStatus(dto.getCommunityStatus())
                 .build();
     }
 

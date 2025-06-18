@@ -2,52 +2,52 @@ package com.urdimbre.urdimbre.dto.professional;
 
 import java.util.Set;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
+import com.urdimbre.urdimbre.model.CommunityStatus;
+import com.urdimbre.urdimbre.model.Pronouns;
+import jakarta.validation.constraints.*;
+
 import lombok.Data;
 
 @Data
 public class ProfessionalRequestDTO {
 
-    @NotBlank(message = "First name is required")
-    @Size(max = 50)
-    private String firstName;
-
-    @NotBlank(message = "Last name is required")
-    @Size(max = 50)
-    private String lastName;
-
-    @NotEmpty(message = "At least one pronoun is required")
-    private Set<String> pronouns;
-
+    @NotBlank(message = "City is required")
     @Size(max = 100)
-    private String title;
+    private String city;
 
-    @Size(max = 300)
-    private String bio;
+    @NotBlank(message = "Name is required")
+    @Size(max = 100)
+    private String name;
 
-    @Pattern(regexp = "^\\+?[0-9\\-\\s]{7,20}$", message = "Phone number format is invalid")
+    @NotNull(message = "Pronouns are required")
+     private Set<Pronouns> pronouns;
+
+    @Size(max = 1000)
+    private String description;
+
+    @Pattern(regexp = "^\\+?[0-9\\-\\s()]{7,20}$", message = "Invalid phone number format")
     private String phone;
 
-    @NotBlank
-    @Email
+    @NotBlank(message = "Email is required")
+    @Email(message = "Invalid email format")
     private String email;
 
+    @Size(max = 255)
+    @Pattern(regexp = "^(https?://)?[\\w.-]+\\.[a-zA-Z]{2,}.*$", message = "Invalid website URL format")
+    private String website;
+
+    @Size(max = 255)
+    private String socialMedia;
+
     @Size(max = 100)
-    private String location;
+    private String town;
 
-    @Size(max = 255)
-    private String profileImageUrl;
+    @Size(max = 500)
+    private String activities;
 
-    @Size(max = 255)
-    private String url1;
+    @Size(max = 100)
+    private String price;
 
-    @Size(max = 255)
-    private String url2;
-
-    @Size(max = 255)
-    private String url3;
+    @NotNull(message = "Community status is required")
+    private CommunityStatus communityStatus;
 }

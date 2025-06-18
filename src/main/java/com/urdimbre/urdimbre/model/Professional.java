@@ -1,6 +1,8 @@
 package com.urdimbre.urdimbre.model;
 
 
+import java.util.HashSet;
+import java.util.Set;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
@@ -28,9 +30,13 @@ public class Professional {
     @Size(max = 100)
     private String name;
 
+    @ElementCollection(targetClass = Pronouns.class, fetch = FetchType.EAGER)
     @Enumerated(EnumType.STRING)
-    @Column(length = 20)
-    private Pronouns pronouns;
+    @CollectionTable(name = "user_pronouns", joinColumns = @JoinColumn(name = "professional_id"))
+    @Column(name = "pronoun")
+    @NotEmpty(message = "You must select at least one pronoun")
+    @Builder.Default
+    private Set<Pronouns> pronouns = new HashSet<>();
 
 
     @Size(max = 1000)
