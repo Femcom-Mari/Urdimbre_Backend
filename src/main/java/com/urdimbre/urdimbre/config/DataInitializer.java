@@ -55,21 +55,17 @@ public class DataInitializer {
         return args -> {
             logger.info("🚀 Inicializando datos del sistema (Perfil: {})...", activeProfile);
 
-            // ✅ VALIDACIONES DE SEGURIDAD PRIMERO
             validateSecurityRequirements();
 
-            // ✅ SOLO DEBUG EN DESARROLLO
             if (isDevelopmentEnvironment()) {
                 debugPasswordConfiguration();
             }
 
-            // ✅ INICIALIZACIÓN SEGURA
             initRoles(roleRepository);
             initAdminUser(userRepository, roleRepository);
             initDefaultInviteCode(inviteCodeRepository);
             showInitializationStats(roleRepository, userRepository, inviteCodeRepository);
 
-            // ✅ WARNINGS DE SEGURIDAD
             showSecurityWarnings();
         };
     }
@@ -77,7 +73,6 @@ public class DataInitializer {
     private void validateSecurityRequirements() {
         logger.info("🔍 Ejecutando validaciones de seguridad...");
 
-        // ✅ Validaciones básicas
         if (adminUsername == null || adminUsername.trim().isEmpty()) {
             throw new IllegalStateException("❌ ADMIN_USERNAME no puede estar vacío");
         }
@@ -97,7 +92,6 @@ public class DataInitializer {
                             "Actual: " + (adminPassword != null ? adminPassword.length() + " caracteres" : "null"));
         }
 
-        // ✅ Validaciones de producción
         if (isProductionEnvironment()) {
             validateProductionRequirements();
         }
@@ -127,7 +121,6 @@ public class DataInitializer {
                     "❌ SEGURIDAD: En producción, ADMIN_PASSWORD debe tener al menos 12 caracteres");
         }
 
-        // ✅ Verificar complejidad adicional para producción
         if (!hasAdvancedPasswordSecurity(adminPassword)) {
             throw new IllegalStateException("❌ SEGURIDAD: Contraseña no es suficientemente compleja para producción");
         }
@@ -136,7 +129,7 @@ public class DataInitializer {
     }
 
     private void debugPasswordConfiguration() {
-        // ✅ SOLO EN DESARROLLO - No mostrar contraseñas en producción
+        // SOLO EN DESARROLLO - No mostrar contraseñas en producción
         if (!isDevelopmentEnvironment()) {
             return;
         }
@@ -202,7 +195,7 @@ public class DataInitializer {
                 userRepository.save(existingUser);
                 logger.info("✅ Contraseña del usuario admin actualizada");
 
-                // ✅ Verificar que la actualización funcionó (solo en dev)
+                // Verificar que la actualización funcionó (solo en dev)
                 if (isDevelopmentEnvironment()) {
                     boolean updatedPasswordWorks = passwordEncoder.matches(adminPassword, newHashedPassword);
                     logger.info("🔍 [DEV] Nueva contraseña funciona: {}", updatedPasswordWorks);
@@ -214,7 +207,6 @@ public class DataInitializer {
             return;
         }
 
-        // ✅ Verificar email duplicado
         if (userRepository.findByEmail(adminEmail).isPresent()) {
             if (logger.isWarnEnabled()) {
                 logger.warn("⚠️ Email de administrador ya está en uso: {}", maskEmail(adminEmail));
@@ -224,16 +216,12 @@ public class DataInitializer {
 
         logger.info("🏗️ Creando usuario administrador: {}", adminUsername);
 
-        // ✅ CREAR USUARIO ADMIN SEGURO
         User admin = createSecureAdminUser();
 
-        // ✅ ASIGNAR ROLES
         assignRolesToAdmin(admin, roleRepository);
 
-        // ✅ GUARDAR USER
         User savedAdmin = userRepository.save(admin);
 
-        // ✅ LOG RESULTADOS
         logAdminCreationResults(savedAdmin);
     }
 
@@ -241,10 +229,8 @@ public class DataInitializer {
         Set<User.Pronoun> adminPronouns = new HashSet<>();
         adminPronouns.add(User.Pronoun.EL);
 
-        // ✅ ENCRIPTAR CONTRASEÑA SEGURAMENTE
         String hashedPassword = passwordEncoder.encode(adminPassword);
 
-        // ✅ Solo verificar en desarrollo
         if (isDevelopmentEnvironment()) {
             boolean hashWorks = passwordEncoder.matches(adminPassword, hashedPassword);
             logger.info("🔍 [DEV] Hash funciona correctamente: {}", hashWorks);
@@ -296,7 +282,7 @@ public class DataInitializer {
     }
 
     private void initDefaultInviteCode(InviteCodeRepository inviteCodeRepository) {
-        // ✅ SOLO CREAR CÓDIGOS EN DESARROLLO
+        // SOLO CREAR CÓDIGOS EN DESARROLLO
         if (!isDevelopmentEnvironment()) {
             logger.info("ℹ️ Omitiendo creación de código de invitación por defecto en entorno: {}", activeProfile);
             return;
@@ -354,7 +340,7 @@ public class DataInitializer {
     }
 
     // ================================
-    // ✅ MÉTODOS DE VALIDACIÓN SEGURA
+    // MÉTODOS DE VALIDACIÓN SEGURA
     // ================================
 
     private boolean isValidEmail(String email) {
@@ -362,12 +348,11 @@ public class DataInitializer {
             return false;
         }
 
-        // ✅ Validación más estricta
         return email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$") &&
-                !email.contains("..") && // Evitar puntos consecutivos
-                !email.startsWith(".") && // No empezar con punto
-                !email.endsWith(".") && // No terminar con punto
-                email.length() <= 100; // Límite de longitud
+                !email.contains("..") &&
+                !email.startsWith(".") &&
+                !email.endsWith(".") &&
+                email.length() <= 100;
     }
 
     private boolean isPasswordSecure(String password) {

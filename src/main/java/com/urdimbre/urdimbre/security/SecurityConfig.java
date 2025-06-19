@@ -51,18 +51,13 @@ public class SecurityConfig {
                                 .csrf(csrf -> csrf.disable())
                                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
-                                // ================================
-                                // HEADERS DE SEGURIDAD MÁXIMA
-                                // ================================
                                 .headers(headers -> headers
-                                                // Anti-Clickjacking (nueva sintaxis)
+
                                                 .frameOptions(frameOptions -> frameOptions.deny())
 
-                                                // Content Type Protection (nueva sintaxis)
                                                 .contentTypeOptions(contentTypeOptions -> {
                                                 })
 
-                                                // HSTS Protection (solo HTTPS en producción)
                                                 .httpStrictTransportSecurity(hstsConfig -> {
                                                         if (isProductionEnvironment()) {
                                                                 hstsConfig
@@ -72,23 +67,21 @@ public class SecurityConfig {
                                                         }
                                                 })
 
-                                                // Content Security Policy
                                                 .contentSecurityPolicy(cspConfig -> cspConfig
                                                                 .policyDirectives(buildContentSecurityPolicy()))
 
-                                                // Headers de seguridad adicionales
                                                 .addHeaderWriter((request, response) -> {
-                                                        // XSS Protection
+
                                                         response.setHeader("X-XSS-Protection", "1; mode=block");
-                                                        // Referrer Policy
+
                                                         response.setHeader("Referrer-Policy",
                                                                         "strict-origin-when-cross-origin");
-                                                        // Permissions Policy
+
                                                         response.setHeader("Permissions-Policy",
                                                                         "geolocation=(), microphone=(), camera=(), payment=(), usb=(), "
                                                                                         +
                                                                                         "magnetometer=(), gyroscope=(), clipboard-read=(), clipboard-write=()");
-                                                        // Cache Control para endpoints sensibles
+
                                                         if (request.getRequestURI().startsWith("/api/auth") ||
                                                                         request.getRequestURI()
                                                                                         .startsWith("/api/admin")) {
@@ -102,20 +95,14 @@ public class SecurityConfig {
                                 .sessionManagement(session -> session
                                                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-                                // ================================
-                                // AUTORIZACIÓN SEGURA
-                                // ================================
                                 .authorizeHttpRequests(auth -> auth
-                                                // ================================
-                                                // ENDPOINTS PÚBLICOS (mínimos necesarios)
-                                                // ================================
+
                                                 .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                                                 .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
                                                 .requestMatchers(HttpMethod.POST, "/api/auth/refresh").permitAll()
                                                 .requestMatchers(HttpMethod.POST, "/api/auth/forgot-password")
                                                 .permitAll()
 
-                                                // Endpoints de validación (solo GET)
                                                 .requestMatchers(HttpMethod.GET, "/api/auth/check-username").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/api/auth/check-email").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/api/auth/invite-codes/validate")
@@ -123,13 +110,9 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.GET, "/api/auth/invite-codes/info")
                                                 .permitAll()
 
-                                                // Health checks
                                                 .requestMatchers("/actuator/health").permitAll()
                                                 .requestMatchers("/error").permitAll()
 
-                                                // ================================
-                                                // 🔧 ENDPOINTS DE DESARROLLO (SOLO EN DEV)
-                                                // ================================
                                                 .requestMatchers("/api/dev/**")
                                                 .access((authentication, context) -> isDevelopmentEnvironment())
                                                 .requestMatchers("/actuator/**")
@@ -137,23 +120,14 @@ public class SecurityConfig {
                                                 .requestMatchers("/api/test/**")
                                                 .access((authentication, context) -> isDevelopmentEnvironment())
 
-                                                // ================================
-                                                // ✅ ENDPOINTS DE ADMIN (máxima seguridad)
-                                                // ================================
                                                 .requestMatchers("/api/admin/**").hasRole(ROLE_ADMIN)
                                                 .requestMatchers("/api/roles/**").hasRole(ROLE_ADMIN)
                                                 .requestMatchers("/api/auth/rate-limit-stats").hasRole(ROLE_ADMIN)
-                                                .requestMatchers("/api/invite-codes/**").hasRole(ROLE_ADMIN) // Gestión
-                                                                                                             // de
-                                                                                                             // códigos
+                                                .requestMatchers("/api/invite-codes/**").hasRole(ROLE_ADMIN)
 
-                                                // Endpoints administrativos específicos
                                                 .requestMatchers(HttpMethod.DELETE, "/api/**").hasRole(ROLE_ADMIN)
                                                 .requestMatchers("/api/users/admin/**").hasRole(ROLE_ADMIN)
 
-                                                // ================================
-                                                // PROFESSIONALS ENDPOINTS (control granular)
-                                                // ================================
                                                 .requestMatchers(HttpMethod.GET, "/api/professionals")
                                                 .hasAnyRole(ROLE_USER, ROLE_ADMIN)
                                                 .requestMatchers(HttpMethod.GET, PROFESSIONALS_API_PATTERN)
@@ -169,18 +143,12 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.DELETE, PROFESSIONALS_API_PATTERN)
                                                 .hasRole(ROLE_ADMIN)
 
-                                                // ================================
-                                                // ENDPOINTS AUTENTICADOS
-                                                // ================================
                                                 .requestMatchers(HttpMethod.POST, "/api/auth/logout").authenticated()
                                                 .requestMatchers(HttpMethod.GET, "/api/users/me").authenticated()
                                                 .requestMatchers(HttpMethod.PUT, "/api/users/me").authenticated()
                                                 .requestMatchers(HttpMethod.GET, "/api/users/profile/**")
                                                 .authenticated()
 
-                                                // ================================
-                                                // ✅ RESTO DE ENDPOINTS AUTENTICADOS
-                                                // ================================
                                                 .anyRequest().authenticated())
 
                                 .addFilterBefore(
@@ -197,17 +165,14 @@ public class SecurityConfig {
 
                 CorsConfiguration configuration = new CorsConfiguration();
 
-                // ================================
-                // ORÍGENES SEGUROS POR ENTORNO
-                // ================================
                 if (isProductionEnvironment()) {
-                        // 🚀 PRODUCCIÓN: Solo dominios específicos con HTTPS
+                        // PRODUCCIÓN: Solo dominios específicos con HTTPS
                         configuration.addAllowedOriginPattern("https://urdimbre.com");
                         configuration.addAllowedOriginPattern("https://*.urdimbre.com");
                         configuration.addAllowedOriginPattern("https://app.urdimbre.com");
                         log.info("🔒 CORS configurado para PRODUCCIÓN - solo HTTPS");
                 } else {
-                        // 🔧 DESARROLLO: Localhost limitado
+                        // DESARROLLO: Localhost limitado
                         configuration.addAllowedOriginPattern("http://localhost:3000");
                         configuration.addAllowedOriginPattern("http://localhost:3001");
                         configuration.addAllowedOriginPattern("http://localhost:5173"); // Vite
@@ -239,7 +204,6 @@ public class SecurityConfig {
                 configuration.addExposedHeader("X-RateLimit-User-Remaining");
                 configuration.addExposedHeader("Retry-After");
 
-                // Configuraciones adicionales seguras
                 configuration.setAllowCredentials(true);
                 configuration.setMaxAge(isProductionEnvironment() ? 1800L : 3600L); // Menor en prod
 

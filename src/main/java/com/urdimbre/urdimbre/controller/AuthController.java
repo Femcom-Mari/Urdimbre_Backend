@@ -64,13 +64,12 @@ public class AuthController {
         logger.info("🔐 Intento de registro para usuario: {}", request.getUsername());
 
         try {
-            // ✅ RATE LIMITING
+
             RateLimitingService.RateLimitResult rateLimitResult = rateLimitingService.checkRegisterByIp(httpRequest);
             if (!rateLimitResult.isAllowed()) {
                 throw RateLimitExceededException.forRegisterByIp(rateLimitResult.getRetryAfterSeconds());
             }
 
-            // ✅ VALIDACIÓN ESPECÍFICA DEL CÓDIGO DE INVITACIÓN
             if (!inviteCodeService.validateInviteCode(request.getInviteCode())) {
                 logger.warn("❌ Código de invitación inválido para {}: {}", request.getUsername(),
                         request.getInviteCode());
@@ -79,7 +78,6 @@ public class AuthController {
                 throw new BadRequestException("Código de invitación: " + specificMessage);
             }
 
-            // ✅ VALIDACIONES ESPECÍFICAS DE USUARIO
             validateRegistrationDataWithSpecificErrors(request);
 
             UserResponseDTO response = authService.register(request);
@@ -257,13 +255,6 @@ public class AuthController {
         }
     }
 
-    // ===================================================
-    // ✅ NUEVOS ENDPOINTS PARA VERIFICACIÓN Y RECUPERACIÓN
-    // ===================================================
-
-    /**
-     * ✅ ENDPOINT PARA VERIFICAR DISPONIBILIDAD DE USERNAME
-     */
     @GetMapping("/check-username")
     public ResponseEntity<CheckAvailabilityResponse> checkUsernameAvailability(@RequestParam String username) {
         logger.debug("🔍 Verificando disponibilidad de username: {}", username);
@@ -315,9 +306,6 @@ public class AuthController {
         }
     }
 
-    /**
-     * ✅ ENDPOINT PARA VERIFICAR DISPONIBILIDAD DE EMAIL
-     */
     @GetMapping("/check-email")
     public ResponseEntity<CheckAvailabilityResponse> checkEmailAvailability(@RequestParam String email) {
         logger.debug("🔍 Verificando disponibilidad de email: {}", email);
@@ -361,9 +349,6 @@ public class AuthController {
         }
     }
 
-    /**
-     * ✅ ENDPOINT PARA RECUPERACIÓN DE CONTRASEÑA
-     */
     @PostMapping("/forgot-password")
     public ResponseEntity<ForgotPasswordResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
         logger.info("📧 Solicitud de recuperación de contraseña para email: {}", request.getEmail());
@@ -383,7 +368,6 @@ public class AuthController {
                         .build());
             }
 
-            // Verificar si el email existe
             Optional<com.urdimbre.urdimbre.model.User> userOpt = userRepository.findByEmail(request.getEmail());
 
             if (userOpt.isEmpty()) {
@@ -395,7 +379,7 @@ public class AuthController {
                         .build());
             }
 
-            // TODO: Aquí implementarías el envío del email
+            // Aquí implementaremos el envío del email
             // passwordResetService.sendPasswordResetEmail(userOpt.get());
 
             logger.info("✅ Email de recuperación enviado exitosamente a: {}", request.getEmail());
@@ -481,10 +465,6 @@ public class AuthController {
         }
     }
 
-    // ===================================================
-    // MÉTODOS PRIVADOS DE VALIDACIÓN Y UTILIDADES
-    // ===================================================
-
     private String getSpecificInviteCodeError(String code) {
         try {
             Optional<InviteCode> optionalCode = inviteCodeService.findByCode(code);
@@ -536,12 +516,11 @@ public class AuthController {
     }
 
     private void validateRegistrationDataWithSpecificErrors(UserRegisterDTO request) {
-        // Validar username duplicado
+
         if (userRepository.findByUsername(request.getUsername()).isPresent()) {
             throw new BadRequestException("El nombre de usuario '" + request.getUsername() + "' ya está en uso");
         }
 
-        // Validar email duplicado
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new BadRequestException("El email '" + request.getEmail() + "' ya está registrado");
         }
@@ -655,10 +634,6 @@ public class AuthController {
 
         return hasLower && hasUpper && hasDigit && hasSymbol;
     }
-
-    // ===================================================
-    // ✅ CLASES DTO PARA LOS NUEVOS ENDPOINTS
-    // ===================================================
 
     @Builder
     @Data

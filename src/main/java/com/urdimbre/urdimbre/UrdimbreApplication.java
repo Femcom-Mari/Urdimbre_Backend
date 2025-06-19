@@ -16,7 +16,7 @@ public class UrdimbreApplication {
 		logger.info("🚀 Iniciando aplicación Urdimbre...");
 
 		try {
-			// ✅ CARGAR .env ANTES QUE NADA
+
 			loadEnvironmentVariables();
 
 			SpringApplication.run(UrdimbreApplication.class, args);
@@ -36,10 +36,8 @@ public class UrdimbreApplication {
 				.ignoreIfMissing()
 				.load();
 
-		// ✅ ESTABLECER PERFIL ACTIVO ANTES QUE NADA
 		setupSpringProfile(dotenv);
 
-		// ✅ CARGAR RATE LIMITING PERMISIVO
 		setupRateLimiting(dotenv);
 
 		validateDatabaseConfig(dotenv);
@@ -49,33 +47,27 @@ public class UrdimbreApplication {
 		logger.info("✅ Variables de entorno cargadas y validadas correctamente");
 	}
 
-	// ✅ NUEVO: Configurar perfil de Spring ANTES de iniciar
 	private static void setupSpringProfile(Dotenv dotenv) {
 		String profile = getEnvVariable(dotenv, "SPRING_PROFILES_ACTIVE", "dev");
 		System.setProperty("spring.profiles.active", profile);
 		logger.info("🔧 Spring Profile establecido: {}", profile);
 	}
 
-	// Constante para duración por defecto de rate limiting
 	private static final String DEFAULT_RATE_LIMIT_DURATION = "PT30S";
 
-	// ✅ NUEVO: Configurar rate limiting permisivo para desarrollo
 	private static void setupRateLimiting(Dotenv dotenv) {
-		// Rate limiting para registro
+
 		String registerCapacity = getEnvVariable(dotenv, "RATE_LIMIT_REGISTER_IP_CAPACITY", "100");
 		String registerDuration = getEnvVariable(dotenv, "RATE_LIMIT_REGISTER_IP_DURATION",
 				DEFAULT_RATE_LIMIT_DURATION);
 
-		// Rate limiting para login por IP
 		String loginIpCapacity = getEnvVariable(dotenv, "RATE_LIMIT_LOGIN_IP_CAPACITY", "100");
 		String loginIpDuration = getEnvVariable(dotenv, "RATE_LIMIT_LOGIN_IP_DURATION", DEFAULT_RATE_LIMIT_DURATION);
 
-		// Rate limiting para login por usuario
 		String loginUserCapacity = getEnvVariable(dotenv, "RATE_LIMIT_LOGIN_USER_CAPACITY", "50");
 		String loginUserDuration = getEnvVariable(dotenv, "RATE_LIMIT_LOGIN_USER_DURATION",
 				DEFAULT_RATE_LIMIT_DURATION);
 
-		// ✅ ESTABLECER SYSTEM PROPERTIES PARA QUE SPRING LOS USE
 		System.setProperty("rate-limit.register.ip.capacity", registerCapacity);
 		System.setProperty("rate-limit.register.ip.refill-duration", registerDuration);
 		System.setProperty("rate-limit.login.ip.capacity", loginIpCapacity);
@@ -192,7 +184,7 @@ public class UrdimbreApplication {
 	}
 
 	private static String getEnvVariable(Dotenv dotenv, String key, String defaultValue) {
-		// Prioridad: System properties > Environment variables > .env file > default
+
 		String value = System.getProperty(key);
 		if (value == null) {
 			value = System.getenv(key);

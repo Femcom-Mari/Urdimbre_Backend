@@ -16,7 +16,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ActivitiesUrdimbreRequestDTO {
 
-    private Long id; // ✅ Cambiado a Long para consistencia
+    private Long id;
 
     @NotNull(message = "(!) ERROR: You need to select a category")
     private Category category;

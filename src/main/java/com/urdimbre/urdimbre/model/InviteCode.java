@@ -64,7 +64,7 @@ public class InviteCode {
     private String createdBy;
 
     @Column(name = "used_by")
-    private String usedBy; // Último usuario que lo usó
+    private String usedBy;
 
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -74,61 +74,37 @@ public class InviteCode {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    // ✅ MÉTODOS DE UTILIDAD
-
-    /**
-     * 🔍 Verificar si el código está activo y válido
-     */
     public boolean isValid() {
         return status == InviteStatus.ACTIVE
                 && expiresAt.isAfter(LocalDateTime.now())
                 && (maxUses == null || currentUses < maxUses);
     }
 
-    /**
-     * 📊 Verificar si el código ha expirado
-     */
     public boolean isExpired() {
         return expiresAt.isBefore(LocalDateTime.now());
     }
 
-    /**
-     * 🔢 Verificar si se alcanzó el límite de usos
-     */
     public boolean isMaxUsesReached() {
         return maxUses != null && currentUses >= maxUses;
     }
 
-    /**
-     * ➕ Incrementar contador de usos
-     */
     public void incrementUses(String usedByUser) {
         this.currentUses++;
         this.usedBy = usedByUser;
 
-        // Si se alcanzó el máximo, marcar como usado
         if (maxUses != null && currentUses >= maxUses) {
             this.status = InviteStatus.EXHAUSTED;
         }
     }
 
-    /**
-     * 🚫 Marcar código como revocado
-     */
     public void revoke() {
         this.status = InviteStatus.REVOKED;
     }
 
-    /**
-     * ⏰ Marcar código como expirado
-     */
     public void markAsExpired() {
         this.status = InviteStatus.EXPIRED;
     }
 
-    // ================================
-    // ENUM DE ESTADOS
-    // ================================
     public enum InviteStatus {
         ACTIVE("Activo"),
         EXPIRED("Expirado"),
