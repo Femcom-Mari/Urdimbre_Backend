@@ -25,6 +25,7 @@ public class DataInitializer {
 
     private static final Logger logger = LoggerFactory.getLogger(DataInitializer.class);
     private static final String ROLE_ADMIN = "ROLE_ADMIN";
+    private static final String ROLE_ORGANIZER = "ROLE_ORGANIZER";
     private static final String ROLE_USER = "ROLE_USER";
 
     @Value("${admin.username}")
@@ -111,14 +112,19 @@ public class DataInitializer {
 
         int initialRoleCount = (int) roleRepository.count();
 
-        createRoleIfNotExists(roleRepository, ROLE_USER, "Default role for registered users");
-        createRoleIfNotExists(roleRepository, ROLE_ADMIN, "Role for system administrators");
+        // ✅ CREAR LOS TRES ROLES EN ORDEN JERÁRQUICO
+        createRoleIfNotExists(roleRepository, ROLE_USER,
+                "Default role for registered users - Basic access to platform");
+        createRoleIfNotExists(roleRepository, ROLE_ORGANIZER,
+                "Role for activity organizers - Can create, update and delete activities");
+        createRoleIfNotExists(roleRepository, ROLE_ADMIN, "Role for system administrators - Full system access");
 
         int finalRoleCount = (int) roleRepository.count();
         int rolesCreated = finalRoleCount - initialRoleCount;
 
         logger.info("✅ Inicialización de roles completada");
         logger.info("📊 Roles totales: {}, Roles creados: {}", finalRoleCount, rolesCreated);
+        logger.info("🏗️ Jerarquía de roles: USER < ORGANIZER < ADMIN");
     }
 
     private void createRoleIfNotExists(RoleRepository roleRepository, String roleName, String description) {
@@ -172,12 +178,20 @@ public class DataInitializer {
 
         int rolesAssigned = 0;
 
+        // ✅ ASIGNAR TODOS LOS ROLES AL ADMINISTRADOR
         roleRepository.findByName(ROLE_ADMIN).ifPresentOrElse(
                 adminRole -> {
                     admin.getRoles().add(adminRole);
                     logger.info("✅ Rol ADMIN asignado al usuario administrador");
                 },
                 () -> logger.error("❌ Rol {} no encontrado en la base de datos", ROLE_ADMIN));
+
+        roleRepository.findByName(ROLE_ORGANIZER).ifPresentOrElse(
+                organizerRole -> {
+                    admin.getRoles().add(organizerRole);
+                    logger.info("✅ Rol ORGANIZER asignado al usuario administrador");
+                },
+                () -> logger.error("❌ Rol {} no encontrado en la base de datos", ROLE_ORGANIZER));
 
         roleRepository.findByName(ROLE_USER).ifPresentOrElse(
                 userRole -> {
@@ -194,7 +208,7 @@ public class DataInitializer {
         logger.info("👤 Username: {}", savedAdmin.getUsername());
         String emailToLog = savedAdmin.getEmail() != null ? maskEmail(savedAdmin.getEmail()) : "null";
         logger.info("📧 Email: {}", emailToLog);
-        logger.info("🎭 Roles asignados: {}", rolesAssigned);
+        logger.info("🎭 Roles asignados: {} (USER, ORGANIZER, ADMIN)", rolesAssigned);
         logger.info("🏷️ Pronombres: {}", savedAdmin.getPronouns().size());
 
         if ("dev".equals(activeProfile)) {
@@ -206,11 +220,13 @@ public class DataInitializer {
         long totalRoles = roleRepository.count();
         long totalUsers = userRepository.count();
         long adminUsers = userRepository.countByRoles_Name(ROLE_ADMIN);
+        long organizerUsers = userRepository.countByRoles_Name(ROLE_ORGANIZER);
 
         logger.info("📊 ESTADÍSTICAS DE INICIALIZACIÓN:");
         logger.info("   🎭 Total roles: {}", totalRoles);
         logger.info("   👥 Total usuarios: {}", totalUsers);
         logger.info("   👑 Administradores: {}", adminUsers);
+        logger.info("   🏗️ Organizadores: {}", organizerUsers);
         logger.info("🚀 Sistema inicializado correctamente para el perfil: {}", activeProfile);
     }
 

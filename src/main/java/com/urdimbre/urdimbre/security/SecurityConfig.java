@@ -34,8 +34,10 @@ import lombok.extern.slf4j.Slf4j;
 public class SecurityConfig {
 
         private static final String ROLE_ADMIN = "ADMIN";
+        private static final String ROLE_ORGANIZER = "ORGANIZER";
         private static final String ROLE_USER = "USER";
         private static final String PROFESSIONALS_API_PATTERN = "/api/professionals/**";
+        private static final String ACTIVITIES_API_PATTERN = "/api/activities/**";
 
         private final UserDetailsServiceImpl userDetailsService;
         private final RefreshTokenService refreshTokenService;

@@ -107,8 +107,19 @@ public class ActivitiesUrdimbreController {
         return ResponseEntity.ok(activities);
     }
 
+    @GetMapping("/search")
+    @Operation(summary = "Buscar actividades por título", description = "Busca actividades que contengan el texto especificado en el título")
+    @ApiResponse(responseCode = "200", description = "Búsqueda realizada con éxito")
+    public ResponseEntity<List<ActivitiesUrdimbreResponseDTO>> searchActivitiesByTitle(
+            @Parameter(description = "Texto a buscar en el título") @RequestParam String title) {
+
+        log.info("🔍 Buscando actividades por título: {}", title);
+        List<ActivitiesUrdimbreResponseDTO> activities = activitiesUrdimbreService.searchActivitiesByTitle(title);
+        return ResponseEntity.ok(activities);
+    }
+
     // ================================
-    // ENDPOINTS DE ESCRITURA - Solo ORGANIZER y ADMIN
+    // ENDPOINTS DE ESCRITURA - ORGANIZER y ADMIN solamente
     // ================================
 
     @PostMapping
@@ -116,7 +127,7 @@ public class ActivitiesUrdimbreController {
     @Operation(summary = "Crear nueva actividad", description = "Crea una nueva actividad (solo ORGANIZER y ADMIN)")
     @ApiResponse(responseCode = "201", description = "Actividad creada exitosamente")
     @ApiResponse(responseCode = "400", description = "Datos de actividad inválidos", content = @Content)
-    @ApiResponse(responseCode = "403", description = "Sin permisos para crear actividades", content = @Content)
+    @ApiResponse(responseCode = "403", description = "Sin permisos para crear actividades - Requiere rol ORGANIZER o ADMIN", content = @Content)
     public ResponseEntity<ActivitiesUrdimbreResponseDTO> createActivity(
             @Parameter(description = "Datos de la nueva actividad") @Valid @RequestBody ActivitiesUrdimbreRequestDTO dto) {
 
@@ -130,7 +141,7 @@ public class ActivitiesUrdimbreController {
     @Operation(summary = "Actualizar actividad", description = "Actualiza una actividad existente (solo ORGANIZER y ADMIN)")
     @ApiResponse(responseCode = "200", description = "Actividad actualizada con éxito")
     @ApiResponse(responseCode = "404", description = "Actividad no encontrada", content = @Content)
-    @ApiResponse(responseCode = "403", description = "Sin permisos para actualizar actividades", content = @Content)
+    @ApiResponse(responseCode = "403", description = "Sin permisos para actualizar actividades - Requiere rol ORGANIZER o ADMIN", content = @Content)
     public ResponseEntity<ActivitiesUrdimbreResponseDTO> updateActivity(
             @Parameter(description = "ID de la actividad a actualizar") @PathVariable Long id,
             @Parameter(description = "Nuevos datos de la actividad") @Valid @RequestBody ActivitiesUrdimbreRequestDTO dto) {
@@ -145,7 +156,7 @@ public class ActivitiesUrdimbreController {
     @Operation(summary = "Eliminar actividad", description = "Elimina una actividad por su ID (solo ORGANIZER y ADMIN)")
     @ApiResponse(responseCode = "204", description = "Actividad eliminada con éxito")
     @ApiResponse(responseCode = "404", description = "Actividad no encontrada", content = @Content)
-    @ApiResponse(responseCode = "403", description = "Sin permisos para eliminar actividades", content = @Content)
+    @ApiResponse(responseCode = "403", description = "Sin permisos para eliminar actividades - Requiere rol ORGANIZER o ADMIN", content = @Content)
     public ResponseEntity<Void> deleteActivity(
             @Parameter(description = "ID de la actividad a eliminar") @PathVariable Long id) {
 
@@ -181,5 +192,34 @@ public class ActivitiesUrdimbreController {
         log.info("🔄 Cambiando estado de actividad con ID: {}", id);
         // Implementar toggle de estado en el servicio
         return ResponseEntity.ok().build();
+    }
+
+    // ================================
+    // ENDPOINTS ESPECIALES PARA ORGANIZADORES
+    // ================================
+
+    @GetMapping("/my-activities")
+    @PreAuthorize("hasRole('ORGANIZER') or hasRole('ADMIN')")
+    @Operation(summary = "Obtener mis actividades", description = "Obtiene las actividades creadas por el organizador actual")
+    @ApiResponse(responseCode = "200", description = "Actividades del organizador obtenidas con éxito")
+    @ApiResponse(responseCode = "403", description = "Sin permisos - Requiere rol ORGANIZER o ADMIN", content = @Content)
+    public ResponseEntity<List<ActivitiesUrdimbreResponseDTO>> getMyActivities(
+            @Parameter(description = "Número de página") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Tamaño de página") @RequestParam(defaultValue = "15") int size) {
+
+        log.info("👤 Obteniendo actividades del organizador actual");
+        // TODO: Implementar getActivitiesByOrganizer en el servicio
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/organizer-dashboard")
+    @PreAuthorize("hasRole('ORGANIZER') or hasRole('ADMIN')")
+    @Operation(summary = "Dashboard del organizador", description = "Obtiene resumen de actividades y estadísticas para el organizador")
+    @ApiResponse(responseCode = "200", description = "Dashboard obtenido con éxito")
+    @ApiResponse(responseCode = "403", description = "Sin permisos - Requiere rol ORGANIZER o ADMIN", content = @Content)
+    public ResponseEntity<?> getOrganizerDashboard() {
+        log.info("📊 Obteniendo dashboard del organizador");
+        // TODO: Implementar dashboard específico para organizadores
+        return ResponseEntity.ok("Dashboard del organizador - Por implementar");
     }
 }

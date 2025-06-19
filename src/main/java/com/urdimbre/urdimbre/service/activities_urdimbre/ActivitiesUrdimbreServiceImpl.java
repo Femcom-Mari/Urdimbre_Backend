@@ -109,7 +109,7 @@ public class ActivitiesUrdimbreServiceImpl implements ActivitiesUrdimbreService 
                                 .toList();
         }
 
-        // ✅ Método sin parámetros requerido por la interfaz
+        // Método sin parámetros requerido por la interfaz
         @Override
         public List<ActivitiesUrdimbreResponseDTO> getUpcomingActivities() {
                 log.info("🔮 Obteniendo actividades futuras (sin parámetros)");
@@ -120,7 +120,7 @@ public class ActivitiesUrdimbreServiceImpl implements ActivitiesUrdimbreService 
                                 .toList();
         }
 
-        // ✅ Método con parámetros de paginación (sobrecarga)
+        // Método con parámetros de paginación (sobrecarga)
         @Override
         public List<ActivitiesUrdimbreResponseDTO> getUpcomingActivities(int days, int page, int size) {
                 log.info("🔮 Obteniendo actividades futuras para {} días (página: {}, tamaño: {})", days, page, size);
@@ -131,7 +131,6 @@ public class ActivitiesUrdimbreServiceImpl implements ActivitiesUrdimbreService 
                 Pageable pageable = PageRequest.of(page, size,
                                 Sort.by("date").ascending().and(Sort.by("startTime").ascending()));
 
-                // ✅ Usar método Spring Data JPA estándar que sí existe
                 Page<ActivitiesUrdimbre> activitiesPage = activitiesUrdimbreRepository
                                 .findByDateBetween(today, futureDate, pageable);
 

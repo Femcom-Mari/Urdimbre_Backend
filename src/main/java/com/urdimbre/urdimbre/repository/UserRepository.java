@@ -1,6 +1,5 @@
 package com.urdimbre.urdimbre.repository;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,31 +17,69 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
         Optional<User> findByEmail(String email);
 
-        Optional<User> findByUsernameOrEmail(String username, String email);
+        boolean existsByUsername(String username);
 
-        Boolean existsByUsername(String username);
+        boolean existsByEmail(String email);
 
-        Boolean existsByEmail(String email);
-
-        List<User> findByStatus(User.UserStatus status);
-
-        long countByStatus(User.UserStatus status);
-
-        boolean existsByEmailAndStatus(String email, User.UserStatus status);
-
-        boolean existsByUsernameAndStatus(String username, User.UserStatus status);
-
-        List<User> findByCreatedAtAfter(LocalDateTime date);
-
-        List<User> findByCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate);
-
-        long countByCreatedAtAfter(LocalDateTime date);
+        // ================================
+        // MÉTODOS JPA DERIVADOS PARA ROLES
+        // ================================
 
         List<User> findByRoles_Name(String roleName);
 
         Page<User> findByRoles_Name(String roleName, Pageable pageable);
 
+        List<User> findByRoles_NameAndStatus(String roleName, User.UserStatus status);
+
+        Page<User> findByRoles_NameAndStatus(String roleName, User.UserStatus status, Pageable pageable);
+
         long countByRoles_Name(String roleName);
 
-        boolean existsByUsernameAndRoles_Name(String username, String roleName);
+        long countByRoles_NameAndStatus(String roleName, User.UserStatus status);
+
+        List<User> findByStatus(User.UserStatus status);
+
+        Page<User> findByStatus(User.UserStatus status, Pageable pageable);
+
+        // ================================
+        // MÉTODOS DE BÚSQUEDA Y FILTRADO
+        // ================================
+
+        List<User> findByUsernameContainingIgnoreCase(String username);
+
+        List<User> findByEmailContainingIgnoreCase(String email);
+
+        List<User> findByUsernameContainingIgnoreCaseOrEmailContainingIgnoreCase(String username, String email);
+
+        Page<User> findByUsernameContainingIgnoreCaseOrEmailContainingIgnoreCase(
+                        String username, String email, Pageable pageable);
+
+        List<User> findByStatusAndUsernameContainingIgnoreCaseOrStatusAndEmailContainingIgnoreCase(
+                        User.UserStatus status1, String username, User.UserStatus status2, String email);
+
+        Page<User> findByStatusAndUsernameContainingIgnoreCaseOrStatusAndEmailContainingIgnoreCase(
+                        User.UserStatus status1, String username, User.UserStatus status2, String email,
+                        Pageable pageable);
+
+        // ================================
+        // MÉTODOS DE VALIDACIÓN
+        // ================================
+
+        List<User> findByUsernameAndIdNot(String username, Long id);
+
+        List<User> findByEmailAndIdNot(String email, Long id);
+
+        boolean existsByUsernameAndIdNot(String username, Long id);
+
+        boolean existsByEmailAndIdNot(String email, Long id);
+
+        // ================================
+        // MÉTODOS DE ORDENAMIENTO
+        // ================================
+
+        List<User> findAllByOrderByUsernameAsc();
+
+        List<User> findByStatusOrderByCreatedAtDesc(User.UserStatus status);
+
+        List<User> findByRoles_NameOrderByUsernameAsc(String roleName);
 }
