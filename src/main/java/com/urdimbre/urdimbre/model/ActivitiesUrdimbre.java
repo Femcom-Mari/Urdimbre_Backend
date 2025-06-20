@@ -1,6 +1,7 @@
 package com.urdimbre.urdimbre.model;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 
@@ -9,9 +10,12 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
@@ -74,12 +78,10 @@ public class ActivitiesUrdimbre {
     @OneToMany(mappedBy = "activityId", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Attendance> attendances;
 
-    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by_id")
+    private User createdBy;
 
+    private LocalDateTime createdAt;
 
-    //ralation whit user to catch the name of the coach
-
-
-
-
- }
+}

@@ -204,16 +204,18 @@ public class ActivitiesUrdimbreServiceImpl implements ActivitiesUrdimbreService 
                                 activity.getId(),
                                 com.urdimbre.urdimbre.model.AttendanceStatus.CONFIRMED);
 
-                return new ActivitiesUrdimbreResponseDTO(
-                                activity.getId(),
-                                activity.getCategory(),
-                                activity.getTitle(),
-                                activity.getDescription(),
-                                activity.getLanguage(),
-                                activity.getDate(),
-                                activity.getStartTime(),
-                                activity.getEndTime(),
-                                activity.getMaxAttendees() != null ? activity.getMaxAttendees().intValue() : null,
-                                currentAttendees.intValue());
+                return ActivitiesUrdimbreResponseDTO.builder()
+                                .id(activity.getId())
+                                .category(activity.getCategory())
+                                .title(activity.getTitle())
+                                .description(activity.getDescription())
+                                .language(activity.getLanguage())
+                                .date(activity.getDate())
+                                .startTime(activity.getStartTime())
+                                .endTime(activity.getEndTime())
+                                .maxAttendees(activity.getMaxAttendees() != null ? activity.getMaxAttendees().intValue()
+                                                : null)
+                                .currentAttendees(currentAttendees.intValue())
+                                .build();
         }
 }

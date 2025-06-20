@@ -18,104 +18,110 @@ import com.urdimbre.urdimbre.model.Language;
 @Repository
 public interface ActivitiesUrdimbreRepository extends JpaRepository<ActivitiesUrdimbre, Long> {
 
-    Optional<ActivitiesUrdimbre> findByTitle(String title);
+        Optional<ActivitiesUrdimbre> findByTitle(String title);
 
-    // ================================
-    // MÉTODOS QUE USA TU SERVICIO (con All)
-    // ================================
+        // ================================
+        // MÉTODOS QUE USA TU SERVICIO (con All)
+        // ================================
 
-    List<ActivitiesUrdimbre> findAllByCategoryOrderByDateAsc(Category category);
+        List<ActivitiesUrdimbre> findAllByCategoryOrderByDateAsc(Category category);
 
-    List<ActivitiesUrdimbre> findAllByDate(LocalDate date);
+        List<ActivitiesUrdimbre> findAllByDate(LocalDate date);
 
-    List<ActivitiesUrdimbre> findAllByLanguage(Language language);
+        List<ActivitiesUrdimbre> findAllByLanguage(Language language);
 
-    List<ActivitiesUrdimbre> findAllByDateGreaterThanEqual(LocalDate date);
+        List<ActivitiesUrdimbre> findAllByDateGreaterThanEqual(LocalDate date);
 
-    List<ActivitiesUrdimbre> findAllByTitleContainingIgnoreCase(String title);
+        List<ActivitiesUrdimbre> findAllByTitleContainingIgnoreCase(String title);
 
-    // ================================
-    // MÉTODOS ADICIONALES (sin All)
-    // ================================
+        // ================================
+        // MÉTODOS ADICIONALES (sin All)
+        // ================================
 
-    List<ActivitiesUrdimbre> findByCategory(Category category);
+        List<ActivitiesUrdimbre> findByCategory(Category category);
 
-    Page<ActivitiesUrdimbre> findByCategory(Category category, Pageable pageable);
+        Page<ActivitiesUrdimbre> findByCategory(Category category, Pageable pageable);
 
-    List<ActivitiesUrdimbre> findByDate(LocalDate date);
+        List<ActivitiesUrdimbre> findByDate(LocalDate date);
 
-    Page<ActivitiesUrdimbre> findByDate(LocalDate date, Pageable pageable);
+        Page<ActivitiesUrdimbre> findByDate(LocalDate date, Pageable pageable);
 
-    List<ActivitiesUrdimbre> findByDateBetween(LocalDate startDate, LocalDate endDate);
+        List<ActivitiesUrdimbre> findByDateBetween(LocalDate startDate, LocalDate endDate);
 
-    Page<ActivitiesUrdimbre> findByDateBetween(LocalDate startDate, LocalDate endDate, Pageable pageable);
+        Page<ActivitiesUrdimbre> findByDateBetween(LocalDate startDate, LocalDate endDate, Pageable pageable);
 
-    List<ActivitiesUrdimbre> findByLanguage(Language language);
+        List<ActivitiesUrdimbre> findByLanguage(Language language);
 
-    Page<ActivitiesUrdimbre> findByLanguage(Language language, Pageable pageable);
+        Page<ActivitiesUrdimbre> findByLanguage(Language language, Pageable pageable);
 
-    List<ActivitiesUrdimbre> findByCategoryAndDate(Category category, LocalDate date);
+        List<ActivitiesUrdimbre> findByCategoryAndDate(Category category, LocalDate date);
 
-    List<ActivitiesUrdimbre> findByCategoryAndLanguage(Category category, Language language);
+        List<ActivitiesUrdimbre> findByCategoryAndLanguage(Category category, Language language);
 
-    List<ActivitiesUrdimbre> findByTitleContainingIgnoreCase(String title);
+        List<ActivitiesUrdimbre> findByTitleContainingIgnoreCase(String title);
 
-    Page<ActivitiesUrdimbre> findByTitleContainingIgnoreCase(String title, Pageable pageable);
+        Page<ActivitiesUrdimbre> findByTitleContainingIgnoreCase(String title, Pageable pageable);
 
-    List<ActivitiesUrdimbre> findByDescriptionContainingIgnoreCase(String description);
+        List<ActivitiesUrdimbre> findByDescriptionContainingIgnoreCase(String description);
 
-    List<ActivitiesUrdimbre> findByDateGreaterThanEqual(LocalDate date);
+        List<ActivitiesUrdimbre> findByDateGreaterThanEqual(LocalDate date);
 
-    Page<ActivitiesUrdimbre> findByDateGreaterThanEqual(LocalDate date, Pageable pageable);
+        Page<ActivitiesUrdimbre> findByDateGreaterThanEqual(LocalDate date, Pageable pageable);
 
-    List<ActivitiesUrdimbre> findByDateLessThan(LocalDate date);
+        List<ActivitiesUrdimbre> findByDateLessThan(LocalDate date);
 
-    List<ActivitiesUrdimbre> findAllByOrderByDateAsc();
+        List<ActivitiesUrdimbre> findAllByOrderByDateAsc();
 
-    List<ActivitiesUrdimbre> findAllByOrderByDateDesc();
+        List<ActivitiesUrdimbre> findAllByOrderByDateDesc();
 
-    List<ActivitiesUrdimbre> findByCategoryOrderByDateAsc(Category category);
+        List<ActivitiesUrdimbre> findByCategoryOrderByDateAsc(Category category);
 
-    // ================================
-    // MÉTODOS DE EXISTENCIA Y CONTEO
-    // ================================
+        // ================================
+        // MÉTODOS DE EXISTENCIA Y CONTEO
+        // ================================
 
-    boolean existsByDate(LocalDate date);
+        boolean existsByDate(LocalDate date);
 
-    boolean existsByTitle(String title);
+        boolean existsByTitle(String title);
 
-    boolean existsByCategoryAndDate(Category category, LocalDate date);
+        boolean existsByCategoryAndDate(Category category, LocalDate date);
 
-    long countByCategory(Category category);
+        long countByCategory(Category category);
 
-    long countByDate(LocalDate date);
+        long countByDate(LocalDate date);
 
-    long countByLanguage(Language language);
+        long countByLanguage(Language language);
 
-    long countByDateGreaterThanEqual(LocalDate date);
+        long countByDateGreaterThanEqual(LocalDate date);
 
-    long countByDateBetween(LocalDate startDate, LocalDate endDate);
+        long countByDateBetween(LocalDate startDate, LocalDate endDate);
 
-    // ================================
-    // CONSULTAS @Query NECESARIAS
-    // ================================
+        // Buscar actividades por creador
+        List<ActivitiesUrdimbre> findByCreatedBy_Username(String username);
 
-    @Query("SELECT a FROM ActivitiesUrdimbre a WHERE a.maxAttendees > " +
-            "(SELECT COUNT(att) FROM Attendance att WHERE att.activityId = a AND att.status = 'CONFIRMED')")
-    List<ActivitiesUrdimbre> findActivitiesWithAvailableCapacity();
+        // Buscar actividades por creador ordenadas por fecha
+        List<ActivitiesUrdimbre> findByCreatedBy_UsernameOrderByDateDesc(String username);
 
-    @Query("SELECT a FROM ActivitiesUrdimbre a WHERE a.maxAttendees > " +
-            "(SELECT COUNT(att) FROM Attendance att WHERE att.activityId = a AND att.status = 'CONFIRMED')")
-    Page<ActivitiesUrdimbre> findActivitiesWithAvailableCapacity(Pageable pageable);
+        // ================================
+        // CONSULTAS @Query NECESARIAS
+        // ================================
 
-    @Query("SELECT a FROM ActivitiesUrdimbre a WHERE " +
-            "LOWER(a.title) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
-            "LOWER(a.description) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
-    List<ActivitiesUrdimbre> findByTitleOrDescriptionContaining(@Param("searchTerm") String searchTerm);
+        @Query("SELECT a FROM ActivitiesUrdimbre a WHERE a.maxAttendees > " +
+                        "(SELECT COUNT(att) FROM Attendance att WHERE att.activityId = a AND att.status = 'CONFIRMED')")
+        List<ActivitiesUrdimbre> findActivitiesWithAvailableCapacity();
 
-    @Query("SELECT a FROM ActivitiesUrdimbre a WHERE " +
-            "LOWER(a.title) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
-            "LOWER(a.description) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
-    Page<ActivitiesUrdimbre> findByTitleOrDescriptionContaining(@Param("searchTerm") String searchTerm,
-            Pageable pageable);
+        @Query("SELECT a FROM ActivitiesUrdimbre a WHERE a.maxAttendees > " +
+                        "(SELECT COUNT(att) FROM Attendance att WHERE att.activityId = a AND att.status = 'CONFIRMED')")
+        Page<ActivitiesUrdimbre> findActivitiesWithAvailableCapacity(Pageable pageable);
+
+        @Query("SELECT a FROM ActivitiesUrdimbre a WHERE " +
+                        "LOWER(a.title) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+                        "LOWER(a.description) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
+        List<ActivitiesUrdimbre> findByTitleOrDescriptionContaining(@Param("searchTerm") String searchTerm);
+
+        @Query("SELECT a FROM ActivitiesUrdimbre a WHERE " +
+                        "LOWER(a.title) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+                        "LOWER(a.description) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
+        Page<ActivitiesUrdimbre> findByTitleOrDescriptionContaining(@Param("searchTerm") String searchTerm,
+                        Pageable pageable);
 }

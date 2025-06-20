@@ -74,34 +74,20 @@ public class InviteCode {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    // ✅ MÉTODOS DE UTILIDAD
-
-    /**
-     * 🔍 Verificar si el código está activo y válido
-     */
     public boolean isValid() {
         return status == InviteStatus.ACTIVE
                 && expiresAt.isAfter(LocalDateTime.now())
                 && (maxUses == null || currentUses < maxUses);
     }
 
-    /**
-     * 📊 Verificar si el código ha expirado
-     */
     public boolean isExpired() {
         return expiresAt.isBefore(LocalDateTime.now());
     }
 
-    /**
-     * 🔢 Verificar si se alcanzó el límite de usos
-     */
     public boolean isMaxUsesReached() {
         return maxUses != null && currentUses >= maxUses;
     }
 
-    /**
-     * ➕ Incrementar contador de usos
-     */
     public void incrementUses(String usedByUser) {
         this.currentUses++;
         this.usedBy = usedByUser;
@@ -112,23 +98,14 @@ public class InviteCode {
         }
     }
 
-    /**
-     * 🚫 Marcar código como revocado
-     */
     public void revoke() {
         this.status = InviteStatus.REVOKED;
     }
 
-    /**
-     * ⏰ Marcar código como expirado
-     */
     public void markAsExpired() {
         this.status = InviteStatus.EXPIRED;
     }
 
-    // ================================
-    // ENUM DE ESTADOS
-    // ================================
     public enum InviteStatus {
         ACTIVE("Activo"),
         EXPIRED("Expirado"),

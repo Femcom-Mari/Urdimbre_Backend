@@ -5,12 +5,14 @@ import java.util.Set;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class UserRequestDTO {
 
     private String username;
@@ -32,6 +34,10 @@ public class UserRequestDTO {
 
     private Set<String> pronouns;
 
+    // ✅ CÓDIGO DE INVITACIÓN OPCIONAL - Solo obligatorio para registro desde front
+    // NO obligatorio cuando ADMIN crea usuarios directamente
+    private String inviteCode;
+
     public boolean isLoginRequest() {
         return username != null && password != null &&
                 email == null && fullName == null;
@@ -41,5 +47,9 @@ public class UserRequestDTO {
         return username == null && password == null &&
                 (email != null || fullName != null || biography != null ||
                         location != null || profileImageUrl != null || pronouns != null);
+    }
+
+    public boolean isCreateRequest() {
+        return username != null && password != null && email != null;
     }
 }

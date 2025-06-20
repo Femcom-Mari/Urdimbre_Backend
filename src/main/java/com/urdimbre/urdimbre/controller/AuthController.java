@@ -18,12 +18,17 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.urdimbre.urdimbre.dto.auth.AuthRequestDTO;
 import com.urdimbre.urdimbre.dto.auth.AuthResponseDTO;
+import com.urdimbre.urdimbre.dto.auth.CheckAvailabilityResponseDTO;
+import com.urdimbre.urdimbre.dto.auth.ForgotPasswordRequestDTO;
+import com.urdimbre.urdimbre.dto.auth.ForgotPasswordResponseDTO;
 import com.urdimbre.urdimbre.dto.auth.RefreshTokenRequestDTO;
+import com.urdimbre.urdimbre.dto.invite.InviteCodePublicInfoDTO;
 import com.urdimbre.urdimbre.dto.user.UserRegisterDTO;
 import com.urdimbre.urdimbre.dto.user.UserResponseDTO;
 import com.urdimbre.urdimbre.exception.BadRequestException;
 import com.urdimbre.urdimbre.exception.RateLimitExceededException;
 import com.urdimbre.urdimbre.model.InviteCode;
+import com.urdimbre.urdimbre.model.User;
 import com.urdimbre.urdimbre.repository.UserRepository;
 import com.urdimbre.urdimbre.security.service.RateLimitingService;
 import com.urdimbre.urdimbre.service.auth.AuthService;
@@ -31,21 +36,18 @@ import com.urdimbre.urdimbre.service.invite.InviteCodeService;
 import com.urdimbre.urdimbre.service.token.BlacklistedTokenService;
 import com.urdimbre.urdimbre.util.HtmlSanitizer;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@Tag(name = "Authentication", description = "API para autenticación y gestión de usuarios")
 public class AuthController {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
@@ -57,19 +59,23 @@ public class AuthController {
     private final UserRepository userRepository;
 
     @PostMapping("/register")
+    @Operation(summary = "Registro público de usuario", description = "Permite el registro de nuevos usuarios con código de invitación")
+    @ApiResponse(responseCode = "200", description = "Usuario registrado exitosamente")
+    @ApiResponse(responseCode = "400", description = "Error de validación o código de invitación inválido")
+    @ApiResponse(responseCode = "429", description = "Rate limit excedido")
     public ResponseEntity<UserResponseDTO> register(
             @Valid @RequestBody UserRegisterDTO request,
             HttpServletRequest httpRequest) {
 
-        logger.info("🔐 Intento de registro para usuario: {}", request.getUsername());
+        logger.info("🔐 Intento de registro PÚBLICO para usuario: {}", request.getUsername());
 
         try {
-
             RateLimitingService.RateLimitResult rateLimitResult = rateLimitingService.checkRegisterByIp(httpRequest);
             if (!rateLimitResult.isAllowed()) {
                 throw RateLimitExceededException.forRegisterByIp(rateLimitResult.getRetryAfterSeconds());
             }
 
+            // ✅ VALIDAR CÓDIGO DE INVITACIÓN (SIEMPRE OBLIGATORIO EN REGISTRO PÚBLICO)
             if (!inviteCodeService.validateInviteCode(request.getInviteCode())) {
                 logger.warn("❌ Código de invitación inválido para {}: {}", request.getUsername(),
                         request.getInviteCode());
@@ -95,7 +101,6 @@ public class AuthController {
                     request.getUsername(), rateLimitingService.getClientIp(httpRequest),
                     e.getRateLimitType(), e.getRetryAfterSeconds(), e);
 
-            // Rethrow with contextual information
             throw new RateLimitExceededException(
                     String.format("Rate limit exceeded para registro - Usuario: %s desde IP: %s. %s",
                             request.getUsername(), rateLimitingService.getClientIp(httpRequest), e.getMessage()),
@@ -131,6 +136,10 @@ public class AuthController {
     }
 
     @PostMapping("/login")
+    @Operation(summary = "Login de usuario", description = "Autentica un usuario y devuelve tokens de acceso")
+    @ApiResponse(responseCode = "200", description = "Login exitoso")
+    @ApiResponse(responseCode = "401", description = "Credenciales inválidas")
+    @ApiResponse(responseCode = "429", description = "Rate limit excedido")
     public ResponseEntity<AuthResponseDTO> login(
             @Valid @RequestBody AuthRequestDTO request,
             HttpServletRequest httpRequest) {
@@ -184,19 +193,26 @@ public class AuthController {
         } catch (RuntimeException e) {
             logger.error("❌ Error inesperado (Runtime) en login - Usuario: {} - Error: {}",
                     request.getUsername(), e.getMessage(), e);
+            // Rethrow with contextual information
             throw new BadCredentialsException(
-                    String.format("Error interno del servidor durante login para usuario '%s'", request.getUsername()),
+                    String.format("Error interno del servidor durante login para usuario '%s': %s",
+                            request.getUsername(), e.getMessage()),
                     e);
         } catch (Exception e) {
             logger.error("❌ Error inesperado (Checked) en login - Usuario: {} - Error: {}",
                     request.getUsername(), e.getMessage(), e);
+            // Rethrow with contextual information
             throw new BadCredentialsException(
-                    String.format("Error interno del servidor durante login para usuario '%s'", request.getUsername()),
+                    String.format("Error interno del servidor durante login para usuario '%s': %s",
+                            request.getUsername(), e.getMessage()),
                     e);
         }
     }
 
     @PostMapping("/refresh")
+    @Operation(summary = "Renovar token", description = "Renueva el token de acceso usando el refresh token")
+    @ApiResponse(responseCode = "200", description = "Token renovado exitosamente")
+    @ApiResponse(responseCode = "401", description = "Refresh token inválido")
     public ResponseEntity<AuthResponseDTO> refreshToken(@Valid @RequestBody RefreshTokenRequestDTO request) {
         logger.info("🔄 Intento de renovación de token");
 
@@ -236,6 +252,9 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
+    @Operation(summary = "Cerrar sesión", description = "Cierra la sesión del usuario y invalida los tokens")
+    @ApiResponse(responseCode = "200", description = "Logout exitoso")
+    @ApiResponse(responseCode = "500", description = "Error interno")
     public ResponseEntity<String> logout(HttpServletRequest request, HttpServletResponse response) {
         String username = "unknown";
 
@@ -258,164 +277,134 @@ public class AuthController {
     }
 
     // ===================================================
-    // ✅ NUEVOS ENDPOINTS PARA VERIFICACIÓN Y RECUPERACIÓN
+    // ✅ ENDPOINTS PARA VERIFICACIÓN Y RECUPERACIÓN
     // ===================================================
 
-    /**
-     * ✅ ENDPOINT PARA VERIFICAR DISPONIBILIDAD DE USERNAME
-     */
     @GetMapping("/check-username")
-    public ResponseEntity<CheckAvailabilityResponse> checkUsernameAvailability(@RequestParam String username) {
+    @Operation(summary = "Verificar disponibilidad de username", description = "Verifica si un username está disponible")
+    @ApiResponse(responseCode = "200", description = "Verificación completada")
+    @ApiResponse(responseCode = "400", description = "Username inválido")
+    public ResponseEntity<CheckAvailabilityResponseDTO> checkUsernameAvailability(@RequestParam String username) {
         logger.debug("🔍 Verificando disponibilidad de username: {}", username);
 
         try {
             if (username == null || username.trim().isEmpty()) {
-                return ResponseEntity.badRequest().body(CheckAvailabilityResponse.builder()
-                        .available(false)
-                        .message("Username requerido")
-                        .build());
+                return ResponseEntity.badRequest()
+                        .body(CheckAvailabilityResponseDTO.error("Username requerido"));
             }
 
             if (username.length() < 3) {
-                return ResponseEntity.ok(CheckAvailabilityResponse.builder()
-                        .available(false)
-                        .message("Username debe tener al menos 3 caracteres")
-                        .build());
+                return ResponseEntity.ok(CheckAvailabilityResponseDTO
+                        .notAvailable("Username debe tener al menos 3 caracteres"));
             }
 
             if (username.length() > 50) {
-                return ResponseEntity.ok(CheckAvailabilityResponse.builder()
-                        .available(false)
-                        .message("Username demasiado largo")
-                        .build());
+                return ResponseEntity.ok(CheckAvailabilityResponseDTO
+                        .notAvailable("Username demasiado largo"));
             }
 
             // Validar formato
             if (!username.matches("^[a-zA-Z0-9_.-]+$")) {
-                return ResponseEntity.ok(CheckAvailabilityResponse.builder()
-                        .available(false)
-                        .message("Username solo puede contener letras, números, puntos, guiones y guiones bajos")
-                        .build());
+                return ResponseEntity.ok(CheckAvailabilityResponseDTO
+                        .notAvailable("Username solo puede contener letras, números, puntos, guiones y guiones bajos"));
             }
 
             boolean isAvailable = userRepository.findByUsername(username).isEmpty();
 
-            return ResponseEntity.ok(CheckAvailabilityResponse.builder()
-                    .available(isAvailable)
-                    .message(isAvailable ? "Username disponible" : "Username no disponible")
-                    .build());
+            return ResponseEntity.ok(isAvailable
+                    ? CheckAvailabilityResponseDTO.available("Username disponible")
+                    : CheckAvailabilityResponseDTO.notAvailable("Username no disponible"));
 
         } catch (Exception e) {
             logger.error("❌ Error verificando username {}: {}", username, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(CheckAvailabilityResponse.builder()
-                            .available(false)
-                            .message("Error interno del servidor")
-                            .build());
+                    .body(CheckAvailabilityResponseDTO.error("Error interno del servidor"));
         }
     }
 
-    /**
-     * ✅ ENDPOINT PARA VERIFICAR DISPONIBILIDAD DE EMAIL
-     */
     @GetMapping("/check-email")
-    public ResponseEntity<CheckAvailabilityResponse> checkEmailAvailability(@RequestParam String email) {
+    @Operation(summary = "Verificar disponibilidad de email", description = "Verifica si un email está disponible")
+    @ApiResponse(responseCode = "200", description = "Verificación completada")
+    @ApiResponse(responseCode = "400", description = "Email inválido")
+    public ResponseEntity<CheckAvailabilityResponseDTO> checkEmailAvailability(@RequestParam String email) {
         logger.debug("🔍 Verificando disponibilidad de email: {}", email);
 
         try {
             if (email == null || email.trim().isEmpty()) {
-                return ResponseEntity.badRequest().body(CheckAvailabilityResponse.builder()
-                        .available(false)
-                        .message("Email requerido")
-                        .build());
+                return ResponseEntity.badRequest()
+                        .body(CheckAvailabilityResponseDTO.error("Email requerido"));
             }
 
             if (!isValidEmail(email)) {
-                return ResponseEntity.ok(CheckAvailabilityResponse.builder()
-                        .available(false)
-                        .message("Formato de email inválido")
-                        .build());
+                return ResponseEntity.ok(CheckAvailabilityResponseDTO
+                        .notAvailable("Formato de email inválido"));
             }
 
             if (email.length() > 100) {
-                return ResponseEntity.ok(CheckAvailabilityResponse.builder()
-                        .available(false)
-                        .message("Email demasiado largo")
-                        .build());
+                return ResponseEntity.ok(CheckAvailabilityResponseDTO
+                        .notAvailable("Email demasiado largo"));
             }
 
             boolean isAvailable = userRepository.findByEmail(email).isEmpty();
 
-            return ResponseEntity.ok(CheckAvailabilityResponse.builder()
-                    .available(isAvailable)
-                    .message(isAvailable ? "Email disponible" : "Email no disponible")
-                    .build());
+            return ResponseEntity.ok(isAvailable
+                    ? CheckAvailabilityResponseDTO.available("Email disponible")
+                    : CheckAvailabilityResponseDTO.notAvailable("Email no disponible"));
 
         } catch (Exception e) {
             logger.error("❌ Error verificando email {}: {}", email, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(CheckAvailabilityResponse.builder()
-                            .available(false)
-                            .message("Error interno del servidor")
-                            .build());
+                    .body(CheckAvailabilityResponseDTO.error("Error interno del servidor"));
         }
     }
 
-    /**
-     * ✅ ENDPOINT PARA RECUPERACIÓN DE CONTRASEÑA
-     */
     @PostMapping("/forgot-password")
-    public ResponseEntity<ForgotPasswordResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+    @Operation(summary = "Solicitar recuperación de contraseña", description = "Envía un enlace de recuperación al email del usuario")
+    @ApiResponse(responseCode = "200", description = "Email de recuperación enviado")
+    @ApiResponse(responseCode = "404", description = "Email no encontrado")
+    @ApiResponse(responseCode = "400", description = "Email inválido")
+    public ResponseEntity<ForgotPasswordResponseDTO> forgotPassword(
+            @Valid @RequestBody ForgotPasswordRequestDTO request) {
         logger.info("📧 Solicitud de recuperación de contraseña para email: {}", request.getEmail());
 
         try {
             if (request.getEmail() == null || request.getEmail().trim().isEmpty()) {
-                return ResponseEntity.badRequest().body(ForgotPasswordResponse.builder()
-                        .success(false)
-                        .message("Email requerido")
-                        .build());
+                return ResponseEntity.badRequest()
+                        .body(ForgotPasswordResponseDTO.error("Email requerido"));
             }
 
             if (!isValidEmail(request.getEmail())) {
-                return ResponseEntity.badRequest().body(ForgotPasswordResponse.builder()
-                        .success(false)
-                        .message("Formato de email inválido")
-                        .build());
+                return ResponseEntity.badRequest()
+                        .body(ForgotPasswordResponseDTO.error("Formato de email inválido"));
             }
 
             // Verificar si el email existe
-            Optional<com.urdimbre.urdimbre.model.User> userOpt = userRepository.findByEmail(request.getEmail());
+            Optional<User> userOpt = userRepository.findByEmail(request.getEmail());
 
             if (userOpt.isEmpty()) {
-                // Por seguridad, no revelamos si el email existe o no en logs públicos
                 logger.warn("❌ Intento de recuperación con email no registrado: {}", request.getEmail());
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ForgotPasswordResponse.builder()
-                        .success(false)
-                        .message("No encontramos una cuenta con ese email")
-                        .build());
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ForgotPasswordResponseDTO.emailNotFound());
             }
 
-            // Aquí implementaremos el envío del email
+            // TODO: Aquí implementaremos el envío del email en el futuro
             // passwordResetService.sendPasswordResetEmail(userOpt.get());
 
             logger.info("✅ Email de recuperación enviado exitosamente a: {}", request.getEmail());
 
-            return ResponseEntity.ok(ForgotPasswordResponse.builder()
-                    .success(true)
-                    .message("Enlace de recuperación enviado al email")
-                    .build());
+            return ResponseEntity.ok(ForgotPasswordResponseDTO.emailSent());
 
         } catch (Exception e) {
             logger.error("❌ Error en recuperación de contraseña para {}: {}", request.getEmail(), e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ForgotPasswordResponse.builder()
-                            .success(false)
-                            .message("Error interno del servidor")
-                            .build());
+                    .body(ForgotPasswordResponseDTO.error("Error interno del servidor"));
         }
     }
 
     @GetMapping("/invite-codes/validate")
+    @Operation(summary = "Validar código de invitación", description = "Verifica si un código de invitación es válido")
+    @ApiResponse(responseCode = "200", description = "Validación completada")
+    @ApiResponse(responseCode = "400", description = "Código requerido")
     public ResponseEntity<Boolean> validateInviteCodePublic(@RequestParam String code) {
         logger.debug("✅ Validando código de invitación público: {}", code);
 
@@ -434,14 +423,15 @@ public class AuthController {
     }
 
     @GetMapping("/invite-codes/info")
-    public ResponseEntity<InviteCodePublicInfo> getInviteCodeInfo(@RequestParam String code) {
+    @Operation(summary = "Obtener información del código de invitación", description = "Devuelve información detallada sobre el estado del código")
+    @ApiResponse(responseCode = "200", description = "Información obtenida")
+    @ApiResponse(responseCode = "400", description = "Código requerido")
+    public ResponseEntity<InviteCodePublicInfoDTO> getInviteCodeInfo(@RequestParam String code) {
         logger.debug("ℹ️ Obteniendo info pública del código: {}", code);
 
         if (code == null || code.trim().isEmpty()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(InviteCodePublicInfo.builder()
-                    .valid(false)
-                    .message("Código requerido")
-                    .build());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(InviteCodePublicInfoDTO.invalid("Código requerido"));
         }
 
         try {
@@ -449,28 +439,22 @@ public class AuthController {
 
             if (!isValid) {
                 String specificMessage = getSpecificInviteCodeError(code);
-                return ResponseEntity.ok(InviteCodePublicInfo.builder()
-                        .valid(false)
-                        .message(specificMessage)
-                        .build());
+                return ResponseEntity.ok(InviteCodePublicInfoDTO.invalid(specificMessage));
             }
 
-            return ResponseEntity.ok(InviteCodePublicInfo.builder()
-                    .valid(true)
-                    .message("Código válido")
-                    .build());
+            return ResponseEntity.ok(InviteCodePublicInfoDTO.valid("Código válido"));
 
         } catch (Exception e) {
             logger.warn("❌ Error obteniendo info del código {}: {}", code, e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                    InviteCodePublicInfo.builder()
-                            .valid(false)
-                            .message("Error interno validando código")
-                            .build());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(InviteCodePublicInfoDTO.invalid("Error interno validando código"));
         }
     }
 
     @GetMapping("/rate-limit-stats")
+    @Operation(summary = "Obtener estadísticas de rate limiting", description = "Devuelve estadísticas del sistema de rate limiting - Solo para ADMIN")
+    @ApiResponse(responseCode = "200", description = "Estadísticas obtenidas")
+    @ApiResponse(responseCode = "500", description = "Error interno")
     public ResponseEntity<RateLimitingService.RateLimitStats> getRateLimitStats() {
         try {
             RateLimitingService.RateLimitStats stats = rateLimitingService.getStatistics();
@@ -550,6 +534,8 @@ public class AuthController {
         validateEmail(request.getEmail());
         validatePassword(request.getPassword());
         validateFullName(request.getFullName());
+
+        // ✅ SIEMPRE VALIDAR INVITE CODE EN REGISTRO PÚBLICO
         validateInviteCode(request.getInviteCode());
     }
 
@@ -616,6 +602,7 @@ public class AuthController {
     }
 
     private void validateInviteCode(String inviteCode) {
+        // ✅ PARA REGISTRO PÚBLICO SIEMPRE ES OBLIGATORIO
         if (inviteCode == null || inviteCode.trim().isEmpty()) {
             throw new BadRequestException("Código de invitación es obligatorio");
         }
@@ -654,44 +641,5 @@ public class AuthController {
         boolean hasSymbol = password.chars().anyMatch(ch -> "@$!%*?&".indexOf(ch) >= 0);
 
         return hasLower && hasUpper && hasDigit && hasSymbol;
-    }
-
-    // ===================================================
-    // ✅ CLASES DTO PARA LOS NUEVOS ENDPOINTS
-    // ===================================================
-
-    @Builder
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class CheckAvailabilityResponse {
-        private boolean available;
-        private String message;
-    }
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class ForgotPasswordRequest {
-        @NotBlank(message = "Email es requerido")
-        @Email(message = "Formato de email inválido")
-        @Size(max = 100, message = "Email demasiado largo")
-        private String email;
-    }
-
-    @Builder
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class ForgotPasswordResponse {
-        private boolean success;
-        private String message;
-    }
-
-    @Builder
-    @Data
-    public static class InviteCodePublicInfo {
-        private boolean valid;
-        private String message;
     }
 }

@@ -44,7 +44,7 @@ public class UserRegisterDTO {
     @Email(message = "El formato del email no es válido")
     private String email;
 
-    @NotBlank(message = "El código de invitación es obligatorio")
+    // ✅ IMPORTANTE: Sin @NotBlank para permitir que ADMIN no lo envíe
     private String inviteCode;
 
     public String getFullName() {
@@ -54,7 +54,16 @@ public class UserRegisterDTO {
         return null;
     }
 
+    // ✅ MANTENER AMBOS MÉTODOS PARA COMPATIBILIDAD
     public String getInvitationCode() {
         return inviteCode;
+    }
+
+    public String getInviteCode() {
+        return inviteCode;
+    }
+
+    public void setInviteCode(String inviteCode) {
+        this.inviteCode = inviteCode;
     }
 }

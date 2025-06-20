@@ -1,6 +1,7 @@
 package com.urdimbre.urdimbre.dto.activities_urdimbre;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -37,4 +38,8 @@ public class ActivitiesUrdimbreResponseDTO {
     private Integer maxAttendees;
     private Integer currentAttendees;
 
+    // ✅ Campos adicionales para el dashboard
+    private Integer availableSpots;
+    private String createdBy;
+    private LocalDateTime createdAt;
 }

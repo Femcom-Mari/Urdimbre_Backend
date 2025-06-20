@@ -13,6 +13,8 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
 
     Boolean existsByUser_IdAndActivityId_Id(Long userId, Long activityId);
 
+    long countByStatus(AttendanceStatus status);
+
     Long countByActivityId_IdAndStatus(Long activityId, AttendanceStatus status);
 
     List<Attendance> findByActivityId_Id(Long activityId);

@@ -219,7 +219,7 @@ public class ActivitiesUrdimbreController {
     @ApiResponse(responseCode = "403", description = "Sin permisos - Requiere rol ORGANIZER o ADMIN", content = @Content)
     public ResponseEntity<?> getOrganizerDashboard() {
         log.info("📊 Obteniendo dashboard del organizador");
-        // TODO: Implementar dashboard específico para organizadores
+        // TODO: Implementar dashboard específico para organizadores/admin
         return ResponseEntity.ok("Dashboard del organizador - Por implementar");
     }
 }

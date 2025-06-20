@@ -135,7 +135,7 @@ public class RefreshTokenService {
 
         } catch (JWTVerificationException e) {
             logger.warn("❌ Refresh token inválido: {}", e.getMessage());
-            removeToken(refreshToken); // Limpiar token inválido
+            removeToken(refreshToken);
             return false;
         }
     }

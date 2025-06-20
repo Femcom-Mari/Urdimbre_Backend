@@ -27,6 +27,7 @@ public class DataInitializer {
     private static final String ROLE_ADMIN = "ROLE_ADMIN";
     private static final String ROLE_ORGANIZER = "ROLE_ORGANIZER";
     private static final String ROLE_USER = "ROLE_USER";
+    private static final String ROLE_NOT_FOUND_ERROR = "❌ Rol {} no encontrado en la base de datos";
 
     @Value("${admin.username}")
     private String adminUsername;
@@ -112,12 +113,13 @@ public class DataInitializer {
 
         int initialRoleCount = (int) roleRepository.count();
 
-        // ✅ CREAR LOS TRES ROLES EN ORDEN JERÁRQUICO
+        // CREAR LOS TRES ROLES EN ORDEN JERÁRQUICO
         createRoleIfNotExists(roleRepository, ROLE_USER,
                 "Default role for registered users - Basic access to platform");
         createRoleIfNotExists(roleRepository, ROLE_ORGANIZER,
-                "Role for activity organizers - Can create, update and delete activities");
-        createRoleIfNotExists(roleRepository, ROLE_ADMIN, "Role for system administrators - Full system access");
+                "Role for activity organizers - Can create, update and delete activities and attendance");
+        createRoleIfNotExists(roleRepository, ROLE_ADMIN,
+                "Role for system administrators - Full system access");
 
         int finalRoleCount = (int) roleRepository.count();
         int rolesCreated = finalRoleCount - initialRoleCount;
@@ -161,8 +163,11 @@ public class DataInitializer {
 
         logger.info("🏗️ Creando usuario administrador: {}", adminUsername);
 
+        // ✅ CONFIGURAR TODOS LOS PRONOMBRES PARA EL ADMIN
         Set<User.Pronoun> adminPronouns = new HashSet<>();
         adminPronouns.add(User.Pronoun.EL);
+        adminPronouns.add(User.Pronoun.ELLE);
+        adminPronouns.add(User.Pronoun.ELLA);
 
         User admin = User.builder()
                 .username(adminUsername)
@@ -178,27 +183,26 @@ public class DataInitializer {
 
         int rolesAssigned = 0;
 
-        // ✅ ASIGNAR TODOS LOS ROLES AL ADMINISTRADOR
         roleRepository.findByName(ROLE_ADMIN).ifPresentOrElse(
                 adminRole -> {
                     admin.getRoles().add(adminRole);
                     logger.info("✅ Rol ADMIN asignado al usuario administrador");
                 },
-                () -> logger.error("❌ Rol {} no encontrado en la base de datos", ROLE_ADMIN));
+                () -> logger.error(ROLE_NOT_FOUND_ERROR, ROLE_ADMIN));
 
         roleRepository.findByName(ROLE_ORGANIZER).ifPresentOrElse(
                 organizerRole -> {
                     admin.getRoles().add(organizerRole);
                     logger.info("✅ Rol ORGANIZER asignado al usuario administrador");
                 },
-                () -> logger.error("❌ Rol {} no encontrado en la base de datos", ROLE_ORGANIZER));
+                () -> logger.error(ROLE_NOT_FOUND_ERROR, ROLE_ORGANIZER));
 
         roleRepository.findByName(ROLE_USER).ifPresentOrElse(
                 userRole -> {
                     admin.getRoles().add(userRole);
                     logger.info("✅ Rol USER asignado al usuario administrador");
                 },
-                () -> logger.error("❌ Rol ROLE_USER no encontrado en la base de datos"));
+                () -> logger.error(ROLE_NOT_FOUND_ERROR, ROLE_USER));
 
         rolesAssigned = admin.getRoles().size();
 
@@ -209,7 +213,7 @@ public class DataInitializer {
         String emailToLog = savedAdmin.getEmail() != null ? maskEmail(savedAdmin.getEmail()) : "null";
         logger.info("📧 Email: {}", emailToLog);
         logger.info("🎭 Roles asignados: {} (USER, ORGANIZER, ADMIN)", rolesAssigned);
-        logger.info("🏷️ Pronombres: {}", savedAdmin.getPronouns().size());
+        logger.info("🏷️ Pronombres: {} (EL, ELLE, ELLA)", savedAdmin.getPronouns().size());
 
         if ("dev".equals(activeProfile)) {
             logger.warn("🔐 RECUERDA CAMBIAR LAS CREDENCIALES POR DEFECTO ANTES DE PRODUCCIÓN!");

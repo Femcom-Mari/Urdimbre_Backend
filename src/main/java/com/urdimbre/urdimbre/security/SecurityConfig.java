@@ -38,6 +38,8 @@ public class SecurityConfig {
         private static final String ROLE_USER = "USER";
         private static final String PROFESSIONALS_API_PATTERN = "/api/professionals/**";
         private static final String ACTIVITIES_API_PATTERN = "/api/activities/**";
+        private static final String ATTENDANCE_API_PATTERN = "/api/attendance/**";
+        private static final String USERS_API_PATTERN = "/api/users/**";
 
         private final UserDetailsServiceImpl userDetailsService;
         private final RefreshTokenService refreshTokenService;
@@ -107,11 +109,9 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
                                                 .requestMatchers(HttpMethod.POST, "/api/auth/refresh").permitAll()
                                                 .requestMatchers(HttpMethod.POST, "/api/auth/forgot-password")
-                                                .permitAll() // ✅ NUEVO
-                                                .requestMatchers(HttpMethod.GET, "/api/auth/check-username").permitAll() // ✅
-                                                                                                                         // NUEVO
-                                                .requestMatchers(HttpMethod.GET, "/api/auth/check-email").permitAll() // ✅
-                                                                                                                      // NUEVO
+                                                .permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/api/auth/check-username").permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/api/auth/check-email").permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/api/auth/invite-codes/validate")
                                                 .permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/api/auth/invite-codes/info")
@@ -146,18 +146,16 @@ public class SecurityConfig {
                                                 // ================================
                                                 .requestMatchers("/api/admin/**").hasRole(ROLE_ADMIN)
                                                 .requestMatchers("/api/roles/**").hasRole(ROLE_ADMIN)
-                                                .requestMatchers("/api/auth/rate-limit-stats").hasRole(ROLE_ADMIN) // ✅
-                                                                                                                   // Solo
-                                                                                                                   // admin
+                                                .requestMatchers("/api/auth/rate-limit-stats").hasRole(ROLE_ADMIN)
 
                                                 // ================================
                                                 // ✅ PROFESSIONALS ENDPOINTS
                                                 // ================================
                                                 // Professional endpoints - read access for users and admins
                                                 .requestMatchers(HttpMethod.GET, "/api/professionals")
-                                                .hasAnyRole(ROLE_USER, ROLE_ADMIN)
+                                                .hasAnyRole(ROLE_USER, ROLE_ORGANIZER, ROLE_ADMIN)
                                                 .requestMatchers(HttpMethod.GET, PROFESSIONALS_API_PATTERN)
-                                                .hasAnyRole(ROLE_USER, ROLE_ADMIN)
+                                                .hasAnyRole(ROLE_USER, ROLE_ORGANIZER, ROLE_ADMIN)
 
                                                 // Professional endpoints - write access only for admins
                                                 .requestMatchers(HttpMethod.POST, "/api/professionals")
@@ -170,10 +168,59 @@ public class SecurityConfig {
                                                 .hasRole(ROLE_ADMIN)
 
                                                 // ================================
+                                                // ✅ ACTIVITIES ENDPOINTS
+                                                // ================================
+                                                // Activities endpoints - read access for all authenticated users
+                                                .requestMatchers(HttpMethod.GET, "/api/activities")
+                                                .hasAnyRole(ROLE_USER, ROLE_ORGANIZER, ROLE_ADMIN)
+                                                .requestMatchers(HttpMethod.GET, ACTIVITIES_API_PATTERN)
+                                                .hasAnyRole(ROLE_USER, ROLE_ORGANIZER, ROLE_ADMIN)
+
+                                                // Activities endpoints - write access for organizers and admins
+                                                .requestMatchers(HttpMethod.POST, "/api/activities")
+                                                .hasAnyRole(ROLE_ORGANIZER, ROLE_ADMIN)
+                                                .requestMatchers(HttpMethod.PUT, ACTIVITIES_API_PATTERN)
+                                                .hasAnyRole(ROLE_ORGANIZER, ROLE_ADMIN)
+                                                .requestMatchers(HttpMethod.PATCH, ACTIVITIES_API_PATTERN)
+                                                .hasAnyRole(ROLE_ORGANIZER, ROLE_ADMIN)
+                                                .requestMatchers(HttpMethod.DELETE, ACTIVITIES_API_PATTERN)
+                                                .hasAnyRole(ROLE_ORGANIZER, ROLE_ADMIN)
+
+                                                // ================================
+                                                // ✅ ATTENDANCE ENDPOINTS
+                                                // ================================
+                                                // Attendance endpoints - read access for all authenticated users
+                                                .requestMatchers(HttpMethod.GET, "/api/attendance")
+                                                .hasAnyRole(ROLE_USER, ROLE_ORGANIZER, ROLE_ADMIN)
+                                                .requestMatchers(HttpMethod.GET, ATTENDANCE_API_PATTERN)
+                                                .hasAnyRole(ROLE_USER, ROLE_ORGANIZER, ROLE_ADMIN)
+
+                                                // Attendance endpoints - write access for organizers and admins
+                                                .requestMatchers(HttpMethod.POST, "/api/attendance")
+                                                .hasAnyRole(ROLE_ORGANIZER, ROLE_ADMIN)
+                                                .requestMatchers(HttpMethod.PUT, ATTENDANCE_API_PATTERN)
+                                                .hasAnyRole(ROLE_ORGANIZER, ROLE_ADMIN)
+                                                .requestMatchers(HttpMethod.PATCH, ATTENDANCE_API_PATTERN)
+                                                .hasAnyRole(ROLE_ORGANIZER, ROLE_ADMIN)
+                                                .requestMatchers(HttpMethod.DELETE, ATTENDANCE_API_PATTERN)
+                                                .hasAnyRole(ROLE_ORGANIZER, ROLE_ADMIN)
+
+                                                // ================================
+                                                // ✅ USER ENDPOINTS
+                                                // ================================
+                                                .requestMatchers(HttpMethod.GET, "/api/users/me").authenticated()
+                                                .requestMatchers(HttpMethod.GET, USERS_API_PATTERN).authenticated()
+                                                .requestMatchers(HttpMethod.POST, "/api/users").hasRole(ROLE_ADMIN)
+                                                .requestMatchers(HttpMethod.PUT, USERS_API_PATTERN).authenticated()
+                                                .requestMatchers(HttpMethod.DELETE, USERS_API_PATTERN)
+                                                .hasRole(ROLE_ADMIN)
+                                                .requestMatchers(HttpMethod.DELETE, USERS_API_PATTERN)
+                                                .hasRole(ROLE_ADMIN)
+
+                                                // ================================
                                                 // ✅ ENDPOINTS AUTENTICADOS (requieren login)
                                                 // ================================
                                                 .requestMatchers(HttpMethod.POST, "/api/auth/logout").authenticated()
-                                                .requestMatchers("/api/users/**").authenticated()
 
                                                 // ================================
                                                 // ✅ RESTO DE ENDPOINTS (DEBE SER EL ÚLTIMO)
@@ -184,7 +231,7 @@ public class SecurityConfig {
                                                 new JwtAuthorizationFilter(userDetailsService, refreshTokenService),
                                                 UsernamePasswordAuthenticationFilter.class);
 
-                log.info("✅ Security Filter Chain configurado para PRODUCCIÓN con nuevos endpoints de auth y protección condicional de dev");
+                log.info("✅ Security Filter Chain configurado para PRODUCCIÓN con rol ORGANIZER");
                 return http.build();
         }
 
@@ -228,11 +275,11 @@ public class SecurityConfig {
                 configuration.addExposedHeader("Refresh-Token");
                 configuration.addExposedHeader("Content-Length");
                 configuration.addExposedHeader("Content-Type");
-                configuration.addExposedHeader("Retry-After"); // ✅ Para rate limiting
-                configuration.addExposedHeader("X-RateLimit-Type"); // ✅ Para rate limiting
-                configuration.addExposedHeader("X-RateLimit-Remaining"); // ✅ Para rate limiting
-                configuration.addExposedHeader("X-RateLimit-IP-Remaining"); // ✅ Para rate limiting
-                configuration.addExposedHeader("X-RateLimit-User-Remaining"); // ✅ Para rate limiting
+                configuration.addExposedHeader("Retry-After");
+                configuration.addExposedHeader("X-RateLimit-Type");
+                configuration.addExposedHeader("X-RateLimit-Remaining");
+                configuration.addExposedHeader("X-RateLimit-IP-Remaining");
+                configuration.addExposedHeader("X-RateLimit-User-Remaining");
 
                 // Additional configurations
                 configuration.setAllowCredentials(true);
