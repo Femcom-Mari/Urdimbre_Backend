@@ -1,5 +1,6 @@
 package com.urdimbre.urdimbre.exception;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -122,6 +123,26 @@ public ResponseEntity<ErrorDetails> handleEntityNotFound(EntityNotFoundException
     );
     return new ResponseEntity<>(errorDetails, HttpStatus.NOT_FOUND);
 }
+
+    @ExceptionHandler(DuplicateResourceException.class)
+    public ResponseEntity<Object> handleDuplicateResource(DuplicateResourceException ex) {
+        return buildResponse(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler(UnauthorizedActionException.class)
+    public ResponseEntity<Object> handleUnauthorized(UnauthorizedActionException ex) {
+        return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage());
+    }
+    
+
+        private ResponseEntity<Object> buildResponse(HttpStatus status, String message) {
+        return ResponseEntity.status(status).body(Map.of(
+                "timestamp", LocalDateTime.now(),
+                "status", status.value(),
+                "error", status.getReasonPhrase(),
+                "message", message
+        ));
+    }
 }
 
 

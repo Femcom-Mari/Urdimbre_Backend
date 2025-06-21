@@ -2,11 +2,13 @@ package com.urdimbre.urdimbre.service.event;
 
 import java.time.LocalDate;
 import java.util.List;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 import com.urdimbre.urdimbre.dto.events.EventRequestDTO;
 import com.urdimbre.urdimbre.dto.events.EventResponseDTO;
+import com.urdimbre.urdimbre.exception.BadRequestException;
+import com.urdimbre.urdimbre.exception.DuplicateResourceException;
+import com.urdimbre.urdimbre.exception.ResourceNotFoundException;
+import com.urdimbre.urdimbre.exception.UnauthorizedActionException;
 import com.urdimbre.urdimbre.mapper.EventMapper;
 import com.urdimbre.urdimbre.model.CategoryEvents;
 import com.urdimbre.urdimbre.model.Event;
@@ -26,6 +28,18 @@ public class EventServiceImpl implements EventService {
     @Override
     public EventResponseDTO createEvent(EventRequestDTO dto, String creatorUsername) {
         User creator = getUser(creatorUsername);
+
+        boolean exists = eventRepository.existsByLink(dto.getLink());
+        if (dto.getLink() == null || dto.getLink().isBlank()) {
+            throw new BadRequestException("Event link cannot be empty.");
+        }
+        if (exists) {
+            throw new DuplicateResourceException("An event with the same link already exists.");
+        }
+        if (dto.getDate().isBefore(LocalDate.now())) {
+            throw new BadRequestException("Event date cannot be in the past.");
+        }
+
         Event event = eventMapper.toEntity(dto, creator);
         eventRepository.save(event);
         return eventMapper.toDto(event);
@@ -33,13 +47,17 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public List<EventResponseDTO> getEventsByCategory(String categoryName) {
-        CategoryEvents category = CategoryEvents.valueOf(categoryName);
+        CategoryEvents category;
+        try {
+            category = CategoryEvents.valueOf(categoryName.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new BadRequestException("Invalid category: " + categoryName);
+        }
         return eventRepository.findByCategory(category)
                 .stream()
                 .map(eventMapper::toDto)
                 .toList();
     }
-
 
     @Override
     public List<EventResponseDTO> getEventsByDate(LocalDate date) {
@@ -59,24 +77,29 @@ public class EventServiceImpl implements EventService {
     @Override
     public EventResponseDTO getById(Long id) {
         Event event = eventRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Evento no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Event", "id", id));
 
         return eventMapper.toDto(event);
     }
 
     private User getUser(String username) {
         return userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("User", "Username", username));
     }
 
     @Override
     public EventResponseDTO updateEventById(Long id, EventRequestDTO dto, String username) {
-            Event event = getEvent(id);
+        Event event = getEvent(id);
 
         if (!event.getCreator().getUsername().equals(username)) {
-            throw new RuntimeException("No tienes permisos para editar este evento");
+            throw new UnauthorizedActionException("You do not have permission to edit this event");
         }
-
+        if (dto.getDate().isBefore(LocalDate.now())) {
+            throw new BadRequestException("Event date cannot be in the past.");
+        }
+        if (dto.getLink() == null || dto.getLink().isBlank()) {
+            throw new BadRequestException("Event link cannot be empty.");
+        }
         eventMapper.updateEventFromDto(event, dto);
         eventRepository.save(event);
         return eventMapper.toDto(event);
@@ -87,15 +110,15 @@ public class EventServiceImpl implements EventService {
         Event event = getEvent(id);
 
         if (!event.getCreator().getUsername().equals(username)) {
-            throw new RuntimeException("No tienes permisos para eliminar este evento");
+            throw new UnauthorizedActionException("You do not have permission to delete this event");
         }
 
         eventRepository.delete(event);
     }
 
-        private Event getEvent(Long id) {
+    private Event getEvent(Long id) {
         return eventRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Evento no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Event", "id", id));
     }
 
 }

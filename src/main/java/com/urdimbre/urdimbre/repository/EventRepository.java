@@ -14,5 +14,5 @@ public interface EventRepository extends JpaRepository<Event, Long>{
     List<Event> findByCategory(CategoryEvents categoryName);
     List<Event> findByDate(LocalDate date);
     List<Event> findByCreator(User creator);
-    
+    boolean existsByLink(String link);
 }

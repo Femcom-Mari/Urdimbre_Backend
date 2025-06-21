@@ -3,7 +3,6 @@ package com.urdimbre.urdimbre.controller;
 import java.security.Principal;
 import java.time.LocalDate;
 import java.util.List;
-
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,11 +14,8 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
 import com.urdimbre.urdimbre.dto.events.EventRequestDTO;
 import com.urdimbre.urdimbre.dto.events.EventResponseDTO;
-// import com.urdimbre.urdimbre.model.User;
-import com.urdimbre.urdimbre.repository.UserRepository;
 import com.urdimbre.urdimbre.service.event.EventService;
 
 import jakarta.validation.Valid;
@@ -29,11 +25,10 @@ import jakarta.validation.Valid;
 public class EventController {
 
     private final EventService eventService;
-    // private final UserRepository userRepository;
+  
 
-    public EventController(EventService eventService, UserRepository userRepository) {
+    public EventController(EventService eventService) {
         this.eventService = eventService;
-        // this.userRepository = userRepository;
     } 
 
         @PostMapping("/create")
@@ -65,7 +60,7 @@ public ResponseEntity<EventResponseDTO> getById(@PathVariable Long id) {
     return ResponseEntity.ok(dto);
 }
     @PutMapping("/{id}")
-    public ResponseEntity<EventResponseDTO> updateEventById(@PathVariable Long id,
+    public ResponseEntity<EventResponseDTO> updateEventById(@Valid @PathVariable Long id,
                                                         @RequestBody EventRequestDTO dto,
                                                         Principal principal) {
         String username = principal.getName();

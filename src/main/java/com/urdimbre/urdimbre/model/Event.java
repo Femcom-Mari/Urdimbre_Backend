@@ -14,6 +14,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.SequenceGenerator;
+import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -47,6 +48,7 @@ public class Event {
 
     @Column
     @NotNull
+    @Future(message = "Date must be in the future")
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate date;
 
@@ -57,7 +59,8 @@ public class Event {
 
     @Size(max = 255, message = "URL must not exceed 255 characters")
     @NotBlank
-    @Pattern(regexp = "^(https?://)?[\\w.-]+\\.[a-zA-Z]{2,}.*$", message = "URL1 format is invalid")
+    @Pattern  (regexp = "^(https?://)?([\\w.-]+)\\.([a-zA-Z]{2,})(:[0-9]{1,5})?(/\\S*)?$",
+  message = "(!) ERROR: The link must be a valid URL (e.g., https://example.com)")
     private String link;
 
     @ManyToOne
