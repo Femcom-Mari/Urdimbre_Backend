@@ -1,9 +1,7 @@
 package com.urdimbre.urdimbre.model;
 
 import java.time.LocalDate;
-
 import com.fasterxml.jackson.annotation.JsonFormat;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -39,15 +37,17 @@ public class Event {
     @Column
     @NotBlank
     @Size(max = 30)
+    @Pattern(regexp = "^[A-Za-z0-9ÁÉÍÓÚáéíóúñÑ.,:;!?()\"'\\-\\s]+$", message = "The title contains illegal characters")
     private String title;
 
     @Column
     @NotBlank
     @Size(max = 500)
+    @Pattern(regexp = "^[\\p{L}\\p{N}\\p{P}\\p{Zs}]{1,500}$", message = "The description contains invalid characters")
     private String description;
 
     @Column
-    @NotNull
+    @NotNull(message = "(!) ERROR: The date field cannot be empty")
     @Future(message = "Date must be in the future")
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate date;
@@ -58,9 +58,11 @@ public class Event {
     private CategoryEvents category;
 
     @Size(max = 255, message = "URL must not exceed 255 characters")
-    @NotBlank
-    @Pattern  (regexp = "^(https?://)?([\\w.-]+)\\.([a-zA-Z]{2,})(:[0-9]{1,5})?(/\\S*)?$",
-  message = "(!) ERROR: The link must be a valid URL (e.g., https://example.com)")
+    @NotBlank(message = "(!) ERROR: The link cannot be blank")
+    @Pattern(
+    regexp = "^(https?://)(?!.*(script|data|javascript|onerror|onload|alert|eval|<|>)).{1,255}$",
+    message = "(!) ERROR: The link must be a valid and safe URL"
+    )
     private String link;
 
     @ManyToOne

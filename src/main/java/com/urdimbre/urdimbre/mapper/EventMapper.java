@@ -2,8 +2,8 @@ package com.urdimbre.urdimbre.mapper;
 
 import org.springframework.stereotype.Component;
 
-import com.urdimbre.urdimbre.dto.events.EventRequestDTO;
-import com.urdimbre.urdimbre.dto.events.EventResponseDTO;
+import com.urdimbre.urdimbre.dto.event.EventRequestDTO;
+import com.urdimbre.urdimbre.dto.event.EventResponseDTO;
 import com.urdimbre.urdimbre.model.Event;
 import com.urdimbre.urdimbre.model.User;
 

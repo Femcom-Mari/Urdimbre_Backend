@@ -1,4 +1,4 @@
-package com.urdimbre.urdimbre.dto.events;
+package com.urdimbre.urdimbre.dto.event;
 
 import java.time.LocalDate;
 

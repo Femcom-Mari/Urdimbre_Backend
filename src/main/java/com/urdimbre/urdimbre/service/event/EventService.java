@@ -3,8 +3,8 @@ package com.urdimbre.urdimbre.service.event;
 import java.time.LocalDate;
 import java.util.List;
 
-import com.urdimbre.urdimbre.dto.events.EventRequestDTO;
-import com.urdimbre.urdimbre.dto.events.EventResponseDTO;
+import com.urdimbre.urdimbre.dto.event.EventRequestDTO;
+import com.urdimbre.urdimbre.dto.event.EventResponseDTO;
 
 public interface EventService {
 

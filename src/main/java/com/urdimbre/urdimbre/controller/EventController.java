@@ -14,8 +14,9 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import com.urdimbre.urdimbre.dto.events.EventRequestDTO;
-import com.urdimbre.urdimbre.dto.events.EventResponseDTO;
+
+import com.urdimbre.urdimbre.dto.event.EventRequestDTO;
+import com.urdimbre.urdimbre.dto.event.EventResponseDTO;
 import com.urdimbre.urdimbre.service.event.EventService;
 
 import jakarta.validation.Valid;
@@ -60,8 +61,8 @@ public ResponseEntity<EventResponseDTO> getById(@PathVariable Long id) {
     return ResponseEntity.ok(dto);
 }
     @PutMapping("/{id}")
-    public ResponseEntity<EventResponseDTO> updateEventById(@Valid @PathVariable Long id,
-                                                        @RequestBody EventRequestDTO dto,
+    public ResponseEntity<EventResponseDTO> updateEventById(@PathVariable Long id,
+                                                         @Valid @RequestBody EventRequestDTO dto,
                                                         Principal principal) {
         String username = principal.getName();
         EventResponseDTO updated = eventService.updateEventById(id, dto, username);

@@ -3,8 +3,9 @@ package com.urdimbre.urdimbre.service.event;
 import java.time.LocalDate;
 import java.util.List;
 import org.springframework.stereotype.Service;
-import com.urdimbre.urdimbre.dto.events.EventRequestDTO;
-import com.urdimbre.urdimbre.dto.events.EventResponseDTO;
+
+import com.urdimbre.urdimbre.dto.event.EventRequestDTO;
+import com.urdimbre.urdimbre.dto.event.EventResponseDTO;
 import com.urdimbre.urdimbre.exception.BadRequestException;
 import com.urdimbre.urdimbre.exception.DuplicateResourceException;
 import com.urdimbre.urdimbre.exception.ResourceNotFoundException;
