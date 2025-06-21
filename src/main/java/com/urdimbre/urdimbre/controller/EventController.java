@@ -7,6 +7,7 @@ import java.util.List;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -64,12 +65,19 @@ public ResponseEntity<EventResponseDTO> getById(@PathVariable Long id) {
     return ResponseEntity.ok(dto);
 }
     @PutMapping("/{id}")
-    public ResponseEntity<EventResponseDTO> updateEvent(@PathVariable Long id,
+    public ResponseEntity<EventResponseDTO> updateEventById(@PathVariable Long id,
                                                         @RequestBody EventRequestDTO dto,
                                                         Principal principal) {
         String username = principal.getName();
-        EventResponseDTO updated = eventService.updateEvent(id, dto, username);
+        EventResponseDTO updated = eventService.updateEventById(id, dto, username);
         return ResponseEntity.ok(updated);
+    }
+
+        @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteEventById(@PathVariable Long id, Principal principal) {
+        String username = principal.getName();
+        eventService.deleteEventById(id, username);
+        return ResponseEntity.noContent().build();
     }
 
 }

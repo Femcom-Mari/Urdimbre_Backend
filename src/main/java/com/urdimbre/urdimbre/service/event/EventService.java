@@ -19,8 +19,8 @@ public interface EventService {
     EventResponseDTO getById (Long id);
 
 
-    EventResponseDTO updateEvent(Long id, EventRequestDTO dto, String username);
+    EventResponseDTO updateEventById(Long id, EventRequestDTO dto, String username);
 
-    void deleteEvent(Long id, String username);
+    void deleteEventById(Long id, String username);
 
 }

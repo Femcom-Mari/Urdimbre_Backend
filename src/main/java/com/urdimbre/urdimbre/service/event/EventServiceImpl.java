@@ -70,7 +70,7 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public EventResponseDTO updateEvent(Long id, EventRequestDTO dto, String username) {
+    public EventResponseDTO updateEventById(Long id, EventRequestDTO dto, String username) {
             Event event = getEvent(id);
 
         if (!event.getCreator().getUsername().equals(username)) {
@@ -83,7 +83,7 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public void deleteEvent(Long id, String username) {
+    public void deleteEventById(Long id, String username) {
         Event event = getEvent(id);
 
         if (!event.getCreator().getUsername().equals(username)) {
