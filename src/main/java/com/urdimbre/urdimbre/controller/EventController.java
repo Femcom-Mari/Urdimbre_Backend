@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -56,11 +57,20 @@ public class EventController {
     public ResponseEntity<List<EventResponseDTO>> getByDate(@PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         return ResponseEntity.ok(eventService.getEventsByDate(date));
     }
-    
+
     @GetMapping("/{id}")
 public ResponseEntity<EventResponseDTO> getById(@PathVariable Long id) {
     EventResponseDTO dto = eventService.getById(id);
     return ResponseEntity.ok(dto);
 }
+    @PutMapping("/{id}")
+    public ResponseEntity<EventResponseDTO> updateEvent(@PathVariable Long id,
+                                                        @RequestBody EventRequestDTO dto,
+                                                        Principal principal) {
+        String username = principal.getName();
+        EventResponseDTO updated = eventService.updateEvent(id, dto, username);
+        return ResponseEntity.ok(updated);
+    }
+
 }
  

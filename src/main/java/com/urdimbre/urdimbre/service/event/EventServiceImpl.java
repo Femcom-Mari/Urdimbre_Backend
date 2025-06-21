@@ -2,7 +2,6 @@ package com.urdimbre.urdimbre.service.event;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -41,14 +40,6 @@ public class EventServiceImpl implements EventService {
                 .toList();
     }
 
-    @Override
-    public List<EventResponseDTO> getEventByCreator(String creatorUser) {
-        User creator = getUser(creatorUser);
-        List<Event> events = eventRepository.findByCreator(creator);
-        return events.stream()
-                .map(eventMapper::toDto)
-                .collect(Collectors.toList());
-    }
 
     @Override
     public List<EventResponseDTO> getEventsByDate(LocalDate date) {
@@ -76,6 +67,35 @@ public class EventServiceImpl implements EventService {
     private User getUser(String username) {
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+    }
+
+    @Override
+    public EventResponseDTO updateEvent(Long id, EventRequestDTO dto, String username) {
+            Event event = getEvent(id);
+
+        if (!event.getCreator().getUsername().equals(username)) {
+            throw new RuntimeException("No tienes permisos para editar este evento");
+        }
+
+        eventMapper.updateEventFromDto(event, dto);
+        eventRepository.save(event);
+        return eventMapper.toDto(event);
+    }
+
+    @Override
+    public void deleteEvent(Long id, String username) {
+        Event event = getEvent(id);
+
+        if (!event.getCreator().getUsername().equals(username)) {
+            throw new RuntimeException("No tienes permisos para eliminar este evento");
+        }
+
+        eventRepository.delete(event);
+    }
+
+        private Event getEvent(Long id) {
+        return eventRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Evento no encontrado"));
     }
 
 }

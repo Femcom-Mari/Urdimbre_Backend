@@ -12,8 +12,6 @@ public interface EventService {
 
     List<EventResponseDTO> getEventsByCategory(String categoryName);
 
-    List<EventResponseDTO> getEventByCreator (String creatorUser);
-
     List<EventResponseDTO> getEventsByDate(LocalDate date);
 
     List<EventResponseDTO> getAllEvents ();
@@ -21,8 +19,8 @@ public interface EventService {
     EventResponseDTO getById (Long id);
 
 
-    // EventResponseDTO updateEvent(Long id, EventRequestDTO dto, String username);
+    EventResponseDTO updateEvent(Long id, EventRequestDTO dto, String username);
 
-    // void deleteEvent(Long id, String username);
+    void deleteEvent(Long id, String username);
 
 }
