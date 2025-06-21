@@ -37,18 +37,18 @@ public class Event {
     @Column
     @NotBlank
     @Size(max = 30)
-    @Pattern(regexp = "^[A-Za-z0-9ÁÉÍÓÚáéíóúñÑ.,:;!?()\"'\\-\\s]+$", message = "The title contains illegal characters")
+    @Pattern(regexp = "^[A-Za-z0-9ÁÉÍÓÚáéíóúñÑ.,:;!?()\"'\\-\\s]+$")
     private String title;
 
     @Column
     @NotBlank
     @Size(max = 500)
-    @Pattern(regexp = "^[\\p{L}\\p{N}\\p{P}\\p{Zs}]{1,500}$", message = "The description contains invalid characters")
+    @Pattern(regexp = "^[\\p{L}\\p{N}\\p{P}\\p{Zs}]{1,500}$")
     private String description;
 
     @Column
-    @NotNull(message = "(!) ERROR: The date field cannot be empty")
-    @Future(message = "Date must be in the future")
+    @NotNull
+    @Future
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate date;
 
@@ -57,12 +57,10 @@ public class Event {
     @NotNull
     private CategoryEvents category;
 
-    @Size(max = 255, message = "URL must not exceed 255 characters")
-    @NotBlank(message = "(!) ERROR: The link cannot be blank")
+    @Size
+    @NotBlank
     @Pattern(
-    regexp = "^(https?://)(?!.*(script|data|javascript|onerror|onload|alert|eval|<|>)).{1,255}$",
-    message = "(!) ERROR: The link must be a valid and safe URL"
-    )
+    regexp = "^(https?://)(?!.*(script|data|javascript|onerror|onload|alert|eval|<|>)).{1,255}$")
     private String link;
 
     @ManyToOne
