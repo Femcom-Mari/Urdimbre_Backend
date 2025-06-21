@@ -202,21 +202,4 @@ class AuthControllerTest {
 
 }
 
-// @Test
-// void testRegister_isUseUsername_shouldreturnBadRequest() throws Exception {
 
-// RateLimitingService.RateLimitResult rateLimitResult = new
-// RateLimitingService.RateLimitResult(true, 10, 10);
-
-// when(rateLimitingService.checkRegisterByIp(any(HttpServletRequest.class))).thenReturn(rateLimitResult);
-// when(inviteCodeService.validateInviteCode("INVITE123")).thenReturn(true);
-// when(authService.register(any(UserRegisterDTO.class))).thenReturn(responseDTO);
-// when(authService.register(any(UserRegisterDTO.class)))
-// .thenThrow(new IllegalArgumentException("Username already exists"));
-
-// mockMvc.perform(post("/api/auth/register")
-// .contentType(MediaType.APPLICATION_JSON)
-// .content(objectMapper.writeValueAsString(dto)))
-// .andExpect(status().isBadRequest())
-// .andExpect(jsonPath("$.message").value("Username already exists"));
-// }
