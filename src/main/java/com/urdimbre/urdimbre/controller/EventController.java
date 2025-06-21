@@ -1,9 +1,14 @@
 package com.urdimbre.urdimbre.controller;
 
 import java.security.Principal;
+import java.time.LocalDate;
+import java.util.List;
 
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -36,5 +41,26 @@ public class EventController {
         EventResponseDTO response = eventService.createEvent(dto, username);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
+
+    @GetMapping
+    public ResponseEntity<List<EventResponseDTO>> getAllEvents() {
+        return ResponseEntity.ok(eventService.getAllEvents());
+    }
+
+    @GetMapping("/category/{category}")
+    public ResponseEntity<List<EventResponseDTO>> getByCategory(@PathVariable String category) {
+        return ResponseEntity.ok(eventService.getEventsByCategory(category));
+    }
+
+    @GetMapping("/date/{date}")
+    public ResponseEntity<List<EventResponseDTO>> getByDate(@PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        return ResponseEntity.ok(eventService.getEventsByDate(date));
+    }
+    
+    @GetMapping("/{id}")
+public ResponseEntity<EventResponseDTO> getById(@PathVariable Long id) {
+    EventResponseDTO dto = eventService.getById(id);
+    return ResponseEntity.ok(dto);
+}
 }
  
