@@ -1,7 +1,10 @@
 package com.urdimbre.urdimbre.dto.events;
 
+import java.time.LocalDate;
+
 import com.urdimbre.urdimbre.model.CategoryEvents;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -9,7 +12,8 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class EventsResponseDTO {
+@Builder
+public class EventResponseDTO {
 
     private Long id;
 
@@ -17,8 +21,12 @@ public class EventsResponseDTO {
 
     private String description;
 
+    private LocalDate date;
+
     private CategoryEvents category;
 
     private String link;
+
+    private String creatorUsername;
 
 }

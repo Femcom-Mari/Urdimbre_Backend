@@ -107,6 +107,10 @@ public class User {
     @Builder.Default
     private Set<Attendance> attendances = new HashSet<>();
 
+    @OneToMany(mappedBy = "creator", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private transient Set<Event> createdEvents = new HashSet<>();
+
     public boolean isEnabled() {
         return this.status == UserStatus.ACTIVE;
     }
