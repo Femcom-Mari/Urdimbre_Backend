@@ -1,9 +1,13 @@
 package com.urdimbre.urdimbre.dto.activities_urdimbre;
 
+import java.time.LocalDate;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.urdimbre.urdimbre.model.Category;
 import com.urdimbre.urdimbre.model.Language;
 
 import jakarta.persistence.Column;
+import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -35,7 +39,9 @@ public class ActivitiesUrdimbreRequestDTO {
     private Language language;
 
     @NotNull(message = "(!) ERROR: La fecha no puede estar vacía")
-    private String date;
+    @Future
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate date;
 
     @NotNull(message = "(!) ERROR: La hora de inicio no puede estar vacía")
     private String startTime;

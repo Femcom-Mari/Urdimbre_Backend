@@ -44,7 +44,7 @@ public class ActivitiesUrdimbreServiceImpl implements ActivitiesUrdimbreService 
                 activity.setTitle(dto.getTitle());
                 activity.setDescription(dto.getDescription());
                 activity.setLanguage(dto.getLanguage());
-                activity.setDate(LocalDate.parse(dto.getDate()));
+                activity.setDate(dto.getDate());
                 activity.setStartTime(LocalTime.parse(dto.getStartTime()));
                 activity.setEndTime(LocalTime.parse(dto.getEndTime()));
                 activity.setMaxAttendees(dto.getMaxAttendees() != null ? dto.getMaxAttendees().longValue() : null);
@@ -94,7 +94,7 @@ public class ActivitiesUrdimbreServiceImpl implements ActivitiesUrdimbreService 
         @Override
         public List<ActivitiesUrdimbreResponseDTO> getActivitiesByDate(LocalDate date) {
                 log.info("📅 Buscando actividades por fecha: {}", date);
-                return activitiesUrdimbreRepository.findAllByDate(date)
+                return activitiesUrdimbreRepository.findByDate(date)
                                 .stream()
                                 .map(this::convertToDto)
                                 .toList();
@@ -187,7 +187,7 @@ public class ActivitiesUrdimbreServiceImpl implements ActivitiesUrdimbreService 
                 activity.setTitle(dto.getTitle());
                 activity.setDescription(dto.getDescription());
                 activity.setLanguage(dto.getLanguage());
-                activity.setDate(LocalDate.parse(dto.getDate()));
+                activity.setDate(dto.getDate());
                 activity.setStartTime(LocalTime.parse(dto.getStartTime()));
                 activity.setEndTime(LocalTime.parse(dto.getEndTime()));
                 activity.setMaxAttendees(dto.getMaxAttendees() != null ? dto.getMaxAttendees().longValue() : null);
