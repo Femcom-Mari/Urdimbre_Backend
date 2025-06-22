@@ -123,7 +123,7 @@ public class DataInitializer {
     }
 
     private void debugPasswordConfiguration() {
-        // SOLO EN DESARROLLO - No mostrar contraseñas en producción
+
         if (!isDevelopmentEnvironment()) {
             return;
         }
@@ -146,7 +146,6 @@ public class DataInitializer {
 
         int initialRoleCount = (int) roleRepository.count();
 
-        // CREAR LOS TRES ROLES EN ORDEN JERÁRQUICO
         createRoleIfNotExists(roleRepository, ROLE_USER,
                 "Default role for registered users - Basic access to platform");
         createRoleIfNotExists(roleRepository, ROLE_ORGANIZER,
@@ -184,7 +183,6 @@ public class DataInitializer {
         if (existingUserOpt.isPresent()) {
             logger.info("ℹ️ Usuario administrador ya existe (username): {}", adminUsername);
 
-            // ✅ VERIFICAR Y ACTUALIZAR CONTRASEÑA SI ES NECESARIO
             User existingUser = existingUserOpt.get();
             boolean currentPasswordMatches = passwordEncoder.matches(adminPassword, existingUser.getPassword());
 
@@ -195,7 +193,6 @@ public class DataInitializer {
                 userRepository.save(existingUser);
                 logger.info("✅ Contraseña del usuario admin actualizada");
 
-                // Verificar que la actualización funcionó (solo en dev)
                 if (isDevelopmentEnvironment()) {
                     boolean updatedPasswordWorks = passwordEncoder.matches(adminPassword, newHashedPassword);
                     logger.info("🔍 [DEV] Nueva contraseña funciona: {}", updatedPasswordWorks);
@@ -216,7 +213,6 @@ public class DataInitializer {
 
         logger.info("🏗️ Creando usuario administrador: {}", adminUsername);
 
-        // ✅ CONFIGURAR TODOS LOS PRONOMBRES PARA EL ADMIN
         String hashedPassword = passwordEncoder.encode(adminPassword);
 
         if (isDevelopmentEnvironment()) {
@@ -316,10 +312,6 @@ public class DataInitializer {
         }
     }
 
-    // ================================
-    // MÉTODOS DE VALIDACIÓN SEGURA
-    // ================================
-
     private boolean isValidEmail(String email) {
         if (email == null || email.trim().isEmpty()) {
             return false;
@@ -350,10 +342,9 @@ public class DataInitializer {
             return false;
         }
 
-        
         boolean hasMultipleSymbols = password.chars().filter(ch -> "@$!%*?&".indexOf(ch) >= 0).count() >= 2;
         boolean hasMultipleDigits = password.chars().filter(Character::isDigit).count() >= 2;
-        boolean noRepeatingChars = !password.matches(".*(.)\\1{2,}.*"); 
+        boolean noRepeatingChars = !password.matches(".*(.)\\1{2,}.*");
         boolean noCommonPatterns = !password.toLowerCase().matches(".*(123|abc|qwe|password|admin).*");
 
         return hasMultipleSymbols && hasMultipleDigits && noRepeatingChars && noCommonPatterns;

@@ -37,10 +37,6 @@ public class AdminController {
 
         private final UserService userService;
 
-        // ========================================
-        // 🏗️ CREACIÓN DE USUARIOS Y ORGANIZADORES
-        // ========================================
-
         @PostMapping("/users/create-organizer")
         @PreAuthorize("hasRole('ADMIN')")
         @Operation(summary = "Crear organizador", description = "Permite al ADMIN crear un usuario con rol ORGANIZER")
@@ -48,16 +44,14 @@ public class AdminController {
         @ApiResponse(responseCode = "400", description = "Datos inválidos")
         @ApiResponse(responseCode = "403", description = "Solo ADMIN puede crear organizadores")
         public ResponseEntity<UserResponseDTO> createOrganizer(
-                        @RequestBody UserRegisterDTO userDTO, // ✅ SIN @Valid para saltarse validaciones
+                        @Valid @RequestBody UserRegisterDTO userDTO, // ✅ SIN @Valid para saltarse validaciones
                         Authentication authentication) {
 
                 log.info("👑 ADMIN {} creando organizador: {}",
                                 authentication.getName(), userDTO.getUsername());
 
-                // ✅ Para ADMIN, limpiar invite code (será ignorado en UserService)
                 userDTO.setInviteCode(null);
 
-                // ✅ Crear usuario con rol ORGANIZER y USER (rol base)
                 Set<String> roles = Set.of("ORGANIZER", "USER");
 
                 UserResponseDTO createdUser = userService.registerUserFromRegisterDTO(userDTO, roles);
@@ -75,16 +69,14 @@ public class AdminController {
         @ApiResponse(responseCode = "400", description = "Datos inválidos")
         @ApiResponse(responseCode = "403", description = "Solo ADMIN puede crear usuarios")
         public ResponseEntity<UserResponseDTO> createUser(
-                        @RequestBody UserRegisterDTO userDTO,
+                        @Valid @RequestBody UserRegisterDTO userDTO,
                         Authentication authentication) {
 
                 log.info("👑 ADMIN {} creando usuario estándar: {}",
                                 authentication.getName(), userDTO.getUsername());
 
-                // ✅ Para ADMIN, limpiar invite code
                 userDTO.setInviteCode(null);
 
-                // ✅ Crear usuario con rol USER únicamente
                 Set<String> roles = Set.of("USER");
 
                 UserResponseDTO createdUser = userService.registerUserFromRegisterDTO(userDTO, roles);
@@ -102,17 +94,15 @@ public class AdminController {
         @ApiResponse(responseCode = "400", description = "Datos inválidos")
         @ApiResponse(responseCode = "403", description = "Solo ADMIN puede crear usuarios")
         public ResponseEntity<UserResponseDTO> createUserWithRoles(
-                        @RequestBody UserRegisterDTO userDTO,
+                        @Valid @RequestBody UserRegisterDTO userDTO,
                         @RequestParam(required = false) List<String> roles,
                         Authentication authentication) {
 
                 log.info("👑 ADMIN {} creando usuario con roles personalizados: {} - Roles: {}",
                                 authentication.getName(), userDTO.getUsername(), roles);
 
-                // ✅ Para ADMIN, limpiar invite code
                 userDTO.setInviteCode(null);
 
-                // ✅ Validar roles
                 if (roles == null || roles.isEmpty()) {
                         roles = List.of("USER");
                         log.info("🔄 No se especificaron roles, asignando USER por defecto");
@@ -129,10 +119,6 @@ public class AdminController {
                 return new ResponseEntity<>(createdUser, HttpStatus.CREATED);
         }
 
-        // ========================================
-        // 🎭 GESTIÓN DE ROLES DE USUARIOS EXISTENTES
-        // ========================================
-
         @PutMapping("/users/{id}/promote-to-organizer")
         @PreAuthorize("hasRole('ADMIN')")
         @Operation(summary = "Promover usuario a organizador", description = "Convierte un usuario existente en organizador")
@@ -146,7 +132,6 @@ public class AdminController {
                 log.info("🎭 ADMIN {} promoviendo usuario ID {} a organizador",
                                 authentication.getName(), id);
 
-                // ✅ Agregar rol ORGANIZER manteniendo USER
                 Set<String> roles = Set.of("USER", "ORGANIZER");
                 UserResponseDTO updatedUser = userService.updateUserRoles(id, roles);
 
@@ -169,7 +154,6 @@ public class AdminController {
                 log.info("🎭 ADMIN {} degradando organizador ID {} a usuario estándar",
                                 authentication.getName(), id);
 
-                // ✅ Dejar solo rol USER
                 Set<String> roles = Set.of("USER");
                 UserResponseDTO updatedUser = userService.updateUserRoles(id, roles);
 
@@ -200,10 +184,6 @@ public class AdminController {
 
                 return ResponseEntity.ok(updatedUser);
         }
-
-        // ========================================
-        // 📋 CONSULTAS ADMINISTRATIVAS
-        // ========================================
 
         @GetMapping("/users")
         @PreAuthorize("hasRole('ADMIN')")

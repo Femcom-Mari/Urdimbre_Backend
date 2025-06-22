@@ -42,10 +42,6 @@ public class ActivitiesUrdimbreController {
 
     private final ActivitiesUrdimbreService activitiesUrdimbreService;
 
-    // ================================
-    // ENDPOINTS DE LECTURA - Todos los usuarios autenticados
-    // ================================
-
     @GetMapping
     @Operation(summary = "Obtener todas las actividades", description = "Devuelve todas las actividades disponibles con paginación")
     @ApiResponse(responseCode = "200", description = "Lista de actividades obtenida con éxito")
@@ -119,10 +115,6 @@ public class ActivitiesUrdimbreController {
         return ResponseEntity.ok(activities);
     }
 
-    // ================================
-    // ENDPOINTS DE ESCRITURA - ORGANIZER y ADMIN solamente
-    // ================================
-
     @PostMapping
     @PreAuthorize("hasRole('ORGANIZER') or hasRole('ADMIN')")
     @Operation(summary = "Crear nueva actividad", description = "Crea una nueva actividad (solo ORGANIZER y ADMIN)")
@@ -130,11 +122,13 @@ public class ActivitiesUrdimbreController {
     @ApiResponse(responseCode = "400", description = "Datos de actividad inválidos", content = @Content)
     @ApiResponse(responseCode = "403", description = "Sin permisos para crear actividades - Requiere rol ORGANIZER o ADMIN", content = @Content)
     public ResponseEntity<ActivitiesUrdimbreResponseDTO> createActivity(
-            @Parameter(description = "Datos de la nueva actividad") @Valid @RequestBody ActivitiesUrdimbreRequestDTO dto, Principal principal) {
+            @Parameter(description = "Datos de la nueva actividad") @Valid @RequestBody ActivitiesUrdimbreRequestDTO dto,
+            Principal principal) {
 
         log.info("✨ Creando nueva actividad: {}", dto.getTitle());
         String username = principal.getName();
-        ActivitiesUrdimbreResponseDTO createdActivity = activitiesUrdimbreService.createActivitiesUrdimbre(dto, username);
+        ActivitiesUrdimbreResponseDTO createdActivity = activitiesUrdimbreService.createActivitiesUrdimbre(dto,
+                username);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdActivity);
     }
 
@@ -167,10 +161,6 @@ public class ActivitiesUrdimbreController {
         return ResponseEntity.noContent().build();
     }
 
-    // ================================
-    // ENDPOINTS ADMINISTRATIVOS - Solo ADMIN
-    // ================================
-
     @GetMapping("/stats")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Estadísticas de actividades", description = "Obtiene estadísticas generales de actividades (solo ADMIN)")
@@ -192,13 +182,9 @@ public class ActivitiesUrdimbreController {
             @Parameter(description = "ID de la actividad") @PathVariable Long id) {
 
         log.info("🔄 Cambiando estado de actividad con ID: {}", id);
-        // Implementar toggle de estado en el servicio
+
         return ResponseEntity.ok().build();
     }
-
-    // ================================
-    // ENDPOINTS ESPECIALES PARA ORGANIZADORES
-    // ================================
 
     @GetMapping("/my-activities")
     @PreAuthorize("hasRole('ORGANIZER') or hasRole('ADMIN')")
