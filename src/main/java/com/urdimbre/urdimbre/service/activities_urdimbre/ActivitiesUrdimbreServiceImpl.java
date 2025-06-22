@@ -1,6 +1,7 @@
 package com.urdimbre.urdimbre.service.activities_urdimbre;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 
@@ -197,6 +198,7 @@ public class ActivitiesUrdimbreServiceImpl implements ActivitiesUrdimbreService 
             .endTime(LocalTime.parse(dto.getEndTime()))
             .maxAttendees(dto.getMaxAttendees() != null ? dto.getMaxAttendees().longValue() : null)
             .creator(creator)
+            .createdAt(LocalDateTime.now())
             .build();
 }
 

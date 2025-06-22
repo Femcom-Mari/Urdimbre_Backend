@@ -41,6 +41,6 @@ public class ActivitiesUrdimbreResponseDTO {
     private Integer availableSpots;
 
     private String creator;
-    
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm")
     private LocalDateTime createdAt;
 }

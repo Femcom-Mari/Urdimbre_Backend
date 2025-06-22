@@ -89,6 +89,8 @@ public class ActivitiesUrdimbre {
     @JoinColumn(name = "creator_id")
     private User creator;
 
+    @Column(name = "created_at", nullable = false, updatable = false)
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm")
     private LocalDateTime createdAt;
 
 }
