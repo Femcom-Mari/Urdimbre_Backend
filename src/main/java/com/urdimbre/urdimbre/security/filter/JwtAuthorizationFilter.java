@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
@@ -17,22 +16,25 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.auth0.jwt.JWT;
+import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import com.auth0.jwt.interfaces.JWTVerifier;
 import com.urdimbre.urdimbre.service.token.RefreshTokenService;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-@RequiredArgsConstructor
 @Slf4j
 public class JwtAuthorizationFilter extends OncePerRequestFilter {
 
     private final UserDetailsService userDetailsService;
     private final RefreshTokenService refreshTokenService;
+    private final String jwtSecret;
+    private final String jwtIssuer;
 
     private static final String TOKEN_PREFIX = "Bearer ";
     private static final String HEADER_STRING = "Authorization";
@@ -54,6 +56,16 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
             "/actuator/health",
             "/error");
 
+    public JwtAuthorizationFilter(UserDetailsService userDetailsService,
+            RefreshTokenService refreshTokenService,
+            String jwtSecret,
+            String jwtIssuer) {
+        this.userDetailsService = userDetailsService;
+        this.refreshTokenService = refreshTokenService;
+        this.jwtSecret = jwtSecret;
+        this.jwtIssuer = jwtIssuer != null ? jwtIssuer : "urdimbre";
+    }
+
     @Override
     protected void doFilterInternal(
             @org.springframework.lang.NonNull HttpServletRequest request,
@@ -63,15 +75,7 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
         String method = request.getMethod();
 
-        log.debug("🔍 Processing request: {} {}", method, path);
-
-        // ✅ DEBUGGING MEJORADO - LOG DEL HEADER
-        String authHeader = request.getHeader(HEADER_STRING);
-        log.info("🔍 Auth Header for {}: {}", path,
-                authHeader != null ? "Present (" + authHeader.length() + " chars)" : "Missing");
-
         if ("OPTIONS".equals(method)) {
-            log.debug("✅ Allowing OPTIONS request for CORS");
             response.setStatus(HttpServletResponse.SC_OK);
             filterChain.doFilter(request, response);
             return;
@@ -81,154 +85,148 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
                 .anyMatch(path::startsWith);
 
         if (isPublicPath) {
-            log.debug("🌐 Public path detected: {}", path);
             filterChain.doFilter(request, response);
             return;
         }
 
-        log.debug("🔒 Protected path, validating JWT: {}", path);
-
         String token = extractTokenFromRequest(request);
 
-        if (token != null && !token.trim().isEmpty()) {
-            log.info("🎯 Token extracted successfully, length: {}", token.length());
+        if (token == null || token.trim().isEmpty()) {
+            log.warn("No JWT token found for protected path: {}", path);
+            sendUnauthorizedResponse(response, "Missing or invalid token");
+            return;
+        }
 
-            if (SecurityContextHolder.getContext().getAuthentication() == null) {
-                try {
-                    processJwtToken(token, request);
-                } catch (Exception e) {
-                    log.error("❌ Error validating JWT token: {}", e.getMessage(), e);
+        if (SecurityContextHolder.getContext().getAuthentication() == null) {
+            try {
+                if (processJwtToken(token, request)) {
+                    log.trace("JWT authentication successful");
+                } else {
+                    sendUnauthorizedResponse(response, "Invalid token");
+                    return;
                 }
-            } else {
-                log.debug("✅ Authentication already set in SecurityContext");
+            } catch (Exception e) {
+                log.error("Error validating JWT token: {}", e.getMessage());
+                sendUnauthorizedResponse(response, "Token validation failed");
+                return;
             }
-        } else {
-            log.warn("🚫 No valid JWT token found for protected path: {}", path);
         }
 
         filterChain.doFilter(request, response);
     }
 
-    private void processJwtToken(String token, HttpServletRequest request) {
+    private boolean processJwtToken(String token, HttpServletRequest request) {
         try {
-            log.debug("🔍 Processing JWT token...");
-
-            // ✅ VALIDACIÓN PREVIA DEL TOKEN
             if (token.split("\\.").length != 3) {
-                log.error("❌ Invalid JWT format - token parts: {}", token.split("\\.").length);
-                return;
+                log.warn("Invalid JWT format");
+                return false;
             }
 
-            DecodedJWT decodedJWT = decodeJwtToken(token);
-
+            DecodedJWT decodedJWT = verifyJwtToken(token);
             if (decodedJWT == null) {
-                log.warn("❌ Could not decode JWT token");
-                return;
+                log.warn("JWT verification failed");
+                return false;
             }
 
             String username = decodedJWT.getSubject();
-
             if (username == null || username.trim().isEmpty()) {
-                log.warn("❌ Could not extract username from token");
-                return;
+                log.warn("No username in JWT token");
+                return false;
             }
 
-            log.info("👤 Username extracted from token: {}", username);
-
-            // ✅ VALIDACIÓN DEL TOKEN CON EL SERVICIO
-            try {
-                if (!refreshTokenService.validateAccessToken(token)) {
-                    log.warn("❌ Invalid JWT access token for user: {}", username);
-                    return;
-                }
-                log.debug("✅ Token validation successful");
-            } catch (Exception e) {
-                log.error("❌ Error validating token with RefreshTokenService: {}", e.getMessage());
-                return;
+            if (!refreshTokenService.validateAccessToken(token)) {
+                log.warn("Token validation failed for user: {}", username);
+                return false;
             }
 
             Collection<GrantedAuthority> authorities = extractAuthoritiesFromToken(decodedJWT);
 
             if (authorities.isEmpty()) {
-                log.debug("🔄 No authorities in token, loading from UserDetailsService for user: {}", username);
-                try {
-                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-                    authorities = userDetails.getAuthorities().stream()
-                            .collect(Collectors.toList());
-                    log.debug("✅ Authorities loaded from UserDetailsService: {}", authorities);
-                } catch (Exception e) {
-                    log.error("❌ Error loading user details for {}: {}", username, e.getMessage());
-                    return;
+                authorities = loadUserAuthorities(username);
+                if (authorities == null) {
+                    return false;
                 }
             }
 
-            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                    username, // Principal: solo el username
-                    null, // Credentials: null para JWT
-                    authorities); // Authorities extraídas del token
+            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(username, null,
+                    authorities);
 
             authentication.setDetails(
                     new WebAuthenticationDetailsSource().buildDetails(request));
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
+            return true;
 
-            log.info("✅ User authenticated successfully: {} with authorities: {}", username, authorities);
-
-        } catch (Exception e) {
-            log.error("❌ Error processing JWT token: {}", e.getMessage(), e);
+        } catch (JWTVerificationException e) {
+            log.warn("JWT verification failed: {}", e.getMessage());
+            return false;
+        } catch (RuntimeException e) {
+            log.error("Runtime exception processing JWT token: {}", e.getMessage());
+            return false;
         }
     }
 
-    private DecodedJWT decodeJwtToken(String token) {
+    private DecodedJWT verifyJwtToken(String token) {
         try {
-            log.debug("🔓 Decoding JWT token...");
-            DecodedJWT decoded = JWT.decode(token); // Decodificación básica sin verificación
-            log.debug("✅ JWT decoded successfully");
-            return decoded;
-        } catch (Exception e) {
-            log.error("❌ Error decoding JWT token: {}", e.getMessage());
+            // ✅ CORREGIDO: Usar HMAC512 igual que RefreshTokenService
+            Algorithm algorithm = Algorithm.HMAC512(jwtSecret);
+            JWTVerifier verifier = JWT.require(algorithm)
+                    .withIssuer(jwtIssuer)
+                    .build();
+
+            return verifier.verify(token);
+
+        } catch (JWTVerificationException e) {
+            log.warn("JWT verification failed: {}", e.getMessage());
+            return null;
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid JWT algorithm configuration: {}", e.getMessage());
             return null;
         }
     }
 
-    /**
-     * 🔑 Extraer authorities del token JWT
-     */
+    private Collection<GrantedAuthority> loadUserAuthorities(String username) {
+        try {
+            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+            return userDetails.getAuthorities().stream().map(a -> (GrantedAuthority) a).toList();
+        } catch (RuntimeException e) {
+            log.error("Error loading user details for {}: {}", username, e.getMessage());
+            return List.of();
+        }
+    }
+
     private Collection<GrantedAuthority> extractAuthoritiesFromToken(DecodedJWT decodedJWT) {
         try {
-            // ✅ EXTRAER CLAIM 'authorities' DEL TOKEN
             List<String> authoritiesList = decodedJWT.getClaim("authorities").asList(String.class);
 
             if (authoritiesList != null && !authoritiesList.isEmpty()) {
-                Collection<GrantedAuthority> authorities = authoritiesList.stream()
+                return authoritiesList.stream()
                         .map(SimpleGrantedAuthority::new)
-                        .collect(Collectors.toList());
-
-                log.info("🎭 Extracted authorities from token: {}", authoritiesList);
-                return authorities;
-            } else {
-                log.debug("🎭 No authorities claim found in token");
+                        .map(a -> (GrantedAuthority) a)
+                        .toList();
             }
-
-        } catch (Exception e) {
-            log.warn("⚠️ Error extracting authorities from token: {}", e.getMessage());
+        } catch (RuntimeException e) {
+            log.trace("No authorities claim in token: {}", e.getMessage());
         }
 
-        return List.of(); // Retornar lista vacía si no se pueden extraer
+        return List.of();
     }
 
     private String extractTokenFromRequest(HttpServletRequest request) {
         String bearerToken = request.getHeader(HEADER_STRING);
 
-        log.debug("🔍 Raw Authorization header: {}", bearerToken);
-
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith(TOKEN_PREFIX)) {
-            String token = bearerToken.substring(TOKEN_PREFIX.length());
-            log.debug("✅ Token extracted from Bearer header, length: {}", token.length());
-            return token;
+            return bearerToken.substring(TOKEN_PREFIX.length());
         }
 
-        log.debug("❌ No valid Bearer token found in header");
         return null;
+    }
+
+    private void sendUnauthorizedResponse(HttpServletResponse response, String message)
+            throws IOException {
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType("application/json");
+        response.getWriter().write(
+                String.format("{\"error\":\"Unauthorized\",\"message\":\"%s\"}", message));
     }
 }

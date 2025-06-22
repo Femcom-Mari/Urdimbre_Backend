@@ -47,40 +47,38 @@ public class SecurityConfig {
         @Value("${spring.profiles.active:dev}")
         private String activeProfile;
 
+        @Value("${jwt.secret}")
+        private String jwtSecret;
+
+        @Value("${jwt.issuer:urdimbre}")
+        private String jwtIssuer;
+
         @Bean
         public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-                log.info("🔒 Configurando Security Filter Chain SEGURO - Perfil: {}", activeProfile);
+                log.info("🔒 Configurando Security Filter Chain - Perfil: {}", activeProfile);
 
                 http
                                 .csrf(csrf -> csrf.disable())
                                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
                                 .headers(headers -> headers
-
                                                 .frameOptions(frameOptions -> frameOptions.deny())
-
                                                 .contentTypeOptions(contentTypeOptions -> {
                                                 })
-
                                                 .httpStrictTransportSecurity(hstsConfig -> {
                                                         if (isProductionEnvironment()) {
                                                                 hstsConfig
-                                                                                .maxAgeInSeconds(31536000) // 1 año
+                                                                                .maxAgeInSeconds(31536000)
                                                                                 .includeSubDomains(true)
                                                                                 .preload(true);
                                                         }
                                                 })
-
                                                 .contentSecurityPolicy(cspConfig -> cspConfig
                                                                 .policyDirectives(buildContentSecurityPolicy()))
-
                                                 .addHeaderWriter((request, response) -> {
-
                                                         response.setHeader("X-XSS-Protection", "1; mode=block");
-
                                                         response.setHeader("Referrer-Policy",
                                                                         "strict-origin-when-cross-origin");
-
                                                         response.setHeader("Permissions-Policy",
                                                                         "geolocation=(), microphone=(), camera=(), payment=(), usb=(), "
                                                                                         +
@@ -99,13 +97,8 @@ public class SecurityConfig {
                                 .sessionManagement(session -> session
                                                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-                                // ✅ REEMPLAZA LA SECCIÓN authorizeHttpRequests() COMPLETA EN TU
-                                // SecurityConfig.java
-
                                 .authorizeHttpRequests(auth -> auth
-                                                // ================================
-                                                // 🌐 ENDPOINTS PÚBLICOS (SIN AUTENTICACIÓN)
-                                                // ================================
+                                                // ENDPOINTS PÚBLICOS
                                                 .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                                                 .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
                                                 .requestMatchers(HttpMethod.POST, "/api/auth/refresh").permitAll()
@@ -117,43 +110,30 @@ public class SecurityConfig {
                                                 .permitAll()
                                                 .requestMatchers(HttpMethod.GET, "/api/auth/invite-codes/info")
                                                 .permitAll()
-
-                                                // Endpoints de salud y error
                                                 .requestMatchers("/actuator/health").permitAll()
                                                 .requestMatchers("/error").permitAll()
 
-                                                // ================================
-                                                // 🔧 ENDPOINTS DE DESARROLLO (SOLO EN DEV)
-                                                // ================================
+                                                // ENDPOINTS DE DESARROLLO
                                                 .requestMatchers("/api/dev/**")
-                                                .access((authentication, context) -> isDevelopmentEnvironmentDecision(
-                                                                authentication, context))
+                                                .access((authentication, context) -> isDevelopmentEnvironmentDecision())
                                                 .requestMatchers("/actuator/**")
-                                                .access((authentication, context) -> isDevelopmentEnvironmentDecision(
-                                                                authentication, context))
+                                                .access((authentication, context) -> isDevelopmentEnvironmentDecision())
                                                 .requestMatchers("/api/test/**")
-                                                .access((authentication, context) -> isDevelopmentEnvironmentDecision(
-                                                                authentication, context))
+                                                .access((authentication, context) -> isDevelopmentEnvironmentDecision())
 
-                                                // ================================
-                                                // 👑 ENDPOINTS SOLO PARA ADMIN
-                                                // ================================
+                                                // ENDPOINTS SOLO PARA ADMIN
                                                 .requestMatchers("/api/admin/**").hasRole(ROLE_ADMIN)
                                                 .requestMatchers("/api/roles/**").hasRole(ROLE_ADMIN)
                                                 .requestMatchers("/api/auth/rate-limit-stats").hasRole(ROLE_ADMIN)
                                                 .requestMatchers("/api/invite-codes/**").hasRole(ROLE_ADMIN)
 
-                                                // ================================
-                                                // 📊 DASHBOARD ENDPOINTS - ¡AGREGADO!
-                                                // ================================
+                                                // DASHBOARD ENDPOINTS
                                                 .requestMatchers("/api/dashboard/**")
                                                 .hasAnyRole(ROLE_ORGANIZER, ROLE_ADMIN)
                                                 .requestMatchers("/api/dashboard")
                                                 .hasAnyRole(ROLE_ORGANIZER, ROLE_ADMIN)
 
-                                                // ================================
-                                                // 👥 PROFESSIONALS ENDPOINTS
-                                                // ================================
+                                                // PROFESSIONALS ENDPOINTS
                                                 .requestMatchers(HttpMethod.GET, "/api/professionals")
                                                 .hasAnyRole(ROLE_USER, ROLE_ORGANIZER, ROLE_ADMIN)
                                                 .requestMatchers(HttpMethod.GET, PROFESSIONALS_API_PATTERN)
@@ -167,9 +147,7 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.DELETE, PROFESSIONALS_API_PATTERN)
                                                 .hasRole(ROLE_ADMIN)
 
-                                                // ================================
-                                                // 🎯 ACTIVITIES ENDPOINTS
-                                                // ================================
+                                                // ACTIVITIES ENDPOINTS
                                                 .requestMatchers(HttpMethod.GET, "/api/activities")
                                                 .hasAnyRole(ROLE_USER, ROLE_ORGANIZER, ROLE_ADMIN)
                                                 .requestMatchers(HttpMethod.GET, ACTIVITIES_API_PATTERN)
@@ -183,9 +161,7 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.DELETE, ACTIVITIES_API_PATTERN)
                                                 .hasAnyRole(ROLE_ORGANIZER, ROLE_ADMIN)
 
-                                                // ================================
-                                                // ✅ ATTENDANCE ENDPOINTS
-                                                // ================================
+                                                // ATTENDANCE ENDPOINTS
                                                 .requestMatchers(HttpMethod.GET, "/api/attendance")
                                                 .hasAnyRole(ROLE_USER, ROLE_ORGANIZER, ROLE_ADMIN)
                                                 .requestMatchers(HttpMethod.GET, ATTENDANCE_API_PATTERN)
@@ -199,9 +175,7 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.DELETE, ATTENDANCE_API_PATTERN)
                                                 .hasAnyRole(ROLE_ORGANIZER, ROLE_ADMIN)
 
-                                                // ================================
-                                                // 👤 USER ENDPOINTS
-                                                // ================================
+                                                // USER ENDPOINTS
                                                 .requestMatchers(HttpMethod.GET, "/api/users/me").authenticated()
                                                 .requestMatchers(HttpMethod.GET, USERS_API_PATTERN).authenticated()
                                                 .requestMatchers(HttpMethod.POST, "/api/users").hasRole(ROLE_ADMIN)
@@ -209,43 +183,39 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.DELETE, USERS_API_PATTERN)
                                                 .hasRole(ROLE_ADMIN)
 
-                                                // ================================
-                                                // 🔐 ENDPOINTS AUTENTICADOS
-                                                // ================================
+                                                // ENDPOINTS AUTENTICADOS
                                                 .requestMatchers(HttpMethod.POST, "/api/auth/logout").authenticated()
 
                                                 .anyRequest().authenticated())
 
                                 .addFilterBefore(
-                                                new JwtAuthorizationFilter(userDetailsService, refreshTokenService),
+                                                new JwtAuthorizationFilter(userDetailsService, refreshTokenService,
+                                                                jwtSecret, jwtIssuer),
                                                 UsernamePasswordAuthenticationFilter.class);
 
-                log.info("✅ Security Filter Chain configurado para PRODUCCIÓN con rol ORGANIZER");
+                log.info("✅ Security Filter Chain configurado para: {}", activeProfile);
                 return http.build();
         }
 
         @Bean
         public CorsConfigurationSource corsConfigurationSource() {
-                log.info("🌐 Configurando CORS seguro para: {}", activeProfile);
+                log.info("🌐 Configurando CORS para: {}", activeProfile);
 
                 CorsConfiguration configuration = new CorsConfiguration();
 
                 if (isProductionEnvironment()) {
-                        // PRODUCCIÓN: Solo dominios específicos con HTTPS
                         configuration.addAllowedOriginPattern("https://urdimbre.com");
                         configuration.addAllowedOriginPattern("https://*.urdimbre.com");
                         configuration.addAllowedOriginPattern("https://app.urdimbre.com");
                         log.info("🔒 CORS configurado para PRODUCCIÓN - solo HTTPS");
                 } else {
-                        // DESARROLLO: Localhost limitado
                         configuration.addAllowedOriginPattern("http://localhost:3000");
                         configuration.addAllowedOriginPattern("http://localhost:3001");
-                        configuration.addAllowedOriginPattern("http://localhost:5173"); // Vite
+                        configuration.addAllowedOriginPattern("http://localhost:5173");
                         configuration.addAllowedOriginPattern("http://127.0.0.1:3000");
-                        log.info("🔧 CORS configurado para DESARROLLO - puertos específicos");
+                        log.info("🔧 CORS configurado para DESARROLLO");
                 }
 
-                // Métodos HTTP permitidos
                 configuration.addAllowedMethod("GET");
                 configuration.addAllowedMethod("POST");
                 configuration.addAllowedMethod("PUT");
@@ -253,7 +223,6 @@ public class SecurityConfig {
                 configuration.addAllowedMethod("DELETE");
                 configuration.addAllowedMethod("OPTIONS");
 
-                // Headers permitidos
                 configuration.addAllowedHeader("Authorization");
                 configuration.addAllowedHeader("Content-Type");
                 configuration.addAllowedHeader("Accept");
@@ -261,7 +230,6 @@ public class SecurityConfig {
                 configuration.addAllowedHeader("X-Requested-With");
                 configuration.addAllowedHeader("Refresh-Token");
 
-                // Headers expuestos (para el frontend)
                 configuration.addExposedHeader("Authorization");
                 configuration.addExposedHeader("Refresh-Token");
                 configuration.addExposedHeader("Content-Length");
@@ -273,7 +241,7 @@ public class SecurityConfig {
                 configuration.addExposedHeader("X-RateLimit-User-Remaining");
 
                 configuration.setAllowCredentials(true);
-                configuration.setMaxAge(isProductionEnvironment() ? 1800L : 3600L); // Menor en prod
+                configuration.setMaxAge(isProductionEnvironment() ? 1800L : 3600L);
 
                 UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
                 source.registerCorsConfiguration("/**", configuration);
@@ -283,15 +251,11 @@ public class SecurityConfig {
 
         @Bean
         public HttpFirewall httpFirewall() {
-                log.info("🛡️ Configurando HTTP Firewall ULTRA SEGURO");
+                log.info("🛡️ Configurando HTTP Firewall");
 
                 StrictHttpFirewall firewall = new StrictHttpFirewall();
-
-                // ================================
-                // CONFIGURACIÓN SUPER ESTRICTA
-                // ================================
                 firewall.setAllowUrlEncodedCarriageReturn(false);
-                firewall.setAllowUrlEncodedPercent(false); // Más restrictivo
+                firewall.setAllowUrlEncodedPercent(false);
                 firewall.setAllowUrlEncodedSlash(false);
                 firewall.setAllowUrlEncodedPeriod(false);
                 firewall.setAllowBackSlash(false);
@@ -300,7 +264,6 @@ public class SecurityConfig {
                 firewall.setAllowUrlEncodedDoubleSlash(false);
                 firewall.setAllowNull(false);
 
-                log.info("✅ HTTP Firewall configurado con protección MÁXIMA");
                 return firewall;
         }
 
@@ -311,21 +274,14 @@ public class SecurityConfig {
 
         @Bean
         public BCryptPasswordEncoder bCryptPasswordEncoder() {
-                int strength = isProductionEnvironment() ? 14 : 12; // Más fuerte en producción
-                log.debug("🔐 BCryptPasswordEncoder con strength: {}", strength);
+                int strength = isProductionEnvironment() ? 14 : 12;
                 return new BCryptPasswordEncoder(strength);
         }
 
         @Bean
         public PasswordEncoder passwordEncoder() {
-                int strength = isProductionEnvironment() ? 14 : 12;
-                log.debug("🔐 PasswordEncoder con strength: {}", strength);
-                return new BCryptPasswordEncoder(strength);
+                return bCryptPasswordEncoder();
         }
-
-        // ================================
-        // MÉTODOS DE SEGURIDAD
-        // ================================
 
         private boolean isProductionEnvironment() {
                 return "prod".equals(activeProfile) ||
@@ -333,37 +289,19 @@ public class SecurityConfig {
                                 "prd".equals(activeProfile);
         }
 
-        /**
-         * Verificar si estamos en entorno de desarrollo (versión simple)
-         */
         private boolean isDevelopmentEnvironment() {
                 return "dev".equals(activeProfile) ||
                                 "development".equals(activeProfile) ||
                                 "local".equals(activeProfile);
         }
 
-        /**
-         * Verificar si estamos en entorno de desarrollo (para endpoints condicionales)
-         */
-        private org.springframework.security.authorization.AuthorizationDecision isDevelopmentEnvironmentDecision(
-                        java.util.function.Supplier<org.springframework.security.core.Authentication> authentication,
-                        org.springframework.security.web.access.intercept.RequestAuthorizationContext context) {
-
+        private org.springframework.security.authorization.AuthorizationDecision isDevelopmentEnvironmentDecision() {
                 boolean isDev = isDevelopmentEnvironment();
-
-                if (!isDev) {
-                        log.warn("🚫 Acceso denegado a endpoint de desarrollo en: {}", activeProfile);
-                }
-
                 return new org.springframework.security.authorization.AuthorizationDecision(isDev);
         }
 
-        /**
-         * Construir Content Security Policy según el entorno
-         */
         private String buildContentSecurityPolicy() {
                 if (isProductionEnvironment()) {
-                        // CSP ESTRICTO PARA PRODUCCIÓN
                         return "default-src 'self'; " +
                                         "script-src 'self'; " +
                                         "style-src 'self' 'unsafe-inline'; " +
@@ -380,7 +318,6 @@ public class SecurityConfig {
                                         "upgrade-insecure-requests; " +
                                         "block-all-mixed-content";
                 } else {
-                        // CSP MÁS PERMISIVO PARA DESARROLLO
                         return "default-src 'self'; " +
                                         "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
                                         "style-src 'self' 'unsafe-inline'; " +

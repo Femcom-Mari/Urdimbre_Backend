@@ -22,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 public class BlacklistedTokenService {
 
     private static final Logger logger = LoggerFactory.getLogger(BlacklistedTokenService.class);
+    private static final String UNKNOWN = "unknown";
 
     @Value("${jwt.secret}")
     private String jwtSecret;
@@ -31,14 +32,12 @@ public class BlacklistedTokenService {
     @Transactional
     public void blacklistToken(String tokenId, String username, String tokenType, LocalDateTime expiresAt,
             String reason) {
-
         saveBlacklistedToken(tokenId, username, tokenType, expiresAt, reason);
     }
 
     @Transactional
     public void blacklistToken(String fullToken, String reason) {
         try {
-
             Algorithm algorithm = Algorithm.HMAC512(jwtSecret);
             DecodedJWT jwt = JWT.require(algorithm).build().verify(fullToken);
 
@@ -46,7 +45,7 @@ public class BlacklistedTokenService {
             String username = jwt.getSubject();
             String tokenType = jwt.getClaim("type").asString();
             if (tokenType == null) {
-                tokenType = "unknown";
+                tokenType = UNKNOWN;
             }
 
             LocalDateTime expiresAt = jwt.getExpiresAt() != null
@@ -57,9 +56,8 @@ public class BlacklistedTokenService {
 
         } catch (Exception e) {
             logger.warn("⚠️ Error decodificando token para blacklist: {}", e.getMessage());
-
             String tokenId = generateTokenId(fullToken);
-            saveBlacklistedToken(tokenId, "unknown", "unknown", LocalDateTime.now().plusDays(1),
+            saveBlacklistedToken(tokenId, UNKNOWN, UNKNOWN, LocalDateTime.now().plusDays(1),
                     reason + " (error decoding)");
         }
     }
@@ -85,7 +83,7 @@ public class BlacklistedTokenService {
         }
     }
 
-    @Scheduled(fixedRate = 3600000) // 3600000 ms = 1 hora
+    @Scheduled(fixedRate = 3600000)
     @Transactional
     public void cleanupExpiredTokens() {
         LocalDateTime now = LocalDateTime.now();
@@ -98,8 +96,6 @@ public class BlacklistedTokenService {
             long deletedCount = initialCount - finalCount;
             if (deletedCount > 0) {
                 logger.info("🧹 Limpieza completada: {} tokens expirados eliminados de blacklist", deletedCount);
-            } else {
-                logger.debug("🧹 Limpieza de blacklist: sin tokens expirados para eliminar");
             }
         } catch (Exception e) {
             logger.error("❌ Error en limpieza de tokens expirados: {}", e.getMessage());
@@ -154,7 +150,6 @@ public class BlacklistedTokenService {
             LocalDateTime expiresAt, String reason) {
 
         if (blacklistedTokenRepository.existsByTokenId(tokenId)) {
-            logger.debug("Token ya está en blacklist: {}", tokenId);
             return;
         }
 

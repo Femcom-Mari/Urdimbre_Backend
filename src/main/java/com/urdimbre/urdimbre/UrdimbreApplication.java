@@ -12,17 +12,25 @@ public class UrdimbreApplication {
 
 	private static final Logger logger = LoggerFactory.getLogger(UrdimbreApplication.class);
 
+	private static final class ConfigDefaults {
+		static final String DEFAULT_PROFILE = "preprod";
+		static final String DEFAULT_RATE_LIMIT_DURATION = "PT1M";
+		static final String DEFAULT_REGISTER_CAPACITY = "10";
+		static final String DEFAULT_LOGIN_IP_CAPACITY = "15";
+		static final String DEFAULT_LOGIN_USER_CAPACITY = "5";
+		static final String DEFAULT_ACCESS_EXPIRATION = "600000";
+		static final String DEFAULT_REFRESH_EXPIRATION = "3600000";
+		static final int MIN_JWT_SECRET_LENGTH = 64;
+		static final int MIN_PASSWORD_LENGTH = 8;
+		static final String ENVIRONMENT_KEY = "ENVIRONMENT";
+	}
+
 	public static void main(String[] args) {
-		logger.info("🚀 Iniciando aplicación Urdimbre...");
-
+		logger.info("🚀 Iniciando aplicación Urdimbre en modo preproducción...");
 		try {
-
 			loadEnvironmentVariables();
-
 			SpringApplication.run(UrdimbreApplication.class, args);
-
 			logger.info("✅ Aplicación Urdimbre iniciada correctamente");
-
 		} catch (Exception e) {
 			logger.error("❌ Error iniciando aplicación: {}", e.getMessage());
 			System.exit(1);
@@ -30,43 +38,50 @@ public class UrdimbreApplication {
 	}
 
 	private static void loadEnvironmentVariables() {
-		logger.info("🔧 Cargando variables de entorno...");
-
-		Dotenv dotenv = Dotenv.configure()
-				.ignoreIfMissing()
-				.load();
-
+		logger.info("🔧 Cargando variables de entorno para preproducción...");
+		Dotenv dotenv = Dotenv.configure().ignoreIfMissing().load();
+		validateEnvironment();
 		setupSpringProfile(dotenv);
-
 		setupRateLimiting(dotenv);
-
 		validateDatabaseConfig(dotenv);
 		validateSecurityConfig(dotenv);
 		validateAdminConfig(dotenv);
-
 		logger.info("✅ Variables de entorno cargadas y validadas correctamente");
 	}
 
-	private static void setupSpringProfile(Dotenv dotenv) {
-		String profile = getEnvVariable(dotenv, "SPRING_PROFILES_ACTIVE", "dev");
-		System.setProperty("spring.profiles.active", profile);
-		logger.info("🔧 Spring Profile establecido: {}", profile);
+	private static void validateEnvironment() {
+		String environment = System.getenv(ConfigDefaults.ENVIRONMENT_KEY);
+		if (environment == null || !environment.equals(ConfigDefaults.DEFAULT_PROFILE)) {
+			logger.warn("⚠️ Variable ENVIRONMENT no está configurada como '{}'", ConfigDefaults.DEFAULT_PROFILE);
+		}
 	}
 
-	private static final String DEFAULT_RATE_LIMIT_DURATION = "PT30S";
+	private static void setupSpringProfile(Dotenv dotenv) {
+		String profile = getEnvVariable(dotenv, "SPRING_PROFILES_ACTIVE", ConfigDefaults.DEFAULT_PROFILE);
+		System.setProperty("spring.profiles.active", profile);
+		logger.info("🔧 Spring Profile establecido: {}", profile);
+		if (!profile.equals(ConfigDefaults.DEFAULT_PROFILE)) {
+			logger.warn("⚠️ Perfil '{}' puede no ser apropiado para preproducción", profile);
+		}
+	}
 
 	private static void setupRateLimiting(Dotenv dotenv) {
-
-		String registerCapacity = getEnvVariable(dotenv, "RATE_LIMIT_REGISTER_IP_CAPACITY", "100");
+		String registerCapacity = getEnvVariable(dotenv, "RATE_LIMIT_REGISTER_IP_CAPACITY",
+				ConfigDefaults.DEFAULT_REGISTER_CAPACITY);
 		String registerDuration = getEnvVariable(dotenv, "RATE_LIMIT_REGISTER_IP_DURATION",
-				DEFAULT_RATE_LIMIT_DURATION);
-
-		String loginIpCapacity = getEnvVariable(dotenv, "RATE_LIMIT_LOGIN_IP_CAPACITY", "100");
-		String loginIpDuration = getEnvVariable(dotenv, "RATE_LIMIT_LOGIN_IP_DURATION", DEFAULT_RATE_LIMIT_DURATION);
-
-		String loginUserCapacity = getEnvVariable(dotenv, "RATE_LIMIT_LOGIN_USER_CAPACITY", "50");
+				ConfigDefaults.DEFAULT_RATE_LIMIT_DURATION);
+		String loginIpCapacity = getEnvVariable(dotenv, "RATE_LIMIT_LOGIN_IP_CAPACITY",
+				ConfigDefaults.DEFAULT_LOGIN_IP_CAPACITY);
+		String loginIpDuration = getEnvVariable(dotenv, "RATE_LIMIT_LOGIN_IP_DURATION",
+				ConfigDefaults.DEFAULT_RATE_LIMIT_DURATION);
+		String loginUserCapacity = getEnvVariable(dotenv, "RATE_LIMIT_LOGIN_USER_CAPACITY",
+				ConfigDefaults.DEFAULT_LOGIN_USER_CAPACITY);
 		String loginUserDuration = getEnvVariable(dotenv, "RATE_LIMIT_LOGIN_USER_DURATION",
-				DEFAULT_RATE_LIMIT_DURATION);
+				ConfigDefaults.DEFAULT_RATE_LIMIT_DURATION);
+
+		validateNumericConfig("RATE_LIMIT_REGISTER_IP_CAPACITY", registerCapacity);
+		validateNumericConfig("RATE_LIMIT_LOGIN_IP_CAPACITY", loginIpCapacity);
+		validateNumericConfig("RATE_LIMIT_LOGIN_USER_CAPACITY", loginUserCapacity);
 
 		System.setProperty("rate-limit.register.ip.capacity", registerCapacity);
 		System.setProperty("rate-limit.register.ip.refill-duration", registerDuration);
@@ -75,116 +90,126 @@ public class UrdimbreApplication {
 		System.setProperty("rate-limit.login.user.capacity", loginUserCapacity);
 		System.setProperty("rate-limit.login.user.refill-duration", loginUserDuration);
 
-		logger.info("🎛️ Rate Limiting configurado:");
-		logger.info("   📝 Registro: {} intentos cada {}", registerCapacity, registerDuration);
-		logger.info("   🔑 Login IP: {} intentos cada {}", loginIpCapacity, loginIpDuration);
-		logger.info("   👤 Login User: {} intentos cada {}", loginUserCapacity, loginUserDuration);
+		logger.info("🎛️ Rate Limiting configurado para preproducción");
 	}
 
 	private static void validateDatabaseConfig(Dotenv dotenv) {
 		String dbUrl = getEnvVariable(dotenv, "DB_URL");
 		String dbUser = getEnvVariable(dotenv, "DB_USERNAME");
 		String dbPass = getEnvVariable(dotenv, "DB_PASSWORD");
+		String environment = getEnvVariable(dotenv, ConfigDefaults.ENVIRONMENT_KEY);
 
-		if (dbUrl == null || dbUser == null) {
-			logger.error("❌ ERROR: Faltan variables de entorno para la base de datos");
-			logger.error("Variables requeridas: DB_URL, DB_USERNAME, DB_PASSWORD");
-			throw new IllegalStateException("Configuración de base de datos incompleta");
+		// Validaciones obligatorias
+		if (dbUrl == null || dbUrl.trim().isEmpty()) {
+			throw new IllegalStateException("DB_URL no configurado");
+		}
+		if (dbUser == null || dbUser.trim().isEmpty()) {
+			throw new IllegalStateException("DB_USERNAME no configurado");
 		}
 
+		dbPass = validateDbPassword(dbPass, environment);
+
 		if (!dbUrl.startsWith("jdbc:")) {
-			logger.error("❌ ERROR: DB_URL debe comenzar con 'jdbc:'");
 			throw new IllegalStateException("Formato de DB_URL inválido");
 		}
 
 		System.setProperty("spring.datasource.url", dbUrl);
 		System.setProperty("spring.datasource.username", dbUser);
-		if (dbPass != null) {
-			System.setProperty("spring.datasource.password", dbPass);
+		System.setProperty("spring.datasource.password", dbPass);
+
+		if (logger.isInfoEnabled()) {
+			logger.info("💃 Base de datos: {}", maskUrl(dbUrl));
+			logger.info("👤 Usuario: {}", maskUsername(dbUser));
+			if (dbPass.isEmpty()) {
+				logger.info("🔓 Password: (vacío - solo desarrollo/preproducción)");
+			} else {
+				logger.info("🔐 Password: (configurado)");
+			}
+		}
+	}
+
+	private static String validateDbPassword(String dbPass, String environment) {
+		// Permitir DB_PASSWORD vacío solo en desarrollo y preproducción
+		boolean isProductionEnv = "prod".equals(environment) || "production".equals(environment);
+		if (isProductionEnv && (dbPass == null || dbPass.trim().isEmpty())) {
+			throw new IllegalStateException("DB_PASSWORD no configurado en producción");
 		}
 
-		logger.info("✅ Configuración de base de datos validada");
-		if (logger.isInfoEnabled()) {
-			logger.info("🗃️ Base de datos: {}", maskUrl(dbUrl));
+		if (dbPass == null) {
+			dbPass = "";
+			logger.warn("⚠️ DB_PASSWORD vacío - Solo permitido en desarrollo/preproducción");
 		}
+
+		if (!dbPass.isEmpty() && (dbPass.equals("admin") || dbPass.equals("password") || dbPass.equals("123456"))) {
+			throw new IllegalStateException("DB_PASSWORD inseguro");
+		}
+
+		return dbPass;
 	}
 
 	private static void validateSecurityConfig(Dotenv dotenv) {
 		String jwtSecret = getEnvVariable(dotenv, "JWT_SECRET_KEY");
-
 		if (jwtSecret == null || jwtSecret.trim().isEmpty()) {
-			logger.error("❌ ERROR: JWT_SECRET_KEY no está configurado");
-			logger.error("Genera uno con: openssl rand -hex 64");
 			throw new IllegalStateException("JWT_SECRET_KEY no configurado");
 		}
-
-		if (jwtSecret.length() < 64) {
-			logger.error("❌ ERROR: JWT_SECRET_KEY debe tener al menos 64 caracteres");
-			logger.error("Actual: {} caracteres", jwtSecret.length());
-			logger.error("Genera uno nuevo con: openssl rand -hex 64");
+		if (jwtSecret.length() < ConfigDefaults.MIN_JWT_SECRET_LENGTH) {
 			throw new IllegalStateException("JWT_SECRET_KEY demasiado corto");
 		}
-
-		if (!jwtSecret.matches("^[0-9a-fA-F]+$")) {
-			logger.warn("⚠️ JWT_SECRET_KEY no parece ser hexadecimal puro");
-		}
-
 		System.setProperty("jwt.secret", jwtSecret);
-
-		String accessExp = getEnvVariable(dotenv, "JWT_ACCESS_EXPIRATION", "900000");
-		String refreshExp = getEnvVariable(dotenv, "JWT_REFRESH_EXPIRATION", "86400000");
-
+		String accessExp = getEnvVariable(dotenv, "JWT_ACCESS_EXPIRATION", ConfigDefaults.DEFAULT_ACCESS_EXPIRATION);
+		String refreshExp = getEnvVariable(dotenv, "JWT_REFRESH_EXPIRATION", ConfigDefaults.DEFAULT_REFRESH_EXPIRATION);
+		validateNumericConfig("JWT_ACCESS_EXPIRATION", accessExp);
+		validateNumericConfig("JWT_REFRESH_EXPIRATION", refreshExp);
 		System.setProperty("jwt.access-token-expiration", accessExp);
 		System.setProperty("jwt.refresh-token-expiration", refreshExp);
-
-		logger.info("✅ Configuración de seguridad validada");
 		logger.info("🔐 JWT Secret length: {} caracteres", jwtSecret.length());
-		logger.info("⏰ Access token expiration: {} ms", accessExp);
-		logger.info("⏰ Refresh token expiration: {} ms", refreshExp);
 	}
 
 	private static void validateAdminConfig(Dotenv dotenv) {
-		String adminUsername = getEnvVariable(dotenv, "ADMIN_USERNAME", "admin");
+		String adminUsername = getEnvVariable(dotenv, "ADMIN_USERNAME");
 		String adminEmail = getEnvVariable(dotenv, "ADMIN_EMAIL");
 		String adminPassword = getEnvVariable(dotenv, "ADMIN_PASSWORD");
+		String environment = getEnvVariable(dotenv, ConfigDefaults.ENVIRONMENT_KEY);
 
-		if (adminEmail == null || adminPassword == null) {
-			logger.warn("⚠️ ADMIN_EMAIL o ADMIN_PASSWORD no configurados");
-			logger.warn("Se usarán valores por defecto (NO RECOMENDADO PARA PRODUCCIÓN)");
+		// Validaciones obligatorias
+		if (adminUsername == null || adminUsername.trim().isEmpty()) {
+			throw new IllegalStateException("ADMIN_USERNAME no configurado");
+		}
+		if (adminEmail == null || adminEmail.trim().isEmpty()) {
+			throw new IllegalStateException("ADMIN_EMAIL no configurado");
+		}
+		if (adminPassword == null || adminPassword.trim().isEmpty()) {
+			throw new IllegalStateException("ADMIN_PASSWORD no configurado");
 		}
 
-		if (adminPassword != null && !isPasswordSecure(adminPassword)) {
-			logger.error("❌ ERROR: ADMIN_PASSWORD no es suficientemente segura");
-			logger.error("Debe tener al menos 8 caracteres, mayúscula, minúscula, número y símbolo");
+		// Validaciones de seguridad solo en producción
+		boolean isProductionEnv = "prod".equals(environment) || "production".equals(environment);
+		if (isProductionEnv) {
+			if (adminUsername.equals("admin") || adminUsername.equals("administrator")) {
+				throw new IllegalStateException("ADMIN_USERNAME no puede ser un valor por defecto en producción");
+			}
+		}
+
+		if (!isValidEmail(adminEmail)) {
+			throw new IllegalStateException("ADMIN_EMAIL inválido");
+		}
+
+		if (!isPasswordSecure(adminPassword)) {
 			throw new IllegalStateException("ADMIN_PASSWORD no es segura");
 		}
 
 		System.setProperty("admin.username", adminUsername);
-		if (adminEmail != null)
-			System.setProperty("admin.email", adminEmail);
-		if (adminPassword != null)
-			System.setProperty("admin.password", adminPassword);
+		System.setProperty("admin.email", adminEmail);
+		System.setProperty("admin.password", adminPassword);
 
-		String inviteCode = getEnvVariable(dotenv, "INVITE_CODE", "URDIMBRE2025");
-		System.setProperty("invite.code.default", inviteCode);
-
-		logger.info("✅ Configuración de administrador validada");
 		logger.info("👑 Admin username: {}", adminUsername);
-		if (adminEmail != null) {
-			if (logger.isInfoEnabled()) {
-				logger.info("📧 Admin email: {}", maskEmail(adminEmail));
-			}
-		} else {
-			logger.info("📧 Admin email: null");
+		if (logger.isInfoEnabled()) {
+			logger.info("📧 Admin email: {}", maskEmail(adminEmail));
 		}
-	}
-
-	private static String getEnvVariable(Dotenv dotenv, String key) {
-		return getEnvVariable(dotenv, key, null);
+		logger.info("🎫 Los códigos de invitación serán creados por el administrador");
 	}
 
 	private static String getEnvVariable(Dotenv dotenv, String key, String defaultValue) {
-
 		String value = System.getProperty(key);
 		if (value == null) {
 			value = System.getenv(key);
@@ -195,35 +220,61 @@ public class UrdimbreApplication {
 		return value != null ? value : defaultValue;
 	}
 
-	private static boolean isPasswordSecure(String password) {
-		if (password == null || password.length() < 8) {
+	private static String getEnvVariable(Dotenv dotenv, String key) {
+		return getEnvVariable(dotenv, key, null);
+	}
+
+	private static void validateNumericConfig(String configName, String value) {
+		try {
+			long numValue = Long.parseLong(value);
+			if (numValue <= 0) {
+				throw new IllegalStateException(configName + " debe ser positivo");
+			}
+		} catch (NumberFormatException e) {
+			throw new IllegalStateException(configName + " no es un número válido");
+		}
+	}
+
+	private static boolean isValidEmail(String email) {
+		if (email == null || email.trim().isEmpty()) {
 			return false;
 		}
+		return email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$") &&
+				!email.contains("..") &&
+				!email.startsWith(".") &&
+				!email.endsWith(".") &&
+				email.length() <= 100;
+	}
 
+	private static boolean isPasswordSecure(String password) {
+		if (password == null || password.length() < ConfigDefaults.MIN_PASSWORD_LENGTH) {
+			return false;
+		}
 		boolean hasLower = password.chars().anyMatch(Character::isLowerCase);
 		boolean hasUpper = password.chars().anyMatch(Character::isUpperCase);
 		boolean hasDigit = password.chars().anyMatch(Character::isDigit);
 		boolean hasSymbol = password.chars().anyMatch(ch -> "@$!%*?&".indexOf(ch) >= 0);
-
 		return hasLower && hasUpper && hasDigit && hasSymbol;
 	}
 
 	private static String maskUrl(String url) {
-		if (url == null)
-			return "null";
 		return url.replaceAll("://([^:]+):([^@]+)@", "://*****:*****@");
 	}
 
-	private static String maskEmail(String email) {
-		if (email == null)
-			return "null";
-		if (!email.contains("@"))
-			return email;
+	private static String maskUsername(String username) {
+		if (username.length() <= 2) {
+			return "*".repeat(username.length());
+		}
+		return username.charAt(0) + "*".repeat(username.length() - 2) + username.charAt(username.length() - 1);
+	}
 
+	private static String maskEmail(String email) {
+		if (email == null || !email.contains("@")) {
+			return "null";
+		}
 		String[] parts = email.split("@");
 		String localPart = parts[0];
 		String domain = parts[1];
-
 		if (localPart.length() <= 2) {
 			return "*".repeat(localPart.length()) + "@" + domain;
 		} else {

@@ -33,6 +33,9 @@ public class RefreshTokenService {
     @Value("${jwt.secret}")
     private String jwtSecret;
 
+    @Value("${jwt.issuer:urdimbre-preproduction}")
+    private String jwtIssuer;
+
     @Value("${jwt.access-token-expiration:900000}")
     private long accessTokenExpiration;
 
@@ -60,10 +63,13 @@ public class RefreshTokenService {
         }
 
         this.algorithm = Algorithm.HMAC512(jwtSecret);
-        this.verifier = JWT.require(algorithm).build();
+        this.verifier = JWT.require(algorithm)
+                .withIssuer(jwtIssuer)
+                .build();
 
         logger.info("✅ RefreshTokenService inicializado con algoritmo HS512 y Blacklist");
         logger.info("🔐 JWT Secret length: {} caracteres", jwtSecret.length());
+        logger.info("🏷️ JWT Issuer: {}", jwtIssuer);
         logger.info("⏰ Access Token Expiration: {} ms", accessTokenExpiration);
         logger.info("⏰ Refresh Token Expiration: {} ms", refreshTokenExpiration);
     }
@@ -75,7 +81,6 @@ public class RefreshTokenService {
 
     public String getUsernameFromToken(String refreshToken) {
         try {
-
             if (blacklistedTokenService.isFullTokenBlacklisted(refreshToken)) {
                 logger.warn("🚫 Intento de usar refresh token en blacklist");
                 return null;
@@ -101,7 +106,6 @@ public class RefreshTokenService {
     public void removeToken(String refreshToken) {
         String username = refreshTokenStore.remove(refreshToken);
         if (username != null) {
-
             blacklistedTokenService.blacklistToken(refreshToken, "Token usado para refresh");
             logger.info("🗑️ Refresh token removido y agregado a blacklist para usuario: {}", username);
         }
@@ -109,7 +113,6 @@ public class RefreshTokenService {
 
     public boolean validateToken(String refreshToken) {
         try {
-
             if (blacklistedTokenService.isFullTokenBlacklisted(refreshToken)) {
                 logger.warn("🚫 Refresh token está en blacklist");
                 return false;
@@ -142,7 +145,6 @@ public class RefreshTokenService {
 
     public boolean validateAccessToken(String accessToken) {
         try {
-
             if (blacklistedTokenService.isFullTokenBlacklisted(accessToken)) {
                 logger.warn("🚫 Access token está en blacklist");
                 return false;
@@ -177,6 +179,7 @@ public class RefreshTokenService {
 
             String refreshToken = JWT.create()
                     .withSubject(username)
+                    .withIssuer(jwtIssuer) // ✅ CORREGIDO: Añadido issuer
                     .withClaim("tokenId", tokenId)
                     .withClaim("type", "refresh")
                     .withIssuedAt(new Date())
@@ -196,7 +199,6 @@ public class RefreshTokenService {
 
     public String generateAccessToken(String username) {
         try {
-
             UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
             List<String> authorities = userDetails.getAuthorities().stream()
@@ -205,6 +207,7 @@ public class RefreshTokenService {
 
             String accessToken = JWT.create()
                     .withSubject(username)
+                    .withIssuer(jwtIssuer) // ✅ CORREGIDO: Añadido issuer
                     .withClaim("type", "access")
                     .withClaim("authorities", authorities)
                     .withIssuedAt(new Date())
@@ -221,7 +224,6 @@ public class RefreshTokenService {
     }
 
     public String extractRefreshTokenFromRequest(HttpServletRequest request) {
-
         String refreshToken = request.getHeader("Refresh-Token");
 
         if (refreshToken == null || refreshToken.trim().isEmpty()) {
@@ -240,13 +242,11 @@ public class RefreshTokenService {
                 DecodedJWT decodedJWT = verifier.verify(token);
                 Date expirationDate = decodedJWT.getExpiresAt();
                 if (expirationDate != null && expirationDate.before(new Date())) {
-
                     blacklistedTokenService.blacklistToken(token, "Expirado durante limpieza");
                     return true;
                 }
                 return false;
             } catch (JWTVerificationException e) {
-
                 blacklistedTokenService.blacklistToken(token, "Inválido durante limpieza");
                 return true;
             }
@@ -273,6 +273,7 @@ public class RefreshTokenService {
                 "activeRefreshTokens", refreshTokenStore.size(),
                 "blacklistedTokens", blacklistStats.getTotalBlacklistedTokens(),
                 "algorithmUsed", "HS512",
+                "issuer", jwtIssuer,
                 "accessTokenExpirationMs", accessTokenExpiration,
                 "refreshTokenExpirationMs", refreshTokenExpiration);
     }

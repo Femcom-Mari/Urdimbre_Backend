@@ -1,6 +1,5 @@
 package com.urdimbre.urdimbre.config;
 
-import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -12,11 +11,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import com.urdimbre.urdimbre.model.InviteCode;
 import com.urdimbre.urdimbre.model.Role;
 import com.urdimbre.urdimbre.model.User;
 import com.urdimbre.urdimbre.model.User.UserStatus;
-import com.urdimbre.urdimbre.repository.InviteCodeRepository;
 import com.urdimbre.urdimbre.repository.RoleRepository;
 import com.urdimbre.urdimbre.repository.UserRepository;
 
@@ -44,16 +41,12 @@ public class DataInitializer {
     @Value("${spring.profiles.active:dev}")
     private String activeProfile;
 
-    @Value("${invite.code.default:URDIMBRE2025}")
-    private String defaultInviteCode;
-
     private final PasswordEncoder passwordEncoder;
 
     @Bean
     public CommandLineRunner initData(
             RoleRepository roleRepository,
-            UserRepository userRepository,
-            InviteCodeRepository inviteCodeRepository) {
+            UserRepository userRepository) {
         return args -> {
             logger.info("🚀 Inicializando datos del sistema (Perfil: {})...", activeProfile);
 
@@ -65,8 +58,7 @@ public class DataInitializer {
 
             initRoles(roleRepository);
             initAdminUser(userRepository, roleRepository);
-            initDefaultInviteCode(inviteCodeRepository);
-            showInitializationStats(roleRepository, userRepository, inviteCodeRepository);
+            showInitializationStats(roleRepository, userRepository);
 
             showSecurityWarnings();
         };
@@ -225,17 +217,17 @@ public class DataInitializer {
         logger.info("🏗️ Creando usuario administrador: {}", adminUsername);
 
         // ✅ CONFIGURAR TODOS LOS PRONOMBRES PARA EL ADMIN
-        Set<User.Pronoun> adminPronouns = new HashSet<>();
-        adminPronouns.add(User.Pronoun.EL);
-        adminPronouns.add(User.Pronoun.ELLE);
-        adminPronouns.add(User.Pronoun.ELLA);
-
         String hashedPassword = passwordEncoder.encode(adminPassword);
 
         if (isDevelopmentEnvironment()) {
             boolean hashWorks = passwordEncoder.matches(adminPassword, hashedPassword);
             logger.info("🔍 [DEV] Hash funciona correctamente: {}", hashWorks);
         }
+
+        Set<User.Pronoun> adminPronouns = new HashSet<>();
+        adminPronouns.add(User.Pronoun.EL);
+        adminPronouns.add(User.Pronoun.ELLE);
+        adminPronouns.add(User.Pronoun.ELLA);
 
         User admin = User.builder()
                 .username(adminUsername)
@@ -289,39 +281,10 @@ public class DataInitializer {
         logger.info("📧 Email: {}", emailToLog);
         logger.info("🎭 Roles asignados: {} (USER, ORGANIZER, ADMIN)", savedAdmin.getRoles().size());
         logger.info("🏷️ Pronombres: {} (EL, ELLE, ELLA)", savedAdmin.getPronouns().size());
+        logger.info("🎫 Los códigos de invitación serán creados por el administrador cuando sean necesarios");
     }
 
-    private void initDefaultInviteCode(InviteCodeRepository inviteCodeRepository) {
-        // SOLO CREAR CÓDIGOS EN DESARROLLO
-        if (!isDevelopmentEnvironment()) {
-            logger.info("ℹ️ Omitiendo creación de código de invitación por defecto en entorno: {}", activeProfile);
-            return;
-        }
-
-        logger.info("🎫 Verificando código de invitación por defecto: {}", defaultInviteCode);
-
-        if (inviteCodeRepository.findByCode(defaultInviteCode).isEmpty()) {
-            logger.info("🏗️ Creando código de invitación por defecto: {}", defaultInviteCode);
-
-            InviteCode inviteCode = InviteCode.builder()
-                    .code(defaultInviteCode)
-                    .description("Código de invitación por defecto para desarrollo")
-                    .maxUses(1000)
-                    .currentUses(0)
-                    .status(InviteCode.InviteStatus.ACTIVE)
-                    .expiresAt(LocalDateTime.now().plusYears(1))
-                    .createdBy("system")
-                    .build();
-
-            inviteCodeRepository.save(inviteCode);
-            logger.info("✅ Código de invitación '{}' creado exitosamente", defaultInviteCode);
-        } else {
-            logger.info("ℹ️ Código de invitación '{}' ya existe", defaultInviteCode);
-        }
-    }
-
-    private void showInitializationStats(RoleRepository roleRepository, UserRepository userRepository,
-            InviteCodeRepository inviteCodeRepository) {
+    private void showInitializationStats(RoleRepository roleRepository, UserRepository userRepository) {
         long totalRoles = roleRepository.count();
         long totalUsers = userRepository.count();
         long adminUsers = userRepository.countByRoles_Name(ROLE_ADMIN);
@@ -332,6 +295,7 @@ public class DataInitializer {
         logger.info("   👥 Total usuarios: {}", totalUsers);
         logger.info("   👑 Administradores: {}", adminUsers);
         logger.info("   🏗️ Organizadores: {}", organizerUsers);
+        logger.info("   🎫 Códigos de invitación: Solo los creados por admin");
         logger.info("🚀 Sistema inicializado correctamente para el perfil: {}", activeProfile);
     }
 
@@ -340,12 +304,15 @@ public class DataInitializer {
             logger.warn("🔐 RECORDATORIO: Cambiar credenciales antes de PRODUCCIÓN!");
             logger.warn("🔐 RECORDATORIO: Configurar HTTPS en producción");
             logger.warn("🔐 RECORDATORIO: Configurar dominios reales en CORS");
+            logger.info(
+                    "🎫 IMPORTANTE: No hay código de invitación por defecto - el admin debe crear códigos cuando sean necesarios");
         }
 
         if (isProductionEnvironment()) {
             logger.info("🔒 PRODUCCIÓN: Configuración de seguridad aplicada");
             logger.info("🔒 PRODUCCIÓN: BCrypt strength aumentado");
             logger.info("🔒 PRODUCCIÓN: CORS restringido a HTTPS");
+            logger.info("🎫 PRODUCCIÓN: Códigos de invitación solo creados por admin");
         }
     }
 
@@ -401,7 +368,8 @@ public class DataInitializer {
     private boolean isDevelopmentEnvironment() {
         return "dev".equals(activeProfile) ||
                 "development".equals(activeProfile) ||
-                "local".equals(activeProfile);
+                "local".equals(activeProfile) ||
+                "preprod".equals(activeProfile);
     }
 
     private String maskEmail(String email) {
