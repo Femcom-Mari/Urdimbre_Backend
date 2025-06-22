@@ -1,5 +1,6 @@
 package com.urdimbre.urdimbre.config;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -11,9 +12,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import com.urdimbre.urdimbre.model.InviteCode;
 import com.urdimbre.urdimbre.model.Role;
 import com.urdimbre.urdimbre.model.User;
 import com.urdimbre.urdimbre.model.User.UserStatus;
+import com.urdimbre.urdimbre.repository.InviteCodeRepository;
 import com.urdimbre.urdimbre.repository.RoleRepository;
 import com.urdimbre.urdimbre.repository.UserRepository;
 
@@ -41,20 +44,31 @@ public class DataInitializer {
     @Value("${spring.profiles.active:dev}")
     private String activeProfile;
 
+    @Value("${invite.code.default:URDIMBRE2025}")
+    private String defaultInviteCode;
+
+    private final PasswordEncoder passwordEncoder;
+
     @Bean
     public CommandLineRunner initData(
             RoleRepository roleRepository,
             UserRepository userRepository,
-            PasswordEncoder passwordEncoder) {
+            InviteCodeRepository inviteCodeRepository) {
         return args -> {
             logger.info("🚀 Inicializando datos del sistema (Perfil: {})...", activeProfile);
 
             validateSecurityRequirements();
 
-            initRoles(roleRepository);
-            initAdminUser(userRepository, roleRepository, passwordEncoder);
+            if (isDevelopmentEnvironment()) {
+                debugPasswordConfiguration();
+            }
 
-            showInitializationStats(roleRepository, userRepository);
+            initRoles(roleRepository);
+            initAdminUser(userRepository, roleRepository);
+            initDefaultInviteCode(inviteCodeRepository);
+            showInitializationStats(roleRepository, userRepository, inviteCodeRepository);
+
+            showSecurityWarnings();
         };
     }
 
@@ -76,10 +90,11 @@ public class DataInitializer {
         if (adminPassword == null || !isPasswordSecure(adminPassword)) {
             throw new IllegalStateException(
                     "❌ ADMIN_PASSWORD debe tener al menos 8 caracteres, mayúscula, minúscula, número y símbolo especial (@$!%*?&). "
-                            + "Actual: " + (adminPassword != null ? adminPassword.length() + " caracteres" : "null"));
+                            +
+                            "Actual: " + (adminPassword != null ? adminPassword.length() + " caracteres" : "null"));
         }
 
-        if ("prod".equals(activeProfile) || "production".equals(activeProfile)) {
+        if (isProductionEnvironment()) {
             validateProductionRequirements();
         }
 
@@ -87,25 +102,51 @@ public class DataInitializer {
     }
 
     private void validateProductionRequirements() {
-        logger.info("🏭 Aplicando validaciones de producción...");
+        logger.info("🏭 Aplicando validaciones de PRODUCCIÓN...");
 
         if ("admin".equals(adminUsername)) {
-            throw new IllegalStateException("❌ No usar 'admin' como username en producción");
+            throw new IllegalStateException("❌ SEGURIDAD: No usar 'admin' como username en producción");
         }
 
-        if (adminEmail.contains("@urdimbre.com") || adminEmail.contains("@example.com")) {
-            throw new IllegalStateException("❌ Usar un email real en producción, no: " + adminEmail);
+        if (adminEmail.contains("@urdimbre.com") || adminEmail.contains("@example.com") ||
+                adminEmail.contains("@test.com") || adminEmail.contains("@localhost")) {
+            throw new IllegalStateException("❌ SEGURIDAD: Usar un email real en producción, no: " + adminEmail);
         }
 
-        if (adminPassword.contains("Admin123") || adminPassword.contains("password")) {
-            throw new IllegalStateException("❌ Cambiar contraseña por defecto en producción");
+        if (adminPassword.contains("Admin123") || adminPassword.contains("password") ||
+                adminPassword.contains("123456") || adminPassword.toLowerCase().contains("admin")) {
+            throw new IllegalStateException("❌ SEGURIDAD: Cambiar contraseña por defecto en producción");
         }
 
         if (adminPassword.length() < 12) {
-            throw new IllegalStateException("❌ En producción, ADMIN_PASSWORD debe tener al menos 12 caracteres");
+            throw new IllegalStateException(
+                    "❌ SEGURIDAD: En producción, ADMIN_PASSWORD debe tener al menos 12 caracteres");
+        }
+
+        if (!hasAdvancedPasswordSecurity(adminPassword)) {
+            throw new IllegalStateException("❌ SEGURIDAD: Contraseña no es suficientemente compleja para producción");
         }
 
         logger.info("✅ Validaciones de producción completadas");
+    }
+
+    private void debugPasswordConfiguration() {
+        // SOLO EN DESARROLLO - No mostrar contraseñas en producción
+        if (!isDevelopmentEnvironment()) {
+            return;
+        }
+
+        logger.info("🔍 [DEV] Verificando configuración de contraseña...");
+        logger.info("🔍 [DEV] Admin password longitud: {} caracteres",
+                adminPassword != null ? adminPassword.length() : 0);
+
+        if (adminPassword != null) {
+            String newHash = passwordEncoder.encode(adminPassword);
+            boolean hashWorks = passwordEncoder.matches(adminPassword, newHash);
+            logger.info("🔍 [DEV] Nuevo hash funciona: {}", hashWorks);
+        } else {
+            logger.warn("⚠️ [DEV] adminPassword es null!");
+        }
     }
 
     private void initRoles(RoleRepository roleRepository) {
@@ -144,13 +185,33 @@ public class DataInitializer {
         }
     }
 
-    private void initAdminUser(UserRepository userRepository, RoleRepository roleRepository,
-            PasswordEncoder passwordEncoder) {
-
+    private void initAdminUser(UserRepository userRepository, RoleRepository roleRepository) {
         logger.info("👑 Verificando usuario administrador...");
 
-        if (userRepository.findByUsername(adminUsername).isPresent()) {
+        var existingUserOpt = userRepository.findByUsername(adminUsername);
+        if (existingUserOpt.isPresent()) {
             logger.info("ℹ️ Usuario administrador ya existe (username): {}", adminUsername);
+
+            // ✅ VERIFICAR Y ACTUALIZAR CONTRASEÑA SI ES NECESARIO
+            User existingUser = existingUserOpt.get();
+            boolean currentPasswordMatches = passwordEncoder.matches(adminPassword, existingUser.getPassword());
+
+            if (!currentPasswordMatches) {
+                logger.warn("⚠️ ACTUALIZANDO contraseña del usuario admin existente");
+                String newHashedPassword = passwordEncoder.encode(adminPassword);
+                existingUser.setPassword(newHashedPassword);
+                userRepository.save(existingUser);
+                logger.info("✅ Contraseña del usuario admin actualizada");
+
+                // Verificar que la actualización funcionó (solo en dev)
+                if (isDevelopmentEnvironment()) {
+                    boolean updatedPasswordWorks = passwordEncoder.matches(adminPassword, newHashedPassword);
+                    logger.info("🔍 [DEV] Nueva contraseña funciona: {}", updatedPasswordWorks);
+                }
+            } else {
+                logger.info("✅ Contraseña del usuario admin ya está actualizada");
+            }
+
             return;
         }
 
@@ -169,10 +230,17 @@ public class DataInitializer {
         adminPronouns.add(User.Pronoun.ELLE);
         adminPronouns.add(User.Pronoun.ELLA);
 
-        User admin = User.builder()
+        String hashedPassword = passwordEncoder.encode(adminPassword);
+
+        if (isDevelopmentEnvironment()) {
+            boolean hashWorks = passwordEncoder.matches(adminPassword, hashedPassword);
+            logger.info("🔍 [DEV] Hash funciona correctamente: {}", hashWorks);
+        }
+
+        return User.builder()
                 .username(adminUsername)
                 .email(adminEmail)
-                .password(passwordEncoder.encode(adminPassword))
+                .password(hashedPassword)
                 .fullName("System Administrator")
                 .biography("Administrator user created automatically by the system")
                 .location("System")
@@ -180,9 +248,9 @@ public class DataInitializer {
                 .status(UserStatus.ACTIVE)
                 .roles(new HashSet<>())
                 .build();
+    }
 
-        int rolesAssigned = 0;
-
+    private void assignRolesToAdmin(User admin, RoleRepository roleRepository) {
         roleRepository.findByName(ROLE_ADMIN).ifPresentOrElse(
                 adminRole -> {
                     admin.getRoles().add(adminRole);
@@ -208,6 +276,7 @@ public class DataInitializer {
 
         User savedAdmin = userRepository.save(admin);
 
+    private void logAdminCreationResults(User savedAdmin) {
         logger.info("✅ Usuario administrador creado exitosamente");
         logger.info("👤 Username: {}", savedAdmin.getUsername());
         String emailToLog = savedAdmin.getEmail() != null ? maskEmail(savedAdmin.getEmail()) : "null";
@@ -215,12 +284,37 @@ public class DataInitializer {
         logger.info("🎭 Roles asignados: {} (USER, ORGANIZER, ADMIN)", rolesAssigned);
         logger.info("🏷️ Pronombres: {} (EL, ELLE, ELLA)", savedAdmin.getPronouns().size());
 
-        if ("dev".equals(activeProfile)) {
-            logger.warn("🔐 RECUERDA CAMBIAR LAS CREDENCIALES POR DEFECTO ANTES DE PRODUCCIÓN!");
+    private void initDefaultInviteCode(InviteCodeRepository inviteCodeRepository) {
+        // SOLO CREAR CÓDIGOS EN DESARROLLO
+        if (!isDevelopmentEnvironment()) {
+            logger.info("ℹ️ Omitiendo creación de código de invitación por defecto en entorno: {}", activeProfile);
+            return;
+        }
+
+        logger.info("🎫 Verificando código de invitación por defecto: {}", defaultInviteCode);
+
+        if (inviteCodeRepository.findByCode(defaultInviteCode).isEmpty()) {
+            logger.info("🏗️ Creando código de invitación por defecto: {}", defaultInviteCode);
+
+            InviteCode inviteCode = InviteCode.builder()
+                    .code(defaultInviteCode)
+                    .description("Código de invitación por defecto para desarrollo")
+                    .maxUses(1000)
+                    .currentUses(0)
+                    .status(InviteCode.InviteStatus.ACTIVE)
+                    .expiresAt(LocalDateTime.now().plusYears(1))
+                    .createdBy("system")
+                    .build();
+
+            inviteCodeRepository.save(inviteCode);
+            logger.info("✅ Código de invitación '{}' creado exitosamente", defaultInviteCode);
+        } else {
+            logger.info("ℹ️ Código de invitación '{}' ya existe", defaultInviteCode);
         }
     }
 
-    private void showInitializationStats(RoleRepository roleRepository, UserRepository userRepository) {
+    private void showInitializationStats(RoleRepository roleRepository, UserRepository userRepository,
+            InviteCodeRepository inviteCodeRepository) {
         long totalRoles = roleRepository.count();
         long totalUsers = userRepository.count();
         long adminUsers = userRepository.countByRoles_Name(ROLE_ADMIN);
@@ -234,8 +328,34 @@ public class DataInitializer {
         logger.info("🚀 Sistema inicializado correctamente para el perfil: {}", activeProfile);
     }
 
+    private void showSecurityWarnings() {
+        if (isDevelopmentEnvironment()) {
+            logger.warn("🔐 RECORDATORIO: Cambiar credenciales antes de PRODUCCIÓN!");
+            logger.warn("🔐 RECORDATORIO: Configurar HTTPS en producción");
+            logger.warn("🔐 RECORDATORIO: Configurar dominios reales en CORS");
+        }
+
+        if (isProductionEnvironment()) {
+            logger.info("🔒 PRODUCCIÓN: Configuración de seguridad aplicada");
+            logger.info("🔒 PRODUCCIÓN: BCrypt strength aumentado");
+            logger.info("🔒 PRODUCCIÓN: CORS restringido a HTTPS");
+        }
+    }
+
+    // ================================
+    // MÉTODOS DE VALIDACIÓN SEGURA
+    // ================================
+
     private boolean isValidEmail(String email) {
-        return email != null && email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
+        if (email == null || email.trim().isEmpty()) {
+            return false;
+        }
+
+        return email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$") &&
+                !email.contains("..") &&
+                !email.startsWith(".") &&
+                !email.endsWith(".") &&
+                email.length() <= 100;
     }
 
     private boolean isPasswordSecure(String password) {
@@ -251,9 +371,36 @@ public class DataInitializer {
         return hasLower && hasUpper && hasDigit && hasSymbol;
     }
 
+    private boolean hasAdvancedPasswordSecurity(String password) {
+        if (password == null || password.length() < 12) {
+            return false;
+        }
+
+        // ✅ Verificaciones adicionales para producción
+        boolean hasMultipleSymbols = password.chars().filter(ch -> "@$!%*?&".indexOf(ch) >= 0).count() >= 2;
+        boolean hasMultipleDigits = password.chars().filter(Character::isDigit).count() >= 2;
+        boolean noRepeatingChars = !password.matches(".*(.)\\1{2,}.*"); // No más de 2 caracteres consecutivos iguales
+        boolean noCommonPatterns = !password.toLowerCase().matches(".*(123|abc|qwe|password|admin).*");
+
+        return hasMultipleSymbols && hasMultipleDigits && noRepeatingChars && noCommonPatterns;
+    }
+
+    private boolean isProductionEnvironment() {
+        return "prod".equals(activeProfile) ||
+                "production".equals(activeProfile) ||
+                "prd".equals(activeProfile);
+    }
+
+    private boolean isDevelopmentEnvironment() {
+        return "dev".equals(activeProfile) ||
+                "development".equals(activeProfile) ||
+                "local".equals(activeProfile);
+    }
+
     private String maskEmail(String email) {
-        if (email == null || !email.contains("@"))
+        if (email == null || !email.contains("@")) {
             return email;
+        }
 
         String[] parts = email.split("@");
         String localPart = parts[0];

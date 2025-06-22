@@ -31,7 +31,6 @@ class LoginRequest {
 
 public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
 
-    // ✅ CONSTANTES PROPIAS (sin depender de SecurityConstants)
     private static final String HEADER_STRING = "Authorization";
     private static final String TOKEN_PREFIX = "Bearer ";
 
@@ -70,7 +69,6 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
         String accessToken = refreshTokenService.generateAccessToken(username);
         String refreshToken = refreshTokenService.generateRefreshToken(username);
 
-        // ✅ USAR CONSTANTES PROPIAS en lugar de SecurityConstants
         response.addHeader(HEADER_STRING, TOKEN_PREFIX + accessToken);
 
         Map<String, String> tokenMap = new HashMap<>();

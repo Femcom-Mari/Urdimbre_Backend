@@ -135,20 +135,49 @@ public class AuthServiceImpl implements AuthService {
     public AuthResponseDTO login(AuthRequestDTO dto) {
         logger.info("Iniciando login para: {}", dto.getUsername());
 
-        Optional<User> optionalUser = userRepository.findByUsername(dto.getUsername());
-        if (optionalUser.isEmpty() && dto.getUsername().contains("@")) {
-            optionalUser = userRepository.findByEmail(dto.getUsername());
+        if (dto.getUsername() == null || dto.getUsername().trim().isEmpty()) {
+            logger.warn("Username/email vacío en login");
+            throw new BadCredentialsException("Username o email es requerido");
         }
 
-        if (optionalUser.isEmpty() ||
-                !passwordEncoder.matches(dto.getPassword(), optionalUser.get().getPassword())) {
+        if (dto.getPassword() == null || dto.getPassword().trim().isEmpty()) {
+            logger.warn("Password vacía en login para usuario: {}", dto.getUsername());
+            throw new BadCredentialsException("Contraseña es requerida");
+        }
+
+        Optional<User> optionalUser = userRepository.findByUsername(dto.getUsername());
+        logger.debug("Usuario encontrado por username: {}", optionalUser.isPresent());
+
+        if (optionalUser.isEmpty() && dto.getUsername().contains("@")) {
+            optionalUser = userRepository.findByEmail(dto.getUsername());
+            logger.debug("Usuario encontrado por email: {}", optionalUser.isPresent());
+        }
+
+        if (optionalUser.isEmpty()) {
+            logger.warn("Usuario no encontrado: {}", dto.getUsername());
             throw new BadCredentialsException("Credenciales inválidas");
         }
 
         User user = optionalUser.get();
 
+        boolean passwordMatches = passwordEncoder.matches(dto.getPassword(), user.getPassword());
+        logger.debug("Password matches para usuario {}: {}", dto.getUsername(), passwordMatches);
+
+        if (!passwordMatches) {
+            logger.warn("Contraseña incorrecta para usuario: {}", dto.getUsername());
+            throw new BadCredentialsException("Credenciales inválidas");
+        }
+
+        if (user.getStatus() != User.UserStatus.ACTIVE) {
+            logger.warn("Usuario {} no está activo. Estado: {}", dto.getUsername(), user.getStatus());
+            throw new BadCredentialsException("Usuario inactivo");
+        }
+
+        logger.info("Generando tokens para usuario: {}", user.getUsername());
         String accessToken = refreshTokenService.generateAccessToken(user.getUsername());
         String refreshToken = refreshTokenService.generateRefreshToken(user.getUsername());
+
+        logger.info("Login exitoso para usuario: {}", user.getUsername());
 
         return AuthResponseDTO.builder()
                 .accessToken(accessToken)

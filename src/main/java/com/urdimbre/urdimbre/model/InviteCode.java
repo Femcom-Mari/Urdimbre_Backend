@@ -64,7 +64,7 @@ public class InviteCode {
     private String createdBy;
 
     @Column(name = "used_by")
-    private String usedBy; // Último usuario que lo usó
+    private String usedBy;
 
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -92,7 +92,6 @@ public class InviteCode {
         this.currentUses++;
         this.usedBy = usedByUser;
 
-        // Si se alcanzó el máximo, marcar como usado
         if (maxUses != null && currentUses >= maxUses) {
             this.status = InviteStatus.EXHAUSTED;
         }

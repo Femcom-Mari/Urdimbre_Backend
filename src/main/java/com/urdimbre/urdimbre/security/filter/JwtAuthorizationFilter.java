@@ -34,11 +34,9 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
     private final UserDetailsService userDetailsService;
     private final RefreshTokenService refreshTokenService;
 
-    // Constantes propias del filtro (sin depender de SecurityConstants)
     private static final String TOKEN_PREFIX = "Bearer ";
     private static final String HEADER_STRING = "Authorization";
 
-    // Rutas que NO requieren autenticación
     private static final List<String> PUBLIC_PATHS = Arrays.asList(
             "/api/auth/register",
             "/api/auth/login",
@@ -85,7 +83,7 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
 
         if (token != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             try {
-                // ✅ MÉTODO MEJORADO: Procesar token JWT completo
+
                 processJwtToken(token, request);
 
             } catch (Exception e) {
@@ -98,12 +96,9 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    /**
-     * ✅ NUEVO MÉTODO: Procesar token JWT y extraer authorities
-     */
     private void processJwtToken(String token, HttpServletRequest request) {
         try {
-            // 🔍 DECODIFICAR JWT PARA EXTRAER CLAIMS
+
             DecodedJWT decodedJWT = decodeJwtToken(token);
 
             if (decodedJWT == null) {
@@ -118,28 +113,25 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
                 return;
             }
 
-            // ✅ VALIDAR ACCESS TOKEN (NO REFRESH TOKEN)
             if (!refreshTokenService.validateAccessToken(token)) {
                 log.warn("Invalid JWT access token for user: {}", username);
                 return;
             }
 
-            // ✅ EXTRAER AUTHORITIES DEL TOKEN JWT
             Collection<GrantedAuthority> authorities = extractAuthoritiesFromToken(decodedJWT);
 
             if (authorities.isEmpty()) {
-                // ✅ FALLBACK: Cargar desde UserDetailsService si no hay authorities en el token
+
                 log.debug("No authorities in token, loading from UserDetailsService for user: {}", username);
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
                 authorities = userDetails.getAuthorities().stream()
                         .collect(Collectors.toList());
             }
 
-            // ✅ CREAR AUTHENTICATION CON AUTHORITIES DEL TOKEN
             UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                     username, // Principal: solo el username
                     null, // Credentials: null para JWT
-                    authorities); // ✅ Authorities extraídas del token
+                    authorities); // Authorities extraídas del token
 
             authentication.setDetails(
                     new WebAuthenticationDetailsSource().buildDetails(request));
@@ -153,13 +145,9 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
         }
     }
 
-    /**
-     * 🔍 NUEVO MÉTODO: Decodificar JWT token
-     */
     private DecodedJWT decodeJwtToken(String token) {
         try {
-            // ✅ USAR EL MISMO ALGORITMO QUE EL RefreshTokenService
-            // Nota: Idealmente esto debería estar en un servicio compartido
+
             return JWT.decode(token); // Decodificación básica sin verificación
 
         } catch (Exception e) {

@@ -42,19 +42,13 @@ public class InviteCodeServiceImpl implements InviteCodeService {
     private static final int DEFAULT_CODE_LENGTH = 12;
     private static final int MAX_ACTIVE_CODES_PER_USER = 50;
 
-    // ✅ Constructor injection para dependencias normales
     private final InviteCodeRepository inviteCodeRepository;
     private final SecureRandom secureRandom = new SecureRandom();
 
-    // ✅ Self-injection: Field injection necesario para evitar dependencia circular
-    @SuppressWarnings("java:S6813") // SonarQube: Field injection requerido para self-injection
+    @SuppressWarnings("java:S6813")
     @Autowired
     @Lazy
     private InviteCodeService self;
-
-    // ===================================================
-    // MÉTODOS PÚBLICOS DE LA INTERFAZ
-    // ===================================================
 
     @Override
     @Transactional(readOnly = true)
@@ -216,13 +210,11 @@ public class InviteCodeServiceImpl implements InviteCodeService {
 
         LocalDateTime now = LocalDateTime.now();
 
-        // Marcar códigos expirados
         List<InviteCode> expiredCodes = findExpiredCodes();
         expiredCodes.forEach(code -> code.setStatus(InviteStatus.EXPIRED));
         inviteCodeRepository.saveAll(expiredCodes);
         int markedExpired = expiredCodes.size();
 
-        // Eliminar códigos muy antiguos
         LocalDateTime cutoff = now.minusDays(30);
         List<InviteCode> oldExpiredCodes = inviteCodeRepository
                 .findByStatusAndCreatedAtBefore(InviteStatus.EXPIRED, cutoff);
@@ -263,7 +255,6 @@ public class InviteCodeServiceImpl implements InviteCodeService {
     public Page<InviteCodeResponseDTO> searchCodes(String searchTerm, Pageable pageable) {
         logger.debug("🔍 Buscando códigos con término: {}", searchTerm);
 
-        // ✅ Usar 'self' para llamadas internas a métodos transaccionales
         if (searchTerm == null || searchTerm.trim().isEmpty()) {
             return self.getAllCodes(pageable);
         }
@@ -273,16 +264,12 @@ public class InviteCodeServiceImpl implements InviteCodeService {
                 .map(this::mapToResponseDTO);
     }
 
-    // ===================================================
-    // MÉTODOS PROGRAMADOS (SCHEDULED)
-    // ===================================================
-
-    @Scheduled(fixedRate = 3600000) // Cada hora
+    @Scheduled(fixedRate = 3600000)
     public void scheduledCleanupExpiredCodes() {
         logger.debug("🧹 Limpieza automática...");
 
         try {
-            // ✅ Usar 'self' para que la transacción funcione correctamente
+
             int cleaned = self.manualCleanup();
             if (cleaned > 0) {
                 logger.info("🧹 Limpieza automática: {} códigos procesados", cleaned);
@@ -291,10 +278,6 @@ public class InviteCodeServiceImpl implements InviteCodeService {
             logger.error("❌ Error en limpieza automática: {}", e.getMessage(), e);
         }
     }
-
-    // ===================================================
-    // MÉTODOS PRIVADOS DE VALIDACIÓN Y UTILIDADES
-    // ===================================================
 
     private Optional<InviteCode> findValidByCode(String code) {
         Optional<InviteCode> inviteCode = inviteCodeRepository.findByCodeAndStatus(code, InviteStatus.ACTIVE);
@@ -306,12 +289,10 @@ public class InviteCodeServiceImpl implements InviteCodeService {
         InviteCode invite = inviteCode.get();
         LocalDateTime now = LocalDateTime.now();
 
-        // Verificar si está expirado
         if (invite.getExpiresAt().isBefore(now)) {
             return Optional.empty();
         }
 
-        // Verificar si ya alcanzó el máximo de usos
         if (invite.getMaxUses() != null && invite.getCurrentUses() >= invite.getMaxUses()) {
             return Optional.empty();
         }

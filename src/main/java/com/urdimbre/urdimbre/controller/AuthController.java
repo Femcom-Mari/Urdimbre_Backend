@@ -465,10 +465,6 @@ public class AuthController {
         }
     }
 
-    // ===================================================
-    // MÉTODOS PRIVADOS DE VALIDACIÓN Y UTILIDADES
-    // ===================================================
-
     private String getSpecificInviteCodeError(String code) {
         try {
             Optional<InviteCode> optionalCode = inviteCodeService.findByCode(code);
@@ -520,12 +516,11 @@ public class AuthController {
     }
 
     private void validateRegistrationDataWithSpecificErrors(UserRegisterDTO request) {
-        // Validar username duplicado
+
         if (userRepository.findByUsername(request.getUsername()).isPresent()) {
             throw new BadRequestException("El nombre de usuario '" + request.getUsername() + "' ya está en uso");
         }
 
-        // Validar email duplicado
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new BadRequestException("El email '" + request.getEmail() + "' ya está registrado");
         }

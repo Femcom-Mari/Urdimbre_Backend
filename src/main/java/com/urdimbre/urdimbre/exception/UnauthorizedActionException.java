@@ -1,0 +1,7 @@
+package com.urdimbre.urdimbre.exception;
+
+public class UnauthorizedActionException extends RuntimeException{
+    public UnauthorizedActionException(String message) {
+        super(message);
+    }
+}

@@ -111,7 +111,6 @@ public class Professional {
         ACTIVE, INACTIVE, DELETED
     }
 
-    // ✅ ENUM SIN CAMBIOS
     public enum Pronoun {
         ELLE("Elle"),
         ELLA("Ella"),
