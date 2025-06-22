@@ -1,7 +1,9 @@
 package com.urdimbre.urdimbre.model;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.springframework.data.annotation.CreatedBy;
@@ -26,6 +28,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.AllArgsConstructor;
@@ -103,6 +106,18 @@ public class User {
     @LastModifiedBy
     @Column(name = "last_modified_by")
     private String lastModifiedBy;
+
+    @OneToMany(mappedBy = "user")
+    @Builder.Default
+    private List<Attendance> attendances = new ArrayList<>();
+
+    @OneToMany(mappedBy = "creator")
+    @Builder.Default
+    private List<ActivitiesUrdimbre> createdActivities = new ArrayList<>();
+
+    @OneToMany(mappedBy = "creator")
+    @Builder.Default
+    private List<Event> createdEvents = new ArrayList<>();
 
     public boolean isEnabled() {
         return this.status == UserStatus.ACTIVE;

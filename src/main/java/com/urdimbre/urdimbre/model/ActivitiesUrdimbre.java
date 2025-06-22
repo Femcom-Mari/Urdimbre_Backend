@@ -27,6 +27,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -34,6 +35,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
+@Builder
 @Table(name = "activities_urdimbre")
 public class ActivitiesUrdimbre {
 
@@ -84,8 +86,8 @@ public class ActivitiesUrdimbre {
     private List<Attendance> attendances;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "created_by_id")
-    private User createdBy;
+    @JoinColumn(name = "creator_id")
+    private User creator;
 
     private LocalDateTime createdAt;
 

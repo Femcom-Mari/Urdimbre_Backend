@@ -65,7 +65,7 @@ public class DashboardServiceImpl implements DashboardService {
 
                 List<ActivitiesUrdimbre> activities = isAdmin
                                 ? activitiesRepository.findAll()
-                                : activitiesRepository.findByCreatedBy_Username(userContext.getUsername());
+                                : activitiesRepository.findByCreator_Username(userContext.getUsername());
 
                 long upcomingActivities = activities.stream()
                                 .filter(activity -> !activity.getDate().isBefore(LocalDate.now()))
@@ -95,7 +95,7 @@ public class DashboardServiceImpl implements DashboardService {
 
                 List<ActivitiesUrdimbre> activities = isAdmin
                                 ? activitiesRepository.findAll()
-                                : activitiesRepository.findByCreatedBy_Username(userContext.getUsername());
+                                : activitiesRepository.findByCreator_Username(userContext.getUsername());
 
                 List<ActivitiesUrdimbreResponseDTO> recentActivities = activities.stream()
                                 .sorted((a, b) -> {
@@ -142,7 +142,7 @@ public class DashboardServiceImpl implements DashboardService {
         public ActivitiesOverviewDTO getOrganizerStats(String username) {
                 log.debug("👤 Obteniendo estadísticas para organizador: {}", username);
 
-                List<ActivitiesUrdimbre> organizerActivities = activitiesRepository.findByCreatedBy_Username(username);
+                List<ActivitiesUrdimbre> organizerActivities = activitiesRepository.findByCreator_Username(username);
 
                 long upcomingActivities = organizerActivities.stream()
                                 .filter(activity -> !activity.getDate().isBefore(LocalDate.now()))
@@ -193,7 +193,7 @@ public class DashboardServiceImpl implements DashboardService {
                                                 : null)
                                 .currentAttendees(confirmedCount)
                                 .availableSpots(availableSpots)
-                                .createdBy(activity.getCreatedBy().getUsername())
+                                .creator(activity.getCreator().getUsername())
                                 .createdAt(activity.getCreatedAt())
                                 .build();
         }

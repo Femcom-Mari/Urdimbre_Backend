@@ -1,5 +1,6 @@
 package com.urdimbre.urdimbre.controller;
 
+import java.security.Principal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -129,10 +130,11 @@ public class ActivitiesUrdimbreController {
     @ApiResponse(responseCode = "400", description = "Datos de actividad inválidos", content = @Content)
     @ApiResponse(responseCode = "403", description = "Sin permisos para crear actividades - Requiere rol ORGANIZER o ADMIN", content = @Content)
     public ResponseEntity<ActivitiesUrdimbreResponseDTO> createActivity(
-            @Parameter(description = "Datos de la nueva actividad") @Valid @RequestBody ActivitiesUrdimbreRequestDTO dto) {
+            @Parameter(description = "Datos de la nueva actividad") @Valid @RequestBody ActivitiesUrdimbreRequestDTO dto, Principal principal) {
 
         log.info("✨ Creando nueva actividad: {}", dto.getTitle());
-        ActivitiesUrdimbreResponseDTO createdActivity = activitiesUrdimbreService.createActivitiesUrdimbre(dto);
+        String username = principal.getName();
+        ActivitiesUrdimbreResponseDTO createdActivity = activitiesUrdimbreService.createActivitiesUrdimbre(dto, username);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdActivity);
     }
 

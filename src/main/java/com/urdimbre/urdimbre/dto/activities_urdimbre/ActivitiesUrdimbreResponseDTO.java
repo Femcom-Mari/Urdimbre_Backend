@@ -38,8 +38,9 @@ public class ActivitiesUrdimbreResponseDTO {
     private Integer maxAttendees;
     private Integer currentAttendees;
 
-    // ✅ Campos adicionales para el dashboard
     private Integer availableSpots;
-    private String createdBy;
+
+    private String creator;
+    
     private LocalDateTime createdAt;
 }

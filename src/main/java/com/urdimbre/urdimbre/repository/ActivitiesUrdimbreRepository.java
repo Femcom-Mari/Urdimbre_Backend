@@ -13,7 +13,9 @@ import org.springframework.stereotype.Repository;
 
 import com.urdimbre.urdimbre.model.ActivitiesUrdimbre;
 import com.urdimbre.urdimbre.model.Category;
+import com.urdimbre.urdimbre.model.Event;
 import com.urdimbre.urdimbre.model.Language;
+import com.urdimbre.urdimbre.model.User;
 
 @Repository
 public interface ActivitiesUrdimbreRepository extends JpaRepository<ActivitiesUrdimbre, Long> {
@@ -37,7 +39,8 @@ public interface ActivitiesUrdimbreRepository extends JpaRepository<ActivitiesUr
         // ================================
         // MÉTODOS ADICIONALES (sin All)
         // ================================
-
+        List<Event> findByCreator(User creator);
+        
         List<ActivitiesUrdimbre> findByCategory(Category category);
 
         Page<ActivitiesUrdimbre> findByCategory(Category category, Pageable pageable);
@@ -97,10 +100,10 @@ public interface ActivitiesUrdimbreRepository extends JpaRepository<ActivitiesUr
         long countByDateBetween(LocalDate startDate, LocalDate endDate);
 
         // Buscar actividades por creador
-        List<ActivitiesUrdimbre> findByCreatedBy_Username(String username);
+        List<ActivitiesUrdimbre> findByCreator_Username(String username);
 
         // Buscar actividades por creador ordenadas por fecha
-        List<ActivitiesUrdimbre> findByCreatedBy_UsernameOrderByDateDesc(String username);
+        List<ActivitiesUrdimbre> findByCreator_UsernameOrderByDateDesc(String username);
 
         // ================================
         // CONSULTAS @Query NECESARIAS

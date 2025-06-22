@@ -9,7 +9,7 @@ import com.urdimbre.urdimbre.model.Language;
 
 public interface ActivitiesUrdimbreService {
 
-    ActivitiesUrdimbreResponseDTO createActivitiesUrdimbre(ActivitiesUrdimbreRequestDTO activityUrdimbreDTO);
+    ActivitiesUrdimbreResponseDTO createActivitiesUrdimbre(ActivitiesUrdimbreRequestDTO activityUrdimbreDTO, String creatorUsername);
 
     List<ActivitiesUrdimbreResponseDTO> getActivitiesByCategory(String category);
 
