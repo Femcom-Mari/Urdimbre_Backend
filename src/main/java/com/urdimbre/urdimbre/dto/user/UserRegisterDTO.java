@@ -44,7 +44,6 @@ public class UserRegisterDTO {
     @Email(message = "El formato del email no es válido")
     private String email;
 
-    // ✅ IMPORTANTE: Sin @NotBlank para permitir que ADMIN no lo envíe
     private String inviteCode;
 
     public String getFullName() {
@@ -58,7 +57,6 @@ public class UserRegisterDTO {
         return username;
     }
 
-    // ✅ MANTENER AMBOS MÉTODOS PARA COMPATIBILIDAD
     public String getInvitationCode() {
         return inviteCode;
     }

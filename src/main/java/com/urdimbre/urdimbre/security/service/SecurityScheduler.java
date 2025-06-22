@@ -79,7 +79,7 @@ public class SecurityScheduler {
     public void logSecurityStatistics() {
         try {
             if (!"dev".equals(activeProfile)) {
-                return; // Solo en desarrollo
+                return;
             }
 
             logger.info("📊 === ESTADÍSTICAS DE SEGURIDAD ===");

@@ -19,7 +19,6 @@ public class SystemStatsDTO {
     private long pendingAttendances;
     private long activitiesThisMonth;
 
-    // ✅ Métodos de utilidad para estadísticas
     public double getAttendanceRate() {
         return totalAttendances > 0 ? (double) confirmedAttendances / totalAttendances * 100 : 0.0;
     }

@@ -69,7 +69,6 @@ public class User {
     @Column(name = "profile_image_url")
     private String profileImageUrl;
 
-    // ✅ MÚLTIPLES PRONOMBRES CON VALIDACIÓN MÍNIMA
     @ElementCollection(targetClass = Pronoun.class, fetch = FetchType.EAGER)
     @Enumerated(EnumType.STRING)
     @CollectionTable(name = "user_pronouns", joinColumns = @JoinColumn(name = "user_id"))
@@ -86,10 +85,6 @@ public class User {
     @JoinTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
     @Builder.Default
     private Set<Role> roles = new HashSet<>();
-
-    // ========================================
-    // AUDITORÍA COMPLETA
-    // ========================================
 
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)

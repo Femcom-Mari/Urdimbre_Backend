@@ -117,7 +117,6 @@ public class UserController {
         return ResponseEntity.ok(updatedUser);
     }
 
-    // ENDPOINT PARA CAMBIAR ROLES - SOLO ADMIN
     @PutMapping("/{id}/roles")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Actualizar roles de usuario", description = "Permite al ADMIN cambiar los roles de un usuario")

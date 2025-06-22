@@ -22,10 +22,6 @@ public interface ActivitiesUrdimbreRepository extends JpaRepository<ActivitiesUr
 
         Optional<ActivitiesUrdimbre> findByTitle(String title);
 
-        // ================================
-        // MÉTODOS QUE USA TU SERVICIO (con All)
-        // ================================
-
         List<ActivitiesUrdimbre> findAllByCategoryOrderByDateAsc(Category category);
 
         List<ActivitiesUrdimbre> findAllByDate(LocalDate date);
@@ -36,11 +32,8 @@ public interface ActivitiesUrdimbreRepository extends JpaRepository<ActivitiesUr
 
         List<ActivitiesUrdimbre> findAllByTitleContainingIgnoreCase(String title);
 
-        // ================================
-        // MÉTODOS ADICIONALES (sin All)
-        // ================================
         List<Event> findByCreator(User creator);
-        
+
         List<ActivitiesUrdimbre> findByCategory(Category category);
 
         Page<ActivitiesUrdimbre> findByCategory(Category category, Pageable pageable);
@@ -79,10 +72,6 @@ public interface ActivitiesUrdimbreRepository extends JpaRepository<ActivitiesUr
 
         List<ActivitiesUrdimbre> findByCategoryOrderByDateAsc(Category category);
 
-        // ================================
-        // MÉTODOS DE EXISTENCIA Y CONTEO
-        // ================================
-
         boolean existsByDate(LocalDate date);
 
         boolean existsByTitle(String title);
@@ -99,15 +88,9 @@ public interface ActivitiesUrdimbreRepository extends JpaRepository<ActivitiesUr
 
         long countByDateBetween(LocalDate startDate, LocalDate endDate);
 
-        // Buscar actividades por creador
         List<ActivitiesUrdimbre> findByCreator_Username(String username);
 
-        // Buscar actividades por creador ordenadas por fecha
         List<ActivitiesUrdimbre> findByCreator_UsernameOrderByDateDesc(String username);
-
-        // ================================
-        // CONSULTAS @Query NECESARIAS
-        // ================================
 
         @Query("SELECT a FROM ActivitiesUrdimbre a WHERE a.maxAttendees > " +
                         "(SELECT COUNT(att) FROM Attendance att WHERE att.activityId = a AND att.status = 'CONFIRMED')")

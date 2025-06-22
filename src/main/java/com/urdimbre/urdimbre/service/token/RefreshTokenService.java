@@ -179,7 +179,7 @@ public class RefreshTokenService {
 
             String refreshToken = JWT.create()
                     .withSubject(username)
-                    .withIssuer(jwtIssuer) // ✅ CORREGIDO: Añadido issuer
+                    .withIssuer(jwtIssuer)
                     .withClaim("tokenId", tokenId)
                     .withClaim("type", "refresh")
                     .withIssuedAt(new Date())

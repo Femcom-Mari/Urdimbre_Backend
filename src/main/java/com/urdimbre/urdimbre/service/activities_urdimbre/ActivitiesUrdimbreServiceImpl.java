@@ -33,22 +33,21 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ActivitiesUrdimbreServiceImpl implements ActivitiesUrdimbreService {
 
-        // ✅ Constante para evitar duplicación de strings
         private static final String ACTIVITY_NOT_FOUND_MESSAGE = "Actividad no encontrada con id: ";
 
         private final ActivitiesUrdimbreRepository activitiesUrdimbreRepository;
         private final AttendanceRepository attendanceRepository;
         private final UserRepository userRepository;
 
-
         @Override
-        public ActivitiesUrdimbreResponseDTO createActivitiesUrdimbre(ActivitiesUrdimbreRequestDTO dto,String creatorUsername) {
+        public ActivitiesUrdimbreResponseDTO createActivitiesUrdimbre(ActivitiesUrdimbreRequestDTO dto,
+                        String creatorUsername) {
                 log.info("🎨 Creando nueva actividad: {}", dto.getTitle());
                 User createdBy = getUser(creatorUsername);
                 ActivitiesUrdimbre activity = mapToEntity(dto, createdBy);
                 ActivitiesUrdimbre saved = activitiesUrdimbreRepository.save(activity);
                 log.info("✅ Actividad creada exitosamente - ID: {}", saved.getId());
-                return convertToDto(saved); 
+                return convertToDto(saved);
         }
 
         @Override
@@ -93,7 +92,6 @@ public class ActivitiesUrdimbreServiceImpl implements ActivitiesUrdimbreService 
                                 .toList();
         }
 
-        // Método sin parámetros requerido por la interfaz
         @Override
         public List<ActivitiesUrdimbreResponseDTO> getUpcomingActivities() {
                 log.info("🔮 Obteniendo actividades futuras (sin parámetros)");
@@ -104,7 +102,6 @@ public class ActivitiesUrdimbreServiceImpl implements ActivitiesUrdimbreService 
                                 .toList();
         }
 
-        // Método con parámetros de paginación (sobrecarga)
         @Override
         public List<ActivitiesUrdimbreResponseDTO> getUpcomingActivities(int days, int page, int size) {
                 log.info("🔮 Obteniendo actividades futuras para {} días (página: {}, tamaño: {})", days, page, size);
@@ -150,10 +147,8 @@ public class ActivitiesUrdimbreServiceImpl implements ActivitiesUrdimbreService 
                                 .orElseThrow(() -> new ActivityNotFoundException(
                                                 ACTIVITY_NOT_FOUND_MESSAGE + activityId));
 
-                // Eliminar asistencias relacionadas primero
                 attendanceRepository.deleteByActivityId_Id(activityId);
 
-                // Eliminar la actividad
                 activitiesUrdimbreRepository.delete(activity);
 
                 log.info("✅ Actividad eliminada exitosamente");
@@ -168,71 +163,64 @@ public class ActivitiesUrdimbreServiceImpl implements ActivitiesUrdimbreService 
                                                 ACTIVITY_NOT_FOUND_MESSAGE + activityId));
 
                 updateEntityFromDTO(activity, dto);
-                
+
                 ActivitiesUrdimbre saved = activitiesUrdimbreRepository.save(activity);
                 log.info("✅ Actividad actualizada exitosamente");
 
                 return convertToDto(saved);
         }
 
-
-
-
-
-
-
-
-    private User getUser(String username) {
-        return userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "Username", username));
-    }
+        private User getUser(String username) {
+                return userRepository.findByUsername(username)
+                                .orElseThrow(() -> new ResourceNotFoundException("User", "Username", username));
+        }
 
         private ActivitiesUrdimbre mapToEntity(ActivitiesUrdimbreRequestDTO dto, User creator) {
-    return ActivitiesUrdimbre.builder()
-            .category(dto.getCategory())
-            .title(dto.getTitle())
-            .description(dto.getDescription())
-            .language(dto.getLanguage())
-            .date(dto.getDate())
-            .startTime(LocalTime.parse(dto.getStartTime()))
-            .endTime(LocalTime.parse(dto.getEndTime()))
-            .maxAttendees(dto.getMaxAttendees() != null ? dto.getMaxAttendees().longValue() : null)
-            .creator(creator)
-            .createdAt(LocalDateTime.now())
-            .build();
-}
+                return ActivitiesUrdimbre.builder()
+                                .category(dto.getCategory())
+                                .title(dto.getTitle())
+                                .description(dto.getDescription())
+                                .language(dto.getLanguage())
+                                .date(dto.getDate())
+                                .startTime(LocalTime.parse(dto.getStartTime()))
+                                .endTime(LocalTime.parse(dto.getEndTime()))
+                                .maxAttendees(dto.getMaxAttendees() != null ? dto.getMaxAttendees().longValue() : null)
+                                .creator(creator)
+                                .createdAt(LocalDateTime.now())
+                                .build();
+        }
 
-private void updateEntityFromDTO(ActivitiesUrdimbre activity, ActivitiesUrdimbreRequestDTO dto) {
-    activity.setCategory(dto.getCategory());
-    activity.setTitle(dto.getTitle());
-    activity.setDescription(dto.getDescription());
-    activity.setLanguage(dto.getLanguage());
-    activity.setDate(dto.getDate());
-    activity.setStartTime(LocalTime.parse(dto.getStartTime()));
-    activity.setEndTime(LocalTime.parse(dto.getEndTime()));
-    activity.setMaxAttendees(dto.getMaxAttendees() != null ? dto.getMaxAttendees().longValue() : null);
-}
+        private void updateEntityFromDTO(ActivitiesUrdimbre activity, ActivitiesUrdimbreRequestDTO dto) {
+                activity.setCategory(dto.getCategory());
+                activity.setTitle(dto.getTitle());
+                activity.setDescription(dto.getDescription());
+                activity.setLanguage(dto.getLanguage());
+                activity.setDate(dto.getDate());
+                activity.setStartTime(LocalTime.parse(dto.getStartTime()));
+                activity.setEndTime(LocalTime.parse(dto.getEndTime()));
+                activity.setMaxAttendees(dto.getMaxAttendees() != null ? dto.getMaxAttendees().longValue() : null);
+        }
 
-private ActivitiesUrdimbreResponseDTO convertToDto(ActivitiesUrdimbre activity) {
-    Long currentAttendees = attendanceRepository.countByActivityId_IdAndStatus(
-            activity.getId(),
-            com.urdimbre.urdimbre.model.AttendanceStatus.CONFIRMED);
+        private ActivitiesUrdimbreResponseDTO convertToDto(ActivitiesUrdimbre activity) {
+                Long currentAttendees = attendanceRepository.countByActivityId_IdAndStatus(
+                                activity.getId(),
+                                com.urdimbre.urdimbre.model.AttendanceStatus.CONFIRMED);
 
-
-    return ActivitiesUrdimbreResponseDTO.builder()
-            .id(activity.getId())
-            .category(activity.getCategory())
-            .title(activity.getTitle())
-            .description(activity.getDescription())
-            .language(activity.getLanguage())
-            .date(activity.getDate())
-            .startTime(activity.getStartTime())
-            .endTime(activity.getEndTime())
-            .maxAttendees(activity.getMaxAttendees() != null ? activity.getMaxAttendees().intValue() : null)
-            .currentAttendees(currentAttendees.intValue())
-            .createdAt(activity.getCreatedAt())
-            .creator(activity.getCreator() != null ? activity.getCreator().getUsername() : null)
-            .build();
-}
+                return ActivitiesUrdimbreResponseDTO.builder()
+                                .id(activity.getId())
+                                .category(activity.getCategory())
+                                .title(activity.getTitle())
+                                .description(activity.getDescription())
+                                .language(activity.getLanguage())
+                                .date(activity.getDate())
+                                .startTime(activity.getStartTime())
+                                .endTime(activity.getEndTime())
+                                .maxAttendees(activity.getMaxAttendees() != null ? activity.getMaxAttendees().intValue()
+                                                : null)
+                                .currentAttendees(currentAttendees.intValue())
+                                .createdAt(activity.getCreatedAt())
+                                .creator(activity.getCreator() != null ? activity.getCreator().getUsername() : null)
+                                .build();
+        }
 
 }

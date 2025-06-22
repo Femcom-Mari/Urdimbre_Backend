@@ -98,7 +98,7 @@ public class SecurityConfig {
                                                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
                                 .authorizeHttpRequests(auth -> auth
-                                                // ENDPOINTS PÚBLICOS
+
                                                 .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                                                 .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
                                                 .requestMatchers(HttpMethod.POST, "/api/auth/refresh").permitAll()
@@ -113,7 +113,6 @@ public class SecurityConfig {
                                                 .requestMatchers("/actuator/health").permitAll()
                                                 .requestMatchers("/error").permitAll()
 
-                                                // ENDPOINTS DE DESARROLLO
                                                 .requestMatchers("/api/dev/**")
                                                 .access((authentication, context) -> isDevelopmentEnvironmentDecision())
                                                 .requestMatchers("/actuator/**")
@@ -121,19 +120,16 @@ public class SecurityConfig {
                                                 .requestMatchers("/api/test/**")
                                                 .access((authentication, context) -> isDevelopmentEnvironmentDecision())
 
-                                                // ENDPOINTS SOLO PARA ADMIN
                                                 .requestMatchers("/api/admin/**").hasRole(ROLE_ADMIN)
                                                 .requestMatchers("/api/roles/**").hasRole(ROLE_ADMIN)
                                                 .requestMatchers("/api/auth/rate-limit-stats").hasRole(ROLE_ADMIN)
                                                 .requestMatchers("/api/invite-codes/**").hasRole(ROLE_ADMIN)
 
-                                                // DASHBOARD ENDPOINTS
                                                 .requestMatchers("/api/dashboard/**")
                                                 .hasAnyRole(ROLE_ORGANIZER, ROLE_ADMIN)
                                                 .requestMatchers("/api/dashboard")
                                                 .hasAnyRole(ROLE_ORGANIZER, ROLE_ADMIN)
 
-                                                // PROFESSIONALS ENDPOINTS
                                                 .requestMatchers(HttpMethod.GET, "/api/professionals")
                                                 .hasAnyRole(ROLE_USER, ROLE_ORGANIZER, ROLE_ADMIN)
                                                 .requestMatchers(HttpMethod.GET, PROFESSIONALS_API_PATTERN)
@@ -147,7 +143,6 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.DELETE, PROFESSIONALS_API_PATTERN)
                                                 .hasRole(ROLE_ADMIN)
 
-                                                // ACTIVITIES ENDPOINTS
                                                 .requestMatchers(HttpMethod.GET, "/api/activities")
                                                 .hasAnyRole(ROLE_USER, ROLE_ORGANIZER, ROLE_ADMIN)
                                                 .requestMatchers(HttpMethod.GET, ACTIVITIES_API_PATTERN)
@@ -161,7 +156,6 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.DELETE, ACTIVITIES_API_PATTERN)
                                                 .hasAnyRole(ROLE_ORGANIZER, ROLE_ADMIN)
 
-                                                // ATTENDANCE ENDPOINTS
                                                 .requestMatchers(HttpMethod.GET, "/api/attendance")
                                                 .hasAnyRole(ROLE_USER, ROLE_ORGANIZER, ROLE_ADMIN)
                                                 .requestMatchers(HttpMethod.GET, ATTENDANCE_API_PATTERN)
@@ -175,7 +169,6 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.DELETE, ATTENDANCE_API_PATTERN)
                                                 .hasAnyRole(ROLE_ORGANIZER, ROLE_ADMIN)
 
-                                                // USER ENDPOINTS
                                                 .requestMatchers(HttpMethod.GET, "/api/users/me").authenticated()
                                                 .requestMatchers(HttpMethod.GET, USERS_API_PATTERN).authenticated()
                                                 .requestMatchers(HttpMethod.POST, "/api/users").hasRole(ROLE_ADMIN)
@@ -183,7 +176,6 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.DELETE, USERS_API_PATTERN)
                                                 .hasRole(ROLE_ADMIN)
 
-                                                // ENDPOINTS AUTENTICADOS
                                                 .requestMatchers(HttpMethod.POST, "/api/auth/logout").authenticated()
 
                                                 .anyRequest().authenticated())

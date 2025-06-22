@@ -17,7 +17,6 @@ public class UsersSummaryDTO {
     private long totalUsers;
     private long totalAllUsers;
 
-    // ✅ Métodos de utilidad para porcentajes
     public double getAdminPercentage() {
         return totalAllUsers > 0 ? (double) totalAdmins / totalAllUsers * 100 : 0.0;
     }

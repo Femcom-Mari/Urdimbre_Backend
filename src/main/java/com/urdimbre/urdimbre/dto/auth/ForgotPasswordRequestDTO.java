@@ -23,7 +23,6 @@ public class ForgotPasswordRequestDTO {
     @Size(max = 100, message = "Email demasiado largo")
     private String email;
 
-    // ✅ Método de utilidad para validación
     public boolean isValidEmail() {
         return email != null &&
                 email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");

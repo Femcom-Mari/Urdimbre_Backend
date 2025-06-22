@@ -22,10 +22,6 @@ public class RateLimitExceededException extends RuntimeException {
         this(message, retryAfterSeconds, "general");
     }
 
-    // ================================
-    // 🏭 MÉTODOS FACTORY ESTÁTICOS
-    // ================================
-
     public static RateLimitExceededException forLoginByIp(long retryAfterSeconds) {
         return new RateLimitExceededException(
                 "Demasiados intentos de login desde esta IP. Intenta nuevamente en " + retryAfterSeconds + " segundos.",
@@ -49,10 +45,6 @@ public class RateLimitExceededException extends RuntimeException {
                 "register_ip");
     }
 
-    // ================================
-    // 🔧 MÉTODOS ADICIONALES DE UTILIDAD
-    // ================================
-
     public static RateLimitExceededException forGeneral(String message, long retryAfterSeconds) {
         return new RateLimitExceededException(message, retryAfterSeconds, "general");
     }
@@ -71,10 +63,6 @@ public class RateLimitExceededException extends RuntimeException {
                 retryAfterSeconds,
                 "password_reset");
     }
-
-    // ================================
-    // 📊 MÉTODOS DE INFORMACIÓN
-    // ================================
 
     public boolean isLoginRelated() {
         return "login_ip".equals(rateLimitType) || "login_user".equals(rateLimitType);

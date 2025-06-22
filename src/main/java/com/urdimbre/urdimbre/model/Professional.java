@@ -44,54 +44,54 @@ public class Professional {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "First name is required")
-    @Size(max = 50, message = "First name must not exceed 50 characters")
-    @Pattern(regexp = "^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\\s]+$", message = "First name can only contain letters and spaces")
+    @NotBlank(message = "El nombre es obligatorio")
+    @Size(max = 50, message = "El nombre no puede exceder los 50 caracteres")
+    @Pattern(regexp = "^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\\s]+$", message = "El nombre solo puede contener letras y espacios")
     private String firstName;
 
-    @NotBlank(message = "Last name is required")
-    @Size(max = 50, message = "Last name must not exceed 50 characters")
-    @Pattern(regexp = "^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\\s]+$", message = "Last name can only contain letters and spaces")
+    @NotBlank(message = "El apellido es obligatorio")
+    @Size(max = 50, message = "El apellido no puede exceder los 50 caracteres")
+    @Pattern(regexp = "^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\\s]+$", message = "El apellido solo puede contener letras y espacios")
     private String lastName;
 
     @ElementCollection(fetch = FetchType.EAGER)
     @Enumerated(EnumType.STRING)
     @CollectionTable(name = "professional_pronouns", joinColumns = @JoinColumn(name = "professional_id"))
     @Column(name = "pronoun")
-    @NotEmpty(message = "At least one pronoun is required")
+    @NotEmpty(message = "Al menos un pronombre es obligatorio")
     @Builder.Default
     private Set<Pronoun> pronouns = new HashSet<>();
 
-    @Size(max = 100, message = "Title must not exceed 100 characters")
+    @Size(max = 100, message = "El título no puede exceder los 100 caracteres")
     private String title;
 
-    @Size(max = 300, message = "Bio must not exceed 300 characters")
+    @Size(max = 300, message = "La biografía no puede exceder los 300 caracteres")
     private String bio;
 
-    @Pattern(regexp = "^\\+?[0-9\\-\\s]{7,20}$", message = "Phone number format is invalid")
+    @Pattern(regexp = "^\\+?[0-9\\-\\s]{7,20}$", message = "El formato del número de teléfono es inválido")
     private String phone;
 
-    @NotBlank(message = "Email is required")
-    @Email(message = "Email format is invalid")
+    @NotBlank(message = "El email es obligatorio")
+    @Email(message = "El formato del email es inválido")
     private String email;
 
-    @Size(max = 100, message = "Location must not exceed 100 characters")
+    @Size(max = 100, message = "La ubicación no puede exceder los 100 caracteres")
     private String location;
 
-    @Size(max = 255, message = "Profile image URL must not exceed 255 characters")
-    @Pattern(regexp = "^(https?://)?[\\w.-]+\\.[a-zA-Z]{2,}.*$", message = "Profile image URL format is invalid")
+    @Size(max = 255, message = "La URL de la imagen de perfil no puede exceder los 255 caracteres")
+    @Pattern(regexp = "^(https?://)?[\\w.-]+\\.[a-zA-Z]{2,}(/.*)?$", message = "El formato de la URL de la imagen de perfil es inválido")
     private String profileImageUrl;
 
-    @Size(max = 255, message = "URL must not exceed 255 characters")
-    @Pattern(regexp = "^(https?://)?[\\w.-]+\\.[a-zA-Z]{2,}.*$", message = "URL1 format is invalid")
+    @Size(max = 255, message = "La URL no puede exceder los 255 caracteres")
+    @Pattern(regexp = "^(https?://)?[\\w.-]+\\.[a-zA-Z]{2,}(/.*)?$", message = "El formato de la URL1 es inválido")
     private String url1;
 
-    @Size(max = 255, message = "URL must not exceed 255 characters")
-    @Pattern(regexp = "^(https?://)?[\\w.-]+\\.[a-zA-Z]{2,}.*$", message = "URL2 format is invalid")
+    @Size(max = 255, message = "La URL no puede exceder los 255 caracteres")
+    @Pattern(regexp = "^(https?://)?[\\w.-]+\\.[a-zA-Z]{2,}(/.*)?$", message = "El formato de la URL2 es inválido")
     private String url2;
 
-    @Size(max = 255, message = "URL must not exceed 255 characters")
-    @Pattern(regexp = "^(https?://)?[\\w.-]+\\.[a-zA-Z]{2,}.*$", message = "URL3 format is invalid")
+    @Size(max = 255, message = "La URL no puede exceder los 255 caracteres")
+    @Pattern(regexp = "^(https?://)?[\\w.-]+\\.[a-zA-Z]{2,}(/.*)?$", message = "El formato de la URL3 es inválido")
     private String url3;
 
     @CreatedDate
@@ -108,7 +108,19 @@ public class Professional {
     private Status status = Status.ACTIVE;
 
     public enum Status {
-        ACTIVE, INACTIVE, DELETED
+        ACTIVE("Activo"),
+        INACTIVE("Inactivo"),
+        DELETED("Eliminado");
+
+        private final String displayValue;
+
+        Status(String displayValue) {
+            this.displayValue = displayValue;
+        }
+
+        public String getDisplayValue() {
+            return displayValue;
+        }
     }
 
     public enum Pronoun {

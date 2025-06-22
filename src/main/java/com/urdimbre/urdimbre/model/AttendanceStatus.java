@@ -6,5 +6,4 @@ public enum AttendanceStatus {
     CONFIRMED,
     CANCELLED,
     ATTENDED;
-
 }

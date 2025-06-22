@@ -76,7 +76,6 @@ public class AuthController {
                 throw RateLimitExceededException.forRegisterByIp(rateLimitResult.getRetryAfterSeconds());
             }
 
-            // ✅ VALIDAR CÓDIGO DE INVITACIÓN (SIEMPRE OBLIGATORIO EN REGISTRO PÚBLICO)
             if (!inviteCodeService.validateInviteCode(request.getInviteCode())) {
                 logger.warn("❌ Código de invitación inválido para {}: {}", request.getUsername(),
                         request.getInviteCode());
@@ -85,7 +84,6 @@ public class AuthController {
                 throw new BadRequestException("Código de invitación: " + specificMessage);
             }
 
-            // VALIDACIONES ESPECÍFICAS DE USUARIO
             validateRegistrationDataWithSpecificErrors(request);
 
             UserResponseDTO response = authService.register(request);
@@ -106,7 +104,7 @@ public class AuthController {
                     String.format("Rate limit exceeded para registro - Usuario: %s desde IP: %s. %s",
                             request.getUsername(), rateLimitingService.getClientIp(httpRequest), e.getMessage()),
                     e.getRetryAfterSeconds(),
-                    e.getRateLimitType());
+                    String.valueOf(e.getRateLimitType()));
         } catch (BadRequestException e) {
             logger.warn("❌ Error de validación en registro - Usuario: {} - Error original: {}",
                     request.getUsername(), e.getMessage());
@@ -270,10 +268,6 @@ public class AuthController {
         }
     }
 
-    // ===================================================
-    // ✅ ENDPOINTS PARA VERIFICACIÓN Y RECUPERACIÓN
-    // ===================================================
-
     @GetMapping("/check-username")
     @Operation(summary = "Verificar disponibilidad de username", description = "Verifica si un username está disponible")
     @ApiResponse(responseCode = "200", description = "Verificación completada")
@@ -297,7 +291,6 @@ public class AuthController {
                         .notAvailable("Username demasiado largo"));
             }
 
-            // Validar formato
             if (!username.matches("^[a-zA-Z0-9_.-]+$")) {
                 return ResponseEntity.ok(CheckAvailabilityResponseDTO
                         .notAvailable("Username solo puede contener letras, números, puntos, guiones y guiones bajos"));
@@ -372,7 +365,6 @@ public class AuthController {
                         .body(ForgotPasswordResponseDTO.error("Formato de email inválido"));
             }
 
-            // Verificar si el email existe
             Optional<User> userOpt = userRepository.findByEmail(request.getEmail());
 
             if (userOpt.isEmpty()) {
@@ -409,7 +401,7 @@ public class AuthController {
             return ResponseEntity.ok(isValid);
         } catch (Exception e) {
             logger.warn("❌ Error validando código {}: {}", code, e.getMessage());
-            return ResponseEntity.ok(false);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(false);
         }
     }
 
@@ -455,10 +447,6 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-
-    // ================================
-    // 🔧 MÉTODOS PRIVADOS DE UTILIDAD
-    // ================================
 
     private String getSpecificInviteCodeError(String code) {
         try {

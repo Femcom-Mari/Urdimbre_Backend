@@ -9,7 +9,8 @@ import com.urdimbre.urdimbre.model.Language;
 
 public interface ActivitiesUrdimbreService {
 
-    ActivitiesUrdimbreResponseDTO createActivitiesUrdimbre(ActivitiesUrdimbreRequestDTO activityUrdimbreDTO, String creatorUsername);
+    ActivitiesUrdimbreResponseDTO createActivitiesUrdimbre(ActivitiesUrdimbreRequestDTO activityUrdimbreDTO,
+            String creatorUsername);
 
     List<ActivitiesUrdimbreResponseDTO> getActivitiesByCategory(String category);
 
@@ -27,9 +28,7 @@ public interface ActivitiesUrdimbreService {
 
     ActivitiesUrdimbreResponseDTO updateActivity(Long activityId, ActivitiesUrdimbreRequestDTO dto);
 
-    // Método actualizado para aceptar parámetros de paginación
     List<ActivitiesUrdimbreResponseDTO> getUpcomingActivities(int days, int page, int size);
 
-    // Método getAllActivities con paginación
     List<ActivitiesUrdimbreResponseDTO> getAllActivities(int page, int size);
 }

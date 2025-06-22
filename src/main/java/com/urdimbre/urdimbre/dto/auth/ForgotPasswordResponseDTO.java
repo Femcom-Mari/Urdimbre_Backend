@@ -17,7 +17,6 @@ public class ForgotPasswordResponseDTO {
     private boolean success;
     private String message;
 
-    // ✅ Métodos de utilidad
     public static ForgotPasswordResponseDTO success(String message) {
         return ForgotPasswordResponseDTO.builder()
                 .success(true)

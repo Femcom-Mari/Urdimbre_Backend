@@ -129,7 +129,7 @@ public class UrdimbreApplication {
 	}
 
 	private static String validateDbPassword(String dbPass, String environment) {
-		// Permitir DB_PASSWORD vacío solo en desarrollo y preproducción
+
 		boolean isProductionEnv = "prod".equals(environment) || "production".equals(environment);
 		if (isProductionEnv && (dbPass == null || dbPass.trim().isEmpty())) {
 			throw new IllegalStateException("DB_PASSWORD no configurado en producción");

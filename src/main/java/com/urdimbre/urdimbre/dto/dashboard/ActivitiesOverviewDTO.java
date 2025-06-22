@@ -17,7 +17,6 @@ public class ActivitiesOverviewDTO {
     private long pastActivities;
     private long thisWeekActivities;
 
-    // ✅ Métodos de utilidad
     public double getUpcomingPercentage() {
         return totalActivities > 0 ? (double) upcomingActivities / totalActivities * 100 : 0.0;
     }

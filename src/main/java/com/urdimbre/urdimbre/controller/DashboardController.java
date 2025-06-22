@@ -42,7 +42,6 @@ public class DashboardController {
 
         log.info("📥 Petición de dashboard por usuario: {} con roles: {}", username, roles);
 
-        // Crear UserContext
         DashboardService.UserContext userContext = new DashboardService.UserContext(username, roles);
         DashboardDTO dashboard = dashboardService.getDashboardData(userContext);
 
@@ -63,7 +62,6 @@ public class DashboardController {
 
         log.info("📊 Obteniendo resumen de actividades para usuario: {}", username);
 
-        // Crear UserContext
         DashboardService.UserContext userContext = new DashboardService.UserContext(username, roles);
         var summary = dashboardService.getActivitiesSummary(userContext);
 
@@ -83,7 +81,6 @@ public class DashboardController {
 
         log.info("⏰ Obteniendo actividades recientes para usuario: {}", username);
 
-        // Crear UserContext
         DashboardService.UserContext userContext = new DashboardService.UserContext(username, roles);
         var recentActivities = dashboardService.getRecentActivities(userContext);
 

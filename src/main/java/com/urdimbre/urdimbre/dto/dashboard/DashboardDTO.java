@@ -17,8 +17,8 @@ import lombok.Setter;
 public class DashboardDTO {
     private String username;
     private List<String> roles;
-    private SystemStatsDTO systemStats; // Solo para ADMIN
-    private UsersSummaryDTO usersSummary; // Solo para ADMIN
+    private SystemStatsDTO systemStats;
+    private UsersSummaryDTO usersSummary;
     private ActivitiesOverviewDTO activitiesOverview;
     private RecentActivityDTO recentActivity;
     private LocalDateTime generatedAt;

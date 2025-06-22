@@ -21,10 +21,9 @@ public class RoleResponseDTO {
     private String createdBy;
     private String lastModifiedBy;
 
-    // ✅ Métodos de utilidad
     public String getDisplayName() {
         if (name != null && name.startsWith("ROLE_")) {
-            return name.substring(5); // Quitar "ROLE_" para mostrar
+            return name.substring(5);
         }
         return name;
     }

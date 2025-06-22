@@ -17,7 +17,6 @@ public class CheckAvailabilityResponseDTO {
     private boolean available;
     private String message;
 
-    // ✅ Métodos de utilidad
     public static CheckAvailabilityResponseDTO available(String message) {
         return CheckAvailabilityResponseDTO.builder()
                 .available(true)

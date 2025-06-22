@@ -1,4 +1,3 @@
-
 package com.urdimbre.urdimbre.controller;
 
 import java.util.List;
@@ -27,10 +26,6 @@ public class AttendanceController {
 
     private final AttendanceService attendanceService;
 
-    // ================================
-    // ENDPOINTS PARA USUARIOS - Registrar asistencia
-    // ================================
-
     @PostMapping("/user/{userId}/activities/{activitiesId}")
     public ResponseEntity<AttendanceResponseDTO> registerAttendance(
             @PathVariable Long userId,
@@ -49,20 +44,12 @@ public class AttendanceController {
         return ResponseEntity.noContent().build();
     }
 
-    // ================================
-    // ENDPOINTS DE CONSULTA - Todos los usuarios autenticados
-    // ================================
-
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<AttendanceResponseDTO>> getUserAttendances(@PathVariable Long userId) {
         log.info("👤 Obtener asistencias del usuario: {}", userId);
         List<AttendanceResponseDTO> attendances = attendanceService.getAttendancesByUser(userId);
         return ResponseEntity.ok(attendances);
     }
-
-    // ================================
-    // ENDPOINTS PARA ORGANIZADORES Y ADMINS
-    // ================================
 
     @GetMapping("/activity/{activityId}")
     @PreAuthorize("hasRole('ORGANIZER') or hasRole('ADMIN')")

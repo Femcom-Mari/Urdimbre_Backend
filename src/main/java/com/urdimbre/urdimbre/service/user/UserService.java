@@ -13,17 +13,9 @@ import com.urdimbre.urdimbre.model.User;
 
 public interface UserService {
 
-    // ================================
-    // 🔐 MÉTODOS DE REGISTRO Y AUTENTICACIÓN
-    // ================================
-
     UserResponseDTO registerUserFromRegisterDTO(UserRegisterDTO userDTO, Set<String> roles);
 
     UserResponseDTO registerUser(UserRequestDTO userDTO, Set<String> roles);
-
-    // ================================
-    // 👤 MÉTODOS DE CONSULTA DE USUARIOS
-    // ================================
 
     UserResponseDTO getUser(Long id);
 
@@ -41,27 +33,15 @@ public interface UserService {
 
     List<UserResponseDTO> getUsersByStatus(User.UserStatus status);
 
-    // ================================
-    // 📊 MÉTODOS DE CONSULTA CON PAGINACIÓN
-    // ================================
-
     Page<UserResponseDTO> getAllUsersPaginated(Pageable pageable);
 
     Page<UserResponseDTO> getUsersByRolePaginated(String role, Pageable pageable);
-
-    // ================================
-    // 🔍 MÉTODOS DE BÚSQUEDA Y FILTRADO
-    // ================================
 
     List<UserResponseDTO> searchUsers(String searchText);
 
     List<UserResponseDTO> searchByUsername(String username);
 
     List<UserResponseDTO> searchByEmail(String email);
-
-    // ================================
-    // ✏️ MÉTODOS DE ACTUALIZACIÓN
-    // ================================
 
     UserResponseDTO updateUser(Long id, UserRequestDTO userDTO);
 
@@ -75,27 +55,15 @@ public interface UserService {
 
     UserResponseDTO deactivateUser(Long id);
 
-    // ================================
-    // 🎭 MÉTODOS ESPECÍFICOS DE ROLES
-    // ================================
-
     UserResponseDTO addRoleToUser(Long id, String role);
 
     UserResponseDTO removeRoleFromUser(Long id, String role);
 
     boolean userHasRole(Long id, String role);
 
-    // ================================
-    // 🗑️ MÉTODOS DE ELIMINACIÓN
-    // ================================
-
     void deleteUser(Long id);
 
     UserResponseDTO softDeleteUser(Long id);
-
-    // ================================
-    // 📈 MÉTODOS DE ESTADÍSTICAS
-    // ================================
 
     long getTotalUsersCount();
 
@@ -104,10 +72,6 @@ public interface UserService {
     long getUsersCountByStatus(User.UserStatus status);
 
     long getActiveUsersCountByRole(String role);
-
-    // ================================
-    // ✅ MÉTODOS DE VALIDACIÓN
-    // ================================
 
     boolean isUsernameAvailable(String username);
 

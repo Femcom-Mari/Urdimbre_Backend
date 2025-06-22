@@ -48,7 +48,6 @@ public class AttendanceServiceImpl implements AttendanceService {
                                         "La asistencia ya fue registrada para esta actividad.");
                 }
 
-                // ✅ Verificar capacidad máxima usando método JPA derivado
                 Long currentAttendees = attendanceRepository.countByActivityId_IdAndStatus(activityId,
                                 AttendanceStatus.CONFIRMED);
                 if (currentAttendees >= activity.getMaxAttendees()) {
