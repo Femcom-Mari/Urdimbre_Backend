@@ -34,5 +34,13 @@ public class UserResponseDTO {
     private String createdBy;
     private String lastModifiedBy;
 
+    public String getUsername() {
+        return username;
+    }
+
+    public List<String> getRoles() {
+        return roles;
+    }
+
     private List<String> roles;
 }

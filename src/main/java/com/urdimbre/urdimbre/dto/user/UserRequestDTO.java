@@ -34,9 +34,11 @@ public class UserRequestDTO {
 
     private Set<String> pronouns;
 
-    // ✅ CÓDIGO DE INVITACIÓN OPCIONAL - Solo obligatorio para registro desde front
-    // NO obligatorio cuando ADMIN crea usuarios directamente
     private String inviteCode;
+
+    public String getUsername() {
+        return username;
+    }
 
     public boolean isLoginRequest() {
         return username != null && password != null &&

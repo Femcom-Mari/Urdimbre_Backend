@@ -54,16 +54,21 @@ public class UserRegisterDTO {
         return null;
     }
 
+    public String getUsername() {
+        return username;
+    }
+
     // ✅ MANTENER AMBOS MÉTODOS PARA COMPATIBILIDAD
     public String getInvitationCode() {
         return inviteCode;
     }
 
     public String getInviteCode() {
-        return inviteCode;
+        return getInvitationCode();
     }
 
     public void setInviteCode(String inviteCode) {
         this.inviteCode = inviteCode;
     }
+
 }

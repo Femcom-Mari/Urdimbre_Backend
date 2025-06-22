@@ -51,6 +51,7 @@ import lombok.RequiredArgsConstructor;
 public class AuthController {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
+    private static final String ERROR_INTERNO_SERVIDOR = "Error interno del servidor";
 
     private final AuthService authService;
     private final InviteCodeService inviteCodeService;
@@ -99,7 +100,7 @@ public class AuthController {
         } catch (RateLimitExceededException e) {
             logger.warn("🚫 Rate limit exceeded en registro - Usuario: {} - IP: {} - Tipo: {} - Retry after: {}s",
                     request.getUsername(), rateLimitingService.getClientIp(httpRequest),
-                    e.getRateLimitType(), e.getRetryAfterSeconds(), e);
+                    e.getRateLimitType(), e.getRetryAfterSeconds());
 
             throw new RateLimitExceededException(
                     String.format("Rate limit exceeded para registro - Usuario: %s desde IP: %s. %s",
@@ -108,12 +109,11 @@ public class AuthController {
                     e.getRateLimitType());
         } catch (BadRequestException e) {
             logger.warn("❌ Error de validación en registro - Usuario: {} - Error original: {}",
-                    request.getUsername(), e.getMessage(), e);
+                    request.getUsername(), e.getMessage());
 
             throw new BadRequestException(
                     String.format("Error de validación en registro para usuario '%s': %s",
-                            request.getUsername(), e.getMessage()),
-                    e);
+                            request.getUsername(), e.getMessage()));
         } catch (DataIntegrityViolationException e) {
             logger.warn("❌ Error de integridad en registro para {}: {}", request.getUsername(), e.getMessage());
             String errorMessage = e.getMessage().toLowerCase();
@@ -127,11 +127,11 @@ public class AuthController {
         } catch (RuntimeException e) {
             logger.error("❌ Error inesperado (Runtime) en registro para {}: {}", request.getUsername(), e.getMessage(),
                     e);
-            throw new BadRequestException("Error interno del servidor. Inténtalo de nuevo más tarde.");
+            throw new BadRequestException(ERROR_INTERNO_SERVIDOR + ". Inténtalo de nuevo más tarde.");
         } catch (Exception e) {
             logger.error("❌ Error inesperado (Checked) en registro para {}: {}", request.getUsername(), e.getMessage(),
                     e);
-            throw new BadRequestException("Error interno del servidor. Inténtalo de nuevo más tarde.");
+            throw new BadRequestException(ERROR_INTERNO_SERVIDOR + ". Inténtalo de nuevo más tarde.");
         }
     }
 
@@ -174,7 +174,7 @@ public class AuthController {
         } catch (RateLimitExceededException e) {
             logger.warn("🚫 Rate limit exceeded en login - Usuario: {} - IP: {} - Tipo: {} - Retry after: {}s",
                     request.getUsername(), rateLimitingService.getClientIp(httpRequest),
-                    e.getRateLimitType(), e.getRetryAfterSeconds(), e);
+                    e.getRateLimitType(), e.getRetryAfterSeconds());
 
             throw new RateLimitExceededException(
                     String.format("Rate limit exceeded para login - Usuario: %s desde IP: %s. %s",
@@ -185,7 +185,6 @@ public class AuthController {
             logger.warn("❌ Credenciales inválidas - Usuario: {} - IP: {} - Error original: {}",
                     request.getUsername(), rateLimitingService.getClientIp(httpRequest), e.getMessage(), e);
 
-            // Rethrow with contextual information
             throw new BadCredentialsException(
                     String.format("Credenciales inválidas para usuario '%s' desde IP '%s': %s",
                             request.getUsername(), rateLimitingService.getClientIp(httpRequest), e.getMessage()),
@@ -193,19 +192,15 @@ public class AuthController {
         } catch (RuntimeException e) {
             logger.error("❌ Error inesperado (Runtime) en login - Usuario: {} - Error: {}",
                     request.getUsername(), e.getMessage(), e);
-            // Rethrow with contextual information
             throw new BadCredentialsException(
                     String.format("Error interno del servidor durante login para usuario '%s': %s",
-                            request.getUsername(), e.getMessage()),
-                    e);
+                            request.getUsername(), e.getMessage()));
         } catch (Exception e) {
             logger.error("❌ Error inesperado (Checked) en login - Usuario: {} - Error: {}",
                     request.getUsername(), e.getMessage(), e);
-            // Rethrow with contextual information
             throw new BadCredentialsException(
                     String.format("Error interno del servidor durante login para usuario '%s': %s",
-                            request.getUsername(), e.getMessage()),
-                    e);
+                            request.getUsername(), e.getMessage()));
         }
     }
 
@@ -236,18 +231,17 @@ public class AuthController {
                     ? request.getRefreshToken().substring(0, Math.min(10, request.getRefreshToken().length())) + "..."
                     : "null";
             logger.warn("❌ Refresh token inválido - Token preview: {} - Error original: {}", tokenPreview,
-                    e.getMessage(), e);
+                    e.getMessage());
 
             throw new BadCredentialsException(
                     String.format("Token de sesión expirado o inválido (preview: %s): %s", tokenPreview,
-                            e.getMessage()),
-                    e);
+                            e.getMessage()));
         } catch (RuntimeException e) {
             logger.error("❌ Error inesperado (Runtime) en renovación de token: {}", e.getMessage(), e);
-            throw new BadCredentialsException("Error interno del servidor durante renovación de token", e);
+            throw new BadCredentialsException("Error interno del servidor durante renovación de token");
         } catch (Exception e) {
             logger.error("❌ Error inesperado (Checked) en renovación de token: {}", e.getMessage(), e);
-            throw new BadCredentialsException("Error interno del servidor durante renovación de token", e);
+            throw new BadCredentialsException("Error interno del servidor durante renovación de token");
         }
     }
 
@@ -318,7 +312,7 @@ public class AuthController {
         } catch (Exception e) {
             logger.error("❌ Error verificando username {}: {}", username, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(CheckAvailabilityResponseDTO.error("Error interno del servidor"));
+                    .body(CheckAvailabilityResponseDTO.error(ERROR_INTERNO_SERVIDOR));
         }
     }
 
@@ -354,7 +348,7 @@ public class AuthController {
         } catch (Exception e) {
             logger.error("❌ Error verificando email {}: {}", email, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(CheckAvailabilityResponseDTO.error("Error interno del servidor"));
+                    .body(CheckAvailabilityResponseDTO.error(ERROR_INTERNO_SERVIDOR));
         }
     }
 
@@ -387,7 +381,7 @@ public class AuthController {
                         .body(ForgotPasswordResponseDTO.emailNotFound());
             }
 
-            // TODO: Aquí implementaremos el envío del email en el futuro
+            // TODO: Implementar envío del email en el futuro
             // passwordResetService.sendPasswordResetEmail(userOpt.get());
 
             logger.info("✅ Email de recuperación enviado exitosamente a: {}", request.getEmail());
@@ -397,7 +391,7 @@ public class AuthController {
         } catch (Exception e) {
             logger.error("❌ Error en recuperación de contraseña para {}: {}", request.getEmail(), e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ForgotPasswordResponseDTO.error("Error interno del servidor"));
+                    .body(ForgotPasswordResponseDTO.error(ERROR_INTERNO_SERVIDOR));
         }
     }
 
@@ -465,6 +459,10 @@ public class AuthController {
         }
     }
 
+    // ================================
+    // 🔧 MÉTODOS PRIVADOS DE UTILIDAD
+    // ================================
+
     private String getSpecificInviteCodeError(String code) {
         try {
             Optional<InviteCode> optionalCode = inviteCodeService.findByCode(code);
@@ -529,8 +527,6 @@ public class AuthController {
         validateEmail(request.getEmail());
         validatePassword(request.getPassword());
         validateFullName(request.getFullName());
-
-        // ✅ SIEMPRE VALIDAR INVITE CODE EN REGISTRO PÚBLICO
         validateInviteCode(request.getInviteCode());
     }
 
@@ -597,7 +593,6 @@ public class AuthController {
     }
 
     private void validateInviteCode(String inviteCode) {
-        // ✅ PARA REGISTRO PÚBLICO SIEMPRE ES OBLIGATORIO
         if (inviteCode == null || inviteCode.trim().isEmpty()) {
             throw new BadRequestException("Código de invitación es obligatorio");
         }

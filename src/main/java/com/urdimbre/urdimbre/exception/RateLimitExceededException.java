@@ -22,6 +22,10 @@ public class RateLimitExceededException extends RuntimeException {
         this(message, retryAfterSeconds, "general");
     }
 
+    // ================================
+    // 🏭 MÉTODOS FACTORY ESTÁTICOS
+    // ================================
+
     public static RateLimitExceededException forLoginByIp(long retryAfterSeconds) {
         return new RateLimitExceededException(
                 "Demasiados intentos de login desde esta IP. Intenta nuevamente en " + retryAfterSeconds + " segundos.",
@@ -43,5 +47,54 @@ public class RateLimitExceededException extends RuntimeException {
                         + " segundos.",
                 retryAfterSeconds,
                 "register_ip");
+    }
+
+    // ================================
+    // 🔧 MÉTODOS ADICIONALES DE UTILIDAD
+    // ================================
+
+    public static RateLimitExceededException forGeneral(String message, long retryAfterSeconds) {
+        return new RateLimitExceededException(message, retryAfterSeconds, "general");
+    }
+
+    public static RateLimitExceededException forApiCall(String endpoint, long retryAfterSeconds) {
+        return new RateLimitExceededException(
+                "Rate limit exceeded para endpoint: " + endpoint + ". Intenta nuevamente en " + retryAfterSeconds
+                        + " segundos.",
+                retryAfterSeconds,
+                "api_call");
+    }
+
+    public static RateLimitExceededException forPasswordReset(long retryAfterSeconds) {
+        return new RateLimitExceededException(
+                "Demasiados intentos de reset de contraseña. Intenta nuevamente en " + retryAfterSeconds + " segundos.",
+                retryAfterSeconds,
+                "password_reset");
+    }
+
+    // ================================
+    // 📊 MÉTODOS DE INFORMACIÓN
+    // ================================
+
+    public boolean isLoginRelated() {
+        return "login_ip".equals(rateLimitType) || "login_user".equals(rateLimitType);
+    }
+
+    public boolean isRegistrationRelated() {
+        return "register_ip".equals(rateLimitType);
+    }
+
+    public boolean isIpBased() {
+        return rateLimitType != null && rateLimitType.contains("_ip");
+    }
+
+    public boolean isUserBased() {
+        return rateLimitType != null && rateLimitType.contains("_user");
+    }
+
+    @Override
+    public String toString() {
+        return String.format("RateLimitExceededException{type='%s', retryAfter=%d, message='%s'}",
+                rateLimitType, retryAfterSeconds, getMessage());
     }
 }

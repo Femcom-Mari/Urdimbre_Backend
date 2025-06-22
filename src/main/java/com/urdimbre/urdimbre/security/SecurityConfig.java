@@ -99,8 +99,13 @@ public class SecurityConfig {
                                 .sessionManagement(session -> session
                                                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-                                .authorizeHttpRequests(auth -> auth
+                                // ✅ REEMPLAZA LA SECCIÓN authorizeHttpRequests() COMPLETA EN TU
+                                // SecurityConfig.java
 
+                                .authorizeHttpRequests(auth -> auth
+                                                // ================================
+                                                // 🌐 ENDPOINTS PÚBLICOS (SIN AUTENTICACIÓN)
+                                                // ================================
                                                 .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                                                 .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
                                                 .requestMatchers(HttpMethod.POST, "/api/auth/refresh").permitAll()
@@ -113,9 +118,13 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.GET, "/api/auth/invite-codes/info")
                                                 .permitAll()
 
+                                                // Endpoints de salud y error
                                                 .requestMatchers("/actuator/health").permitAll()
                                                 .requestMatchers("/error").permitAll()
 
+                                                // ================================
+                                                // 🔧 ENDPOINTS DE DESARROLLO (SOLO EN DEV)
+                                                // ================================
                                                 .requestMatchers("/api/dev/**")
                                                 .access((authentication, context) -> isDevelopmentEnvironmentDecision(
                                                                 authentication, context))
@@ -126,16 +135,29 @@ public class SecurityConfig {
                                                 .access((authentication, context) -> isDevelopmentEnvironmentDecision(
                                                                 authentication, context))
 
+                                                // ================================
+                                                // 👑 ENDPOINTS SOLO PARA ADMIN
+                                                // ================================
                                                 .requestMatchers("/api/admin/**").hasRole(ROLE_ADMIN)
                                                 .requestMatchers("/api/roles/**").hasRole(ROLE_ADMIN)
                                                 .requestMatchers("/api/auth/rate-limit-stats").hasRole(ROLE_ADMIN)
+                                                .requestMatchers("/api/invite-codes/**").hasRole(ROLE_ADMIN)
 
+                                                // ================================
+                                                // 📊 DASHBOARD ENDPOINTS - ¡AGREGADO!
+                                                // ================================
+                                                .requestMatchers("/api/dashboard/**")
+                                                .hasAnyRole(ROLE_ORGANIZER, ROLE_ADMIN)
+                                                .requestMatchers("/api/dashboard")
+                                                .hasAnyRole(ROLE_ORGANIZER, ROLE_ADMIN)
+
+                                                // ================================
+                                                // 👥 PROFESSIONALS ENDPOINTS
+                                                // ================================
                                                 .requestMatchers(HttpMethod.GET, "/api/professionals")
                                                 .hasAnyRole(ROLE_USER, ROLE_ORGANIZER, ROLE_ADMIN)
                                                 .requestMatchers(HttpMethod.GET, PROFESSIONALS_API_PATTERN)
                                                 .hasAnyRole(ROLE_USER, ROLE_ORGANIZER, ROLE_ADMIN)
-
-                                                // Solo admins pueden modificar
                                                 .requestMatchers(HttpMethod.POST, "/api/professionals")
                                                 .hasRole(ROLE_ADMIN)
                                                 .requestMatchers(HttpMethod.PUT, PROFESSIONALS_API_PATTERN)
@@ -146,15 +168,12 @@ public class SecurityConfig {
                                                 .hasRole(ROLE_ADMIN)
 
                                                 // ================================
-                                                // ✅ ACTIVITIES ENDPOINTS
+                                                // 🎯 ACTIVITIES ENDPOINTS
                                                 // ================================
-                                                // Activities endpoints - read access for all authenticated users
                                                 .requestMatchers(HttpMethod.GET, "/api/activities")
                                                 .hasAnyRole(ROLE_USER, ROLE_ORGANIZER, ROLE_ADMIN)
                                                 .requestMatchers(HttpMethod.GET, ACTIVITIES_API_PATTERN)
                                                 .hasAnyRole(ROLE_USER, ROLE_ORGANIZER, ROLE_ADMIN)
-
-                                                // Activities endpoints - write access for organizers and admins
                                                 .requestMatchers(HttpMethod.POST, "/api/activities")
                                                 .hasAnyRole(ROLE_ORGANIZER, ROLE_ADMIN)
                                                 .requestMatchers(HttpMethod.PUT, ACTIVITIES_API_PATTERN)
@@ -167,13 +186,10 @@ public class SecurityConfig {
                                                 // ================================
                                                 // ✅ ATTENDANCE ENDPOINTS
                                                 // ================================
-                                                // Attendance endpoints - read access for all authenticated users
                                                 .requestMatchers(HttpMethod.GET, "/api/attendance")
                                                 .hasAnyRole(ROLE_USER, ROLE_ORGANIZER, ROLE_ADMIN)
                                                 .requestMatchers(HttpMethod.GET, ATTENDANCE_API_PATTERN)
                                                 .hasAnyRole(ROLE_USER, ROLE_ORGANIZER, ROLE_ADMIN)
-
-                                                // Attendance endpoints - write access for organizers and admins
                                                 .requestMatchers(HttpMethod.POST, "/api/attendance")
                                                 .hasAnyRole(ROLE_ORGANIZER, ROLE_ADMIN)
                                                 .requestMatchers(HttpMethod.PUT, ATTENDANCE_API_PATTERN)
@@ -184,7 +200,7 @@ public class SecurityConfig {
                                                 .hasAnyRole(ROLE_ORGANIZER, ROLE_ADMIN)
 
                                                 // ================================
-                                                // ✅ USER ENDPOINTS
+                                                // 👤 USER ENDPOINTS
                                                 // ================================
                                                 .requestMatchers(HttpMethod.GET, "/api/users/me").authenticated()
                                                 .requestMatchers(HttpMethod.GET, USERS_API_PATTERN).authenticated()
@@ -194,7 +210,7 @@ public class SecurityConfig {
                                                 .hasRole(ROLE_ADMIN)
 
                                                 // ================================
-                                                // ✅ ENDPOINTS AUTENTICADOS (requieren login)
+                                                // 🔐 ENDPOINTS AUTENTICADOS
                                                 // ================================
                                                 .requestMatchers(HttpMethod.POST, "/api/auth/logout").authenticated()
 
