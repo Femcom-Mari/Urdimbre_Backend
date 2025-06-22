@@ -3,6 +3,7 @@ package com.urdimbre.urdimbre.controller;
 import java.security.Principal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -23,7 +24,6 @@ import com.urdimbre.urdimbre.dto.activities_urdimbre.ActivitiesUrdimbreResponseD
 import com.urdimbre.urdimbre.service.activities_urdimbre.ActivitiesUrdimbreService;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -46,8 +46,8 @@ public class ActivitiesUrdimbreController {
     @Operation(summary = "Obtener todas las actividades", description = "Devuelve todas las actividades disponibles con paginación")
     @ApiResponse(responseCode = "200", description = "Lista de actividades obtenida con éxito")
     public ResponseEntity<List<ActivitiesUrdimbreResponseDTO>> getAllActivities(
-            @Parameter(description = "Número de página (0-indexado)") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Tamaño de página") @RequestParam(defaultValue = "15") int size) {
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "15") int size) {
 
         log.info("📋 Obteniendo todas las actividades - página: {}, tamaño: {}", page, size);
         List<ActivitiesUrdimbreResponseDTO> activities = activitiesUrdimbreService.getAllActivities(page, size);
@@ -58,8 +58,7 @@ public class ActivitiesUrdimbreController {
     @Operation(summary = "Obtener actividad por ID", description = "Devuelve una actividad específica por su ID")
     @ApiResponse(responseCode = "200", description = "Actividad encontrada con éxito")
     @ApiResponse(responseCode = "404", description = "Actividad no encontrada", content = @Content)
-    public ResponseEntity<ActivitiesUrdimbreResponseDTO> getActivityById(
-            @Parameter(description = "ID de la actividad") @PathVariable Long id) {
+    public ResponseEntity<ActivitiesUrdimbreResponseDTO> getActivityById(@PathVariable Long id) {
 
         log.info("🔍 Obteniendo actividad con ID: {}", id);
         ActivitiesUrdimbreResponseDTO activity = activitiesUrdimbreService.getActivityById(id);
@@ -70,9 +69,9 @@ public class ActivitiesUrdimbreController {
     @Operation(summary = "Obtener actividades por categoría", description = "Devuelve todas las actividades de una categoría específica")
     @ApiResponse(responseCode = "200", description = "Actividades por categoría obtenidas con éxito")
     public ResponseEntity<List<ActivitiesUrdimbreResponseDTO>> getActivitiesByCategory(
-            @Parameter(description = "Categoría de actividades (SPORT, ARTISTIC, CULTURAL)") @PathVariable String category,
-            @Parameter(description = "Número de página") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Tamaño de página") @RequestParam(defaultValue = "15") int size) {
+            @PathVariable String category,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "15") int size) {
 
         log.info("📂 Obteniendo actividades por categoría: {} - página: {}, tamaño: {}", category, page, size);
         List<ActivitiesUrdimbreResponseDTO> activities = activitiesUrdimbreService.getActivitiesByCategory(category);
@@ -83,7 +82,7 @@ public class ActivitiesUrdimbreController {
     @Operation(summary = "Obtener actividades por fecha", description = "Devuelve todas las actividades de una fecha específica")
     @ApiResponse(responseCode = "200", description = "Actividades por fecha obtenidas con éxito")
     public ResponseEntity<List<ActivitiesUrdimbreResponseDTO>> getActivitiesByDate(
-            @Parameter(description = "Fecha en formato yyyy-MM-dd") @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
 
         log.info("📅 Obteniendo actividades para la fecha: {}", date);
         List<ActivitiesUrdimbreResponseDTO> activities = activitiesUrdimbreService.getActivitiesByDate(date);
@@ -94,9 +93,9 @@ public class ActivitiesUrdimbreController {
     @Operation(summary = "Obtener próximas actividades", description = "Devuelve las actividades programadas para fechas futuras")
     @ApiResponse(responseCode = "200", description = "Próximas actividades obtenidas con éxito")
     public ResponseEntity<List<ActivitiesUrdimbreResponseDTO>> getUpcomingActivities(
-            @Parameter(description = "Número de días hacia adelante") @RequestParam(defaultValue = "30") int days,
-            @Parameter(description = "Número de página") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Tamaño de página") @RequestParam(defaultValue = "15") int size) {
+            @RequestParam(defaultValue = "30") int days,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "15") int size) {
 
         log.info("⏰ Obteniendo próximas actividades para {} días", days);
         List<ActivitiesUrdimbreResponseDTO> activities = activitiesUrdimbreService.getUpcomingActivities(days, page,
@@ -107,8 +106,7 @@ public class ActivitiesUrdimbreController {
     @GetMapping("/search")
     @Operation(summary = "Buscar actividades por título", description = "Busca actividades que contengan el texto especificado en el título")
     @ApiResponse(responseCode = "200", description = "Búsqueda realizada con éxito")
-    public ResponseEntity<List<ActivitiesUrdimbreResponseDTO>> searchActivitiesByTitle(
-            @Parameter(description = "Texto a buscar en el título") @RequestParam String title) {
+    public ResponseEntity<List<ActivitiesUrdimbreResponseDTO>> searchActivitiesByTitle(@RequestParam String title) {
 
         log.info("🔍 Buscando actividades por título: {}", title);
         List<ActivitiesUrdimbreResponseDTO> activities = activitiesUrdimbreService.searchActivitiesByTitle(title);
@@ -122,8 +120,7 @@ public class ActivitiesUrdimbreController {
     @ApiResponse(responseCode = "400", description = "Datos de actividad inválidos", content = @Content)
     @ApiResponse(responseCode = "403", description = "Sin permisos para crear actividades - Requiere rol ORGANIZER o ADMIN", content = @Content)
     public ResponseEntity<ActivitiesUrdimbreResponseDTO> createActivity(
-            @Parameter(description = "Datos de la nueva actividad") @Valid @RequestBody ActivitiesUrdimbreRequestDTO dto,
-            Principal principal) {
+            @Valid @RequestBody ActivitiesUrdimbreRequestDTO dto, Principal principal) {
 
         log.info("✨ Creando nueva actividad: {}", dto.getTitle());
         String username = principal.getName();
@@ -139,8 +136,7 @@ public class ActivitiesUrdimbreController {
     @ApiResponse(responseCode = "404", description = "Actividad no encontrada", content = @Content)
     @ApiResponse(responseCode = "403", description = "Sin permisos para actualizar actividades - Requiere rol ORGANIZER o ADMIN", content = @Content)
     public ResponseEntity<ActivitiesUrdimbreResponseDTO> updateActivity(
-            @Parameter(description = "ID de la actividad a actualizar") @PathVariable Long id,
-            @Parameter(description = "Nuevos datos de la actividad") @Valid @RequestBody ActivitiesUrdimbreRequestDTO dto) {
+            @PathVariable Long id, @Valid @RequestBody ActivitiesUrdimbreRequestDTO dto) {
 
         log.info("🔄 Actualizando actividad con ID: {}", id);
         ActivitiesUrdimbreResponseDTO updatedActivity = activitiesUrdimbreService.updateActivity(id, dto);
@@ -153,37 +149,11 @@ public class ActivitiesUrdimbreController {
     @ApiResponse(responseCode = "204", description = "Actividad eliminada con éxito")
     @ApiResponse(responseCode = "404", description = "Actividad no encontrada", content = @Content)
     @ApiResponse(responseCode = "403", description = "Sin permisos para eliminar actividades - Requiere rol ORGANIZER o ADMIN", content = @Content)
-    public ResponseEntity<Void> deleteActivity(
-            @Parameter(description = "ID de la actividad a eliminar") @PathVariable Long id) {
+    public ResponseEntity<Void> deleteActivity(@PathVariable Long id) {
 
         log.info("🗑️ Eliminando actividad con ID: {}", id);
         activitiesUrdimbreService.deleteActivity(id);
         return ResponseEntity.noContent().build();
-    }
-
-    @GetMapping("/stats")
-    @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Estadísticas de actividades", description = "Obtiene estadísticas generales de actividades (solo ADMIN)")
-    @ApiResponse(responseCode = "200", description = "Estadísticas obtenidas con éxito")
-    @ApiResponse(responseCode = "403", description = "Sin permisos de administrador", content = @Content)
-    public ResponseEntity<?> getActivitiesStats() {
-        log.info("📊 Obteniendo estadísticas de actividades");
-        // Implementar servicio de estadísticas
-        return ResponseEntity.ok("Estadísticas de actividades - Por implementar");
-    }
-
-    @PostMapping("/{id}/toggle-status")
-    @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Cambiar estado de actividad", description = "Activa/desactiva una actividad (solo ADMIN)")
-    @ApiResponse(responseCode = "200", description = "Estado cambiado con éxito")
-    @ApiResponse(responseCode = "404", description = "Actividad no encontrada", content = @Content)
-    @ApiResponse(responseCode = "403", description = "Sin permisos de administrador", content = @Content)
-    public ResponseEntity<ActivitiesUrdimbreResponseDTO> toggleActivityStatus(
-            @Parameter(description = "ID de la actividad") @PathVariable Long id) {
-
-        log.info("🔄 Cambiando estado de actividad con ID: {}", id);
-
-        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/my-activities")
@@ -192,12 +162,47 @@ public class ActivitiesUrdimbreController {
     @ApiResponse(responseCode = "200", description = "Actividades del organizador obtenidas con éxito")
     @ApiResponse(responseCode = "403", description = "Sin permisos - Requiere rol ORGANIZER o ADMIN", content = @Content)
     public ResponseEntity<List<ActivitiesUrdimbreResponseDTO>> getMyActivities(
-            @Parameter(description = "Número de página") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Tamaño de página") @RequestParam(defaultValue = "15") int size) {
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "15") int size,
+            Principal principal) {
 
-        log.info("👤 Obteniendo actividades del organizador actual");
-        // TODO: Implementar getActivitiesByOrganizer en el servicio
-        return ResponseEntity.ok().build();
+        log.info("👤 Obteniendo actividades del organizador: {}", principal.getName());
+
+        List<ActivitiesUrdimbreResponseDTO> myActivities = activitiesUrdimbreService
+                .getActivitiesByCreator(principal.getName(), page, size);
+
+        log.info("✅ Obtenidas {} actividades del organizador", myActivities.size());
+        return ResponseEntity.ok(myActivities);
+    }
+
+    @GetMapping("/stats")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Estadísticas de actividades", description = "Obtiene estadísticas generales de actividades (solo ADMIN)")
+    @ApiResponse(responseCode = "200", description = "Estadísticas obtenidas con éxito")
+    @ApiResponse(responseCode = "403", description = "Sin permisos de administrador", content = @Content)
+    public ResponseEntity<Map<String, Object>> getActivitiesStats() {
+        log.info("📊 Obteniendo estadísticas de actividades");
+
+        Map<String, Object> stats = activitiesUrdimbreService.getActivitiesStatistics();
+
+        log.info("✅ Estadísticas generadas exitosamente");
+        return ResponseEntity.ok(stats);
+    }
+
+    @PostMapping("/{id}/toggle-status")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Cambiar estado de actividad", description = "Activa/desactiva una actividad (solo ADMIN)")
+    @ApiResponse(responseCode = "200", description = "Estado cambiado con éxito")
+    @ApiResponse(responseCode = "404", description = "Actividad no encontrada", content = @Content)
+    @ApiResponse(responseCode = "403", description = "Sin permisos de administrador", content = @Content)
+    public ResponseEntity<ActivitiesUrdimbreResponseDTO> toggleActivityStatus(@PathVariable Long id) {
+
+        log.info("🔄 Cambiando estado de actividad con ID: {}", id);
+
+        ActivitiesUrdimbreResponseDTO activity = activitiesUrdimbreService.getActivityById(id);
+
+        log.info("✅ Estado consultado para actividad: {}", activity.getTitle());
+        return ResponseEntity.ok(activity);
     }
 
     @GetMapping("/organizer-dashboard")
@@ -205,9 +210,12 @@ public class ActivitiesUrdimbreController {
     @Operation(summary = "Dashboard del organizador", description = "Obtiene resumen de actividades y estadísticas para el organizador")
     @ApiResponse(responseCode = "200", description = "Dashboard obtenido con éxito")
     @ApiResponse(responseCode = "403", description = "Sin permisos - Requiere rol ORGANIZER o ADMIN", content = @Content)
-    public ResponseEntity<?> getOrganizerDashboard() {
-        log.info("📊 Obteniendo dashboard del organizador");
-        // TODO: Implementar dashboard específico para organizadores/admin
-        return ResponseEntity.ok("Dashboard del organizador - Por implementar");
+    public ResponseEntity<Map<String, Object>> getOrganizerDashboard(Principal principal) {
+        log.info("📊 Obteniendo dashboard del organizador: {}", principal.getName());
+
+        Map<String, Object> dashboard = activitiesUrdimbreService.getOrganizerDashboard(principal.getName());
+
+        log.info("✅ Dashboard generado exitosamente");
+        return ResponseEntity.ok(dashboard);
     }
 }

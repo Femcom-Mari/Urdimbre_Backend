@@ -2,6 +2,7 @@ package com.urdimbre.urdimbre.service.activities_urdimbre;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 import com.urdimbre.urdimbre.dto.activities_urdimbre.ActivitiesUrdimbreRequestDTO;
 import com.urdimbre.urdimbre.dto.activities_urdimbre.ActivitiesUrdimbreResponseDTO;
@@ -9,7 +10,8 @@ import com.urdimbre.urdimbre.model.Language;
 
 public interface ActivitiesUrdimbreService {
 
-    ActivitiesUrdimbreResponseDTO createActivitiesUrdimbre(ActivitiesUrdimbreRequestDTO activityUrdimbreDTO, String creatorUsername);
+    ActivitiesUrdimbreResponseDTO createActivitiesUrdimbre(ActivitiesUrdimbreRequestDTO activityUrdimbreDTO,
+            String creatorUsername);
 
     List<ActivitiesUrdimbreResponseDTO> getActivitiesByCategory(String category);
 
@@ -27,9 +29,13 @@ public interface ActivitiesUrdimbreService {
 
     ActivitiesUrdimbreResponseDTO updateActivity(Long activityId, ActivitiesUrdimbreRequestDTO dto);
 
-    // Método actualizado para aceptar parámetros de paginación
     List<ActivitiesUrdimbreResponseDTO> getUpcomingActivities(int days, int page, int size);
 
-    // Método getAllActivities con paginación
     List<ActivitiesUrdimbreResponseDTO> getAllActivities(int page, int size);
+
+    List<ActivitiesUrdimbreResponseDTO> getActivitiesByCreator(String creatorUsername, int page, int size);
+
+    Map<String, Object> getActivitiesStatistics();
+
+    Map<String, Object> getOrganizerDashboard(String organizerUsername);
 }
