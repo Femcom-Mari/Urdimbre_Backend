@@ -13,6 +13,7 @@ import io.github.resilience4j.ratelimiter.RateLimiter;
 import io.github.resilience4j.ratelimiter.RateLimiterConfig;
 import io.github.resilience4j.ratelimiter.RateLimiterRegistry;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.Builder;
 import lombok.Data;
 
 @Service
@@ -140,7 +141,6 @@ public class RateLimitingService {
     }
 
     private long getRemainingPermissions(RateLimiter rateLimiter) {
-
         return Math.max(0, rateLimiter.getRateLimiterConfig().getLimitForPeriod() - 1);
     }
 
@@ -152,7 +152,7 @@ public class RateLimitingService {
     }
 
     @Data
-    @lombok.Builder
+    @Builder
     public static class RateLimitStats {
         private final int activeBuckets;
         private final int ipBuckets;

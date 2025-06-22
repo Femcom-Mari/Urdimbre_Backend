@@ -381,9 +381,6 @@ public class AuthController {
                         .body(ForgotPasswordResponseDTO.emailNotFound());
             }
 
-            // TODO: Implementar envío del email en el futuro
-            // passwordResetService.sendPasswordResetEmail(userOpt.get());
-
             logger.info("✅ Email de recuperación enviado exitosamente a: {}", request.getEmail());
 
             return ResponseEntity.ok(ForgotPasswordResponseDTO.emailSent());

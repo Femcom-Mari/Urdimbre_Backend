@@ -350,10 +350,10 @@ public class DataInitializer {
             return false;
         }
 
-        // ✅ Verificaciones adicionales para producción
+        
         boolean hasMultipleSymbols = password.chars().filter(ch -> "@$!%*?&".indexOf(ch) >= 0).count() >= 2;
         boolean hasMultipleDigits = password.chars().filter(Character::isDigit).count() >= 2;
-        boolean noRepeatingChars = !password.matches(".*(.)\\1{2,}.*"); // No más de 2 caracteres consecutivos iguales
+        boolean noRepeatingChars = !password.matches(".*(.)\\1{2,}.*"); 
         boolean noCommonPatterns = !password.toLowerCase().matches(".*(123|abc|qwe|password|admin).*");
 
         return hasMultipleSymbols && hasMultipleDigits && noRepeatingChars && noCommonPatterns;
