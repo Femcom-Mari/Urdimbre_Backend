@@ -117,11 +117,14 @@ public class SecurityConfig {
                                                 .requestMatchers("/error").permitAll()
 
                                                 .requestMatchers("/api/dev/**")
-                                                .access((authentication, context) -> isDevelopmentEnvironment())
+                                                .access((authentication, context) -> isDevelopmentEnvironmentDecision(
+                                                                authentication, context))
                                                 .requestMatchers("/actuator/**")
-                                                .access((authentication, context) -> isDevelopmentEnvironment())
+                                                .access((authentication, context) -> isDevelopmentEnvironmentDecision(
+                                                                authentication, context))
                                                 .requestMatchers("/api/test/**")
-                                                .access((authentication, context) -> isDevelopmentEnvironment())
+                                                .access((authentication, context) -> isDevelopmentEnvironmentDecision(
+                                                                authentication, context))
 
                                                 .requestMatchers("/api/admin/**").hasRole(ROLE_ADMIN)
                                                 .requestMatchers("/api/roles/**").hasRole(ROLE_ADMIN)
@@ -187,8 +190,6 @@ public class SecurityConfig {
                                                 .requestMatchers(HttpMethod.GET, USERS_API_PATTERN).authenticated()
                                                 .requestMatchers(HttpMethod.POST, "/api/users").hasRole(ROLE_ADMIN)
                                                 .requestMatchers(HttpMethod.PUT, USERS_API_PATTERN).authenticated()
-                                                .requestMatchers(HttpMethod.DELETE, USERS_API_PATTERN)
-                                                .hasRole(ROLE_ADMIN)
                                                 .requestMatchers(HttpMethod.DELETE, USERS_API_PATTERN)
                                                 .hasRole(ROLE_ADMIN)
 
@@ -283,10 +284,7 @@ public class SecurityConfig {
                 firewall.setAllowUrlEncodedDoubleSlash(false);
                 firewall.setAllowNull(false);
 
-                // Bloquear caracteres peligrosos (métodos existentes)
-                firewall.setAllowNull(false);
-
-                log.info(" HTTP Firewall configurado con protección MÁXIMA");
+                log.info("✅ HTTP Firewall configurado con protección MÁXIMA");
                 return firewall;
         }
 
@@ -320,16 +318,22 @@ public class SecurityConfig {
         }
 
         /**
-         * Verificar si estamos en entorno de desarrollo (para endpoints
-         * condicionales)
+         * Verificar si estamos en entorno de desarrollo (versión simple)
          */
-        private org.springframework.security.authorization.AuthorizationDecision isDevelopmentEnvironment(
+        private boolean isDevelopmentEnvironment() {
+                return "dev".equals(activeProfile) ||
+                                "development".equals(activeProfile) ||
+                                "local".equals(activeProfile);
+        }
+
+        /**
+         * Verificar si estamos en entorno de desarrollo (para endpoints condicionales)
+         */
+        private org.springframework.security.authorization.AuthorizationDecision isDevelopmentEnvironmentDecision(
                         java.util.function.Supplier<org.springframework.security.core.Authentication> authentication,
                         org.springframework.security.web.access.intercept.RequestAuthorizationContext context) {
 
-                boolean isDev = "dev".equals(activeProfile) ||
-                                "development".equals(activeProfile) ||
-                                "local".equals(activeProfile);
+                boolean isDev = isDevelopmentEnvironment();
 
                 if (!isDev) {
                         log.warn("🚫 Acceso denegado a endpoint de desarrollo en: {}", activeProfile);

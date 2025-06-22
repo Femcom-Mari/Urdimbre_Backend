@@ -237,7 +237,7 @@ public class DataInitializer {
             logger.info("🔍 [DEV] Hash funciona correctamente: {}", hashWorks);
         }
 
-        return User.builder()
+        User admin = User.builder()
                 .username(adminUsername)
                 .email(adminEmail)
                 .password(hashedPassword)
@@ -248,9 +248,15 @@ public class DataInitializer {
                 .status(UserStatus.ACTIVE)
                 .roles(new HashSet<>())
                 .build();
+
+        assignRolesToAdmin(admin, roleRepository);
+        User savedAdmin = userRepository.save(admin);
+        logAdminCreationResults(savedAdmin);
     }
 
     private void assignRolesToAdmin(User admin, RoleRepository roleRepository) {
+        int rolesAssigned = 0;
+
         roleRepository.findByName(ROLE_ADMIN).ifPresentOrElse(
                 adminRole -> {
                     admin.getRoles().add(adminRole);
@@ -273,16 +279,17 @@ public class DataInitializer {
                 () -> logger.error(ROLE_NOT_FOUND_ERROR, ROLE_USER));
 
         rolesAssigned = admin.getRoles().size();
-
-        User savedAdmin = userRepository.save(admin);
+        logger.info("📊 Total de roles asignados: {}", rolesAssigned);
+    }
 
     private void logAdminCreationResults(User savedAdmin) {
         logger.info("✅ Usuario administrador creado exitosamente");
         logger.info("👤 Username: {}", savedAdmin.getUsername());
         String emailToLog = savedAdmin.getEmail() != null ? maskEmail(savedAdmin.getEmail()) : "null";
         logger.info("📧 Email: {}", emailToLog);
-        logger.info("🎭 Roles asignados: {} (USER, ORGANIZER, ADMIN)", rolesAssigned);
+        logger.info("🎭 Roles asignados: {} (USER, ORGANIZER, ADMIN)", savedAdmin.getRoles().size());
         logger.info("🏷️ Pronombres: {} (EL, ELLE, ELLA)", savedAdmin.getPronouns().size());
+    }
 
     private void initDefaultInviteCode(InviteCodeRepository inviteCodeRepository) {
         // SOLO CREAR CÓDIGOS EN DESARROLLO

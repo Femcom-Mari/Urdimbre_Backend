@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.urdimbre.urdimbre.dto.user.UpdateRolesRequestDTO; // ✅ IMPORT CORRECTO
+import com.urdimbre.urdimbre.dto.user.UpdateRolesRequestDTO;
 import com.urdimbre.urdimbre.dto.user.UserRequestDTO;
 import com.urdimbre.urdimbre.dto.user.UserResponseDTO;
 import com.urdimbre.urdimbre.service.user.UserService;
@@ -85,13 +85,11 @@ public class UserController {
                 authentication.getName(), userDTO.getUsername());
         log.info("🎭 Roles solicitados: {}", roles);
 
-        // ✅ Si no se especifican roles, asignar USER por defecto
         if (roles == null || roles.isEmpty()) {
             roles = List.of("USER");
             log.info("🔄 No se especificaron roles, asignando USER por defecto");
         }
 
-        // ✅ Limpiar y validar roles
         Set<String> cleanRoles = Set.copyOf(roles);
         log.info("🎭 Roles finales para creación: {}", cleanRoles);
 
@@ -119,7 +117,7 @@ public class UserController {
         return ResponseEntity.ok(updatedUser);
     }
 
-    // ✅ ENDPOINT PARA CAMBIAR ROLES - SOLO ADMIN
+    // ENDPOINT PARA CAMBIAR ROLES - SOLO ADMIN
     @PutMapping("/{id}/roles")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Actualizar roles de usuario", description = "Permite al ADMIN cambiar los roles de un usuario")
@@ -128,7 +126,7 @@ public class UserController {
     @ApiResponse(responseCode = "403", description = "Solo ADMIN puede cambiar roles", content = @Content)
     public ResponseEntity<UserResponseDTO> updateUserRoles(
             @PathVariable Long id,
-            @Valid @RequestBody UpdateRolesRequestDTO request, // ✅ USANDO DTO SEPARADO
+            @Valid @RequestBody UpdateRolesRequestDTO request,
             Authentication authentication) {
 
         log.info("🎭 ADMIN {} actualizando roles del usuario ID: {} a roles: {}",
