@@ -92,22 +92,22 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
         String token = extractTokenFromRequest(request);
 
         if (token == null || token.trim().isEmpty()) {
-            log.warn("No JWT token found for protected path: {}", path);
-            sendUnauthorizedResponse(response, "Missing or invalid token");
+            log.warn("Token JWT no encontrado para ruta protegida: {}", path);
+            sendUnauthorizedResponse(response, "Token de acceso requerido");
             return;
         }
 
         if (SecurityContextHolder.getContext().getAuthentication() == null) {
             try {
                 if (processJwtToken(token, request)) {
-                    log.trace("JWT authentication successful");
+                    log.trace("Autenticación JWT exitosa");
                 } else {
-                    sendUnauthorizedResponse(response, "Invalid token");
+                    sendUnauthorizedResponse(response, "Token inválido");
                     return;
                 }
             } catch (Exception e) {
-                log.error("Error validating JWT token: {}", e.getMessage());
-                sendUnauthorizedResponse(response, "Token validation failed");
+                log.error("Error validando token JWT: {}", e.getMessage());
+                sendUnauthorizedResponse(response, "Error de validación del token");
                 return;
             }
         }
@@ -118,24 +118,24 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
     private boolean processJwtToken(String token, HttpServletRequest request) {
         try {
             if (token.split("\\.").length != 3) {
-                log.warn("Invalid JWT format");
+                log.warn("Formato JWT inválido");
                 return false;
             }
 
             DecodedJWT decodedJWT = verifyJwtToken(token);
             if (decodedJWT == null) {
-                log.warn("JWT verification failed");
+                log.warn("Verificación JWT falló");
                 return false;
             }
 
             String username = decodedJWT.getSubject();
             if (username == null || username.trim().isEmpty()) {
-                log.warn("No username in JWT token");
+                log.warn("No hay nombre de usuario en el token JWT");
                 return false;
             }
 
             if (!refreshTokenService.validateAccessToken(token)) {
-                log.warn("Token validation failed for user: {}", username);
+                log.warn("Validación de token falló para usuario: {}", username);
                 return false;
             }
 
@@ -158,17 +158,16 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
             return true;
 
         } catch (JWTVerificationException e) {
-            log.warn("JWT verification failed: {}", e.getMessage());
+            log.warn("Verificación JWT falló: {}", e.getMessage());
             return false;
         } catch (RuntimeException e) {
-            log.error("Runtime exception processing JWT token: {}", e.getMessage());
+            log.error("Excepción en tiempo de ejecución procesando token JWT: {}", e.getMessage());
             return false;
         }
     }
 
     private DecodedJWT verifyJwtToken(String token) {
         try {
-            // ✅ CORREGIDO: Usar HMAC512 igual que RefreshTokenService
             Algorithm algorithm = Algorithm.HMAC512(jwtSecret);
             JWTVerifier verifier = JWT.require(algorithm)
                     .withIssuer(jwtIssuer)
@@ -177,10 +176,10 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
             return verifier.verify(token);
 
         } catch (JWTVerificationException e) {
-            log.warn("JWT verification failed: {}", e.getMessage());
+            log.warn("Verificación JWT falló: {}", e.getMessage());
             return null;
         } catch (IllegalArgumentException e) {
-            log.error("Invalid JWT algorithm configuration: {}", e.getMessage());
+            log.error("Configuración de algoritmo JWT inválida: {}", e.getMessage());
             return null;
         }
     }
@@ -190,7 +189,7 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
             UserDetails userDetails = userDetailsService.loadUserByUsername(username);
             return userDetails.getAuthorities().stream().map(a -> (GrantedAuthority) a).toList();
         } catch (RuntimeException e) {
-            log.error("Error loading user details for {}: {}", username, e.getMessage());
+            log.error("Error cargando detalles del usuario para {}: {}", username, e.getMessage());
             return List.of();
         }
     }
@@ -206,7 +205,7 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
                         .toList();
             }
         } catch (RuntimeException e) {
-            log.trace("No authorities claim in token: {}", e.getMessage());
+            log.trace("No hay claim de authorities en el token: {}", e.getMessage());
         }
 
         return List.of();
@@ -227,6 +226,6 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType("application/json");
         response.getWriter().write(
-                String.format("{\"error\":\"Unauthorized\",\"message\":\"%s\"}", message));
+                String.format("{\"error\":\"No autorizado\",\"message\":\"%s\"}", message));
     }
 }
