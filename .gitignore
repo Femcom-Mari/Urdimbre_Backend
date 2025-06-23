@@ -1,3 +1,4 @@
+# Spring Boot - Maven
 HELP.md
 target/
 .mvn/wrapper/maven-wrapper.jar
@@ -32,6 +33,9 @@ build/
 ### VS Code ###
 .vscode/
 
+# ===========================================
+# VARIABLES DE ENTORNO Y SECRETS
+# ===========================================
 # Archivos y carpetas con -env
 *-env
 *-env.*
@@ -39,18 +43,61 @@ build/
 .env
 .env.*
 
-#!/bin/bash
+# ===========================================
+# SPRING BOOT SECURITY - PROFILES
+# ===========================================
+# Archivos de configuración con secrets
+application-prod.properties
+application-production.properties
+application-secret.properties
+application-local.properties
 
-# ================================
-# SCRIPT DE VALIDACIÓN DE SEGURIDAD
-# URDIMBRE APPLICATION
-# ================================
+# Certificados y claves
+*.key
+*.pem
+*.p12
+*.jks
+*.keystore
+*.truststore
 
-echo "🔐 VALIDADOR DE SEGURIDAD URDIMBRE"
-echo "=================================="
-echo ""
+# Directorios de secrets
+secrets/
+config/secrets/
+keys/
+certs/
 
-# Colores para output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
+# Variables de entorno locales adicionales
+.env.local
+.env.production
+.env.*.local
+
+# Archivos de configuración sensibles
+*-secret.properties
+*-secrets.properties
+*.secret
+
+
+# ===========================================
+# LOGS Y TEMPORALES
+# ===========================================
+*.log
+logs/
+temp/
+tmp/
+*.tmp
+*.bak
+*.swp
+*~
+
+cat << 'EOF' >> .gitignore
+
+# Spring Security - Solo producción
+application-prod.properties
+application-production.properties
+application-local.properties
+*.key
+*.pem
+*.p12
+*.jks
+secrets/
+EOF

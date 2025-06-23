@@ -171,7 +171,6 @@ public class UrdimbreApplication {
 		String adminPassword = getEnvVariable(dotenv, "ADMIN_PASSWORD");
 		String environment = getEnvVariable(dotenv, ConfigDefaults.ENVIRONMENT_KEY);
 
-		// Validaciones obligatorias
 		if (adminUsername == null || adminUsername.trim().isEmpty()) {
 			throw new IllegalStateException("ADMIN_USERNAME no configurado");
 		}
@@ -182,7 +181,6 @@ public class UrdimbreApplication {
 			throw new IllegalStateException("ADMIN_PASSWORD no configurado");
 		}
 
-		// Validaciones de seguridad solo en producción
 		boolean isProductionEnv = "prod".equals(environment) || "production".equals(environment);
 		if (isProductionEnv) {
 			if (adminUsername.equals("admin") || adminUsername.equals("administrator")) {
