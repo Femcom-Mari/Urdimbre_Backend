@@ -1,3 +1,4 @@
+# Carpetas de build e IDEs
 HELP.md
 target/
 .mvn/wrapper/maven-wrapper.jar
@@ -32,25 +33,16 @@ build/
 ### VS Code ###
 .vscode/
 
-# Archivos y carpetas con -env
+# Archivos de configuración de entorno
 *-env
 *-env.*
 *-env/
 .env
 .env.*
 
-#!/bin/bash
+# Archivos de configuración sensibles
+application-secret.properties
 
-# ================================
-# SCRIPT DE VALIDACIÓN DE SEGURIDAD
-# URDIMBRE APPLICATION
-# ================================
-
-echo "🔐 VALIDADOR DE SEGURIDAD URDIMBRE"
-echo "=================================="
-echo ""
-
-# Colores para output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
+# Certificados y claves privadas
+*.key
+*.pem
